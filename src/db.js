@@ -119,3 +119,29 @@ export function workoutVolume(workout) {
     0
   )
 }
+
+function localISODate(d) {
+  const copy = new Date(d)
+  copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset())
+  return copy.toISOString().slice(0, 10)
+}
+
+// Total weight lifted per calendar day for the last `days` days (including
+// rest days at 0), oldest first: [{ date: 'YYYY-MM-DD', volume }]
+export async function dailyVolume(days = 30) {
+  const workouts = await listWorkouts()
+  const byDate = new Map()
+  for (const w of workouts) {
+    byDate.set(w.date, (byDate.get(w.date) || 0) + workoutVolume(w))
+  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const result = []
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const iso = localISODate(d)
+    result.push({ date: iso, volume: byDate.get(iso) || 0 })
+  }
+  return result
+}

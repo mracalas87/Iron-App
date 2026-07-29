@@ -1,6 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from 'recharts'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
-import { saveWorkout } from '../db'
+import { saveWorkout, dailyVolume } from '../db'
 
 function todayISO() {
   const d = new Date()
@@ -8,9 +17,23 @@ function todayISO() {
   return d.toISOString().slice(0, 10)
 }
 
+function formatDateShort(iso) {
+  const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
 export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved }) {
   const [draftTitle, setDraftTitle] = useState('')
   const [saved, setSaved] = useState(false)
+  const [volumeData, setVolumeData] = useState([])
+
+  useEffect(() => {
+    if (!activeWorkout) {
+      dailyVolume(30).then((data) =>
+        setVolumeData(data.map((d) => ({ ...d, label: formatDateShort(d.date) })))
+      )
+    }
+  }, [activeWorkout])
 
   function startWorkout() {
     setActiveWorkout({ title: draftTitle.trim() || 'Workout', date: todayISO(), exercises: [] })
@@ -30,6 +53,8 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
   }
 
   if (!activeWorkout) {
+    const hasVolume = volumeData.some((d) => d.volume > 0)
+
     return (
       <div>
         <div className="card">
@@ -50,6 +75,33 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
           <p style={{ color: 'var(--pr)', fontSize: 13, textAlign: 'center' }}>
             Workout saved.
           </p>
+        )}
+
+        {hasVolume && (
+          <div className="card">
+            <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Last 30 days (kg lifted/day)
+            </div>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={volumeData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                  axisLine={{ stroke: '#33393f' }}
+                  tickLine={false}
+                  interval={4}
+                />
+                <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip
+                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
+                  labelStyle={{ color: '#e8e6e1' }}
+                  itemStyle={{ color: '#c9f24b' }}
+                />
+                <Line type="monotone" dataKey="volume" stroke="#c9f24b" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     )
