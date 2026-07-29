@@ -1,0 +1,121 @@
+import { openDB } from 'idb'
+
+const DB_NAME = 'iron-log'
+const DB_VERSION = 2
+
+export const CATEGORIES = ['Push', 'Pull', 'Legs', 'Core', 'Other']
+
+async function getDB() {
+  return openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('exercises')) {
+        const store = db.createObjectStore('exercises', { keyPath: 'id', autoIncrement: true })
+        store.createIndex('by-name', 'name', { unique: true })
+      }
+      // v1 used a per-exercise "sessions" store. v2 replaces it with "workouts"
+      // (one record per workout, containing multiple exercises each with sets).
+      if (db.objectStoreNames.contains('sessions')) {
+        db.deleteObjectStore('sessions')
+      }
+      if (!db.objectStoreNames.contains('workouts')) {
+        const store = db.createObjectStore('workouts', { keyPath: 'id', autoIncrement: true })
+        store.createIndex('by-date', 'date')
+      }
+    }
+  })
+}
+
+// ---- Exercises ----
+
+export async function listExercises() {
+  const db = await getDB()
+  const all = await db.getAll('exercises')
+  return all.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function findExercises(query) {
+  const all = await listExercises()
+  if (!query) return all
+  const q = query.trim().toLowerCase()
+  return all.filter((e) => e.name.toLowerCase().includes(q))
+}
+
+export async function addExercise(name, category) {
+  const db = await getDB()
+  const trimmed = name.trim()
+  const existing = await db.getFromIndex('exercises', 'by-name', trimmed)
+  if (existing) return existing
+  const id = await db.add('exercises', {
+    name: trimmed,
+    category: category || 'Other',
+    createdAt: new Date().toISOString()
+  })
+  return { id, name: trimmed, category: category || 'Other' }
+}
+
+// ---- Workouts ----
+// workout shape: { id, title, date, createdAt, completedAt,
+//                  exercises: [ { exerciseId, exerciseName, sets: [{reps, weight}] } ] }
+
+export async function saveWorkout(workout) {
+  const db = await getDB()
+  const id = await db.add('workouts', workout)
+  return id
+}
+
+export async function deleteWorkout(id) {
+  const db = await getDB()
+  await db.delete('workouts', id)
+}
+
+export async function updateWorkout(id, data) {
+  const db = await getDB()
+  await db.put('workouts', { ...data, id })
+}
+
+export async function listWorkouts() {
+  const db = await getDB()
+  const all = await db.getAll('workouts')
+  return all.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id)
+}
+
+export async function getWorkout(id) {
+  const db = await getDB()
+  return db.get('workouts', id)
+}
+
+// Returns chronological history for one exercise across all workouts, in a
+// shape compatible with sessionMetrics: [{ date, sets, workoutId, workoutTitle }]
+export async function exerciseHistory(exerciseId) {
+  const workouts = await listWorkouts()
+  const entries = []
+  for (const w of workouts) {
+    const matches = w.exercises.filter((e) => e.exerciseId === exerciseId)
+    if (matches.length === 0) continue
+    const sets = matches.flatMap((m) => m.sets)
+    entries.push({ date: w.date, sets, workoutId: w.id, workoutTitle: w.title })
+  }
+  return entries.sort((a, b) => new Date(a.date) - new Date(b.date))
+}
+
+// ---- Derived metrics ----
+
+// Epley formula: 1RM = weight * (1 + reps/30)
+export function estimate1RM(weight, reps) {
+  if (reps === 1) return weight
+  return weight * (1 + reps / 30)
+}
+
+export function sessionMetrics(entry) {
+  const volume = entry.sets.reduce((sum, s) => sum + s.weight * s.reps, 0)
+  const best1RM = entry.sets.reduce((max, s) => Math.max(max, estimate1RM(s.weight, s.reps)), 0)
+  const topSet = entry.sets.reduce((top, s) => (s.weight > (top?.weight ?? 0) ? s : top), null)
+  return { volume, best1RM, topSet }
+}
+
+export function workoutVolume(workout) {
+  return workout.exercises.reduce(
+    (sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+    0
+  )
+}
