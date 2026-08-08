@@ -1,8 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ExercisePicker from './ExercisePicker'
+import { bestSet } from '../db'
 
 export default function WorkoutEditor({ workout, setWorkout }) {
   const [addingExercise, setAddingExercise] = useState(false)
+  const [bestSets, setBestSets] = useState({}) // exerciseId -> { reps, weight } | null
+
+  const exerciseIdsKey = workout.exercises.map((ex) => ex.exerciseId).join(',')
+
+  useEffect(() => {
+    let cancelled = false
+    const ids = [...new Set(workout.exercises.map((ex) => ex.exerciseId))]
+    Promise.all(ids.map(async (id) => [id, await bestSet(id)])).then((pairs) => {
+      if (cancelled) return
+      setBestSets(Object.fromEntries(pairs))
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseIdsKey])
 
   function updateTitle(title) {
     setWorkout((w) => ({ ...w, title }))
@@ -71,14 +88,21 @@ export default function WorkoutEditor({ workout, setWorkout }) {
         </div>
       </div>
 
-      {workout.exercises.map((ex, exIdx) => (
+      {workout.exercises.map((ex, exIdx) => {
+        const best = bestSets[ex.exerciseId]
+        return (
         <div className="card" key={exIdx}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <span style={{ fontWeight: 600 }}>{ex.exerciseName}</span>
             <button className="btn-ghost" style={{ color: 'var(--danger)' }} onClick={() => removeExercise(exIdx)}>
               remove
             </button>
           </div>
+          {best && (
+            <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 10 }}>
+              Best: <span style={{ color: 'var(--pr)', fontFamily: 'var(--mono)' }}>{best.reps} × {best.weight}kg</span>
+            </div>
+          )}
           {ex.sets.map((s, setIdx) => (
             <div className="set-row" key={setIdx}>
               <div className="set-index">{setIdx + 1}</div>
@@ -110,7 +134,8 @@ export default function WorkoutEditor({ workout, setWorkout }) {
             + Add set
           </button>
         </div>
-      ))}
+        )
+      })}
 
       <div className="card">
         {addingExercise ? (

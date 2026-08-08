@@ -78,21 +78,28 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
         )}
 
         {hasVolume && (
-          <div className="card">
+          <div className="card" style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Last 30 days (kg lifted/day)
             </div>
-            <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={volumeData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={170}>
+              <LineChart data={volumeData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                  tick={{ fill: '#9aa0a6', fontSize: 10 }}
                   axisLine={{ stroke: '#33393f' }}
                   tickLine={false}
-                  interval={4}
+                  interval="preserveStartEnd"
+                  minTickGap={24}
                 />
-                <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <YAxis
+                  tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={36}
+                  tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 100) / 10}k` : v)}
+                />
                 <Tooltip
                   contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
                   labelStyle={{ color: '#e8e6e1' }}

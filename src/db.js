@@ -113,6 +113,24 @@ export function sessionMetrics(entry) {
   return { volume, best1RM, topSet }
 }
 
+// The single best-ever set for an exercise (highest estimated 1RM across all
+// past workouts, however long ago): { reps, weight } or null if never logged.
+export async function bestSet(exerciseId) {
+  const history = await exerciseHistory(exerciseId)
+  let best = null
+  let bestRM = -Infinity
+  for (const entry of history) {
+    for (const s of entry.sets) {
+      const rm = estimate1RM(s.weight, s.reps)
+      if (rm > bestRM) {
+        bestRM = rm
+        best = s
+      }
+    }
+  }
+  return best
+}
+
 export function workoutVolume(workout) {
   return workout.exercises.reduce(
     (sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
