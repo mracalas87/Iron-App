@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listWorkouts, deleteWorkout, updateWorkout, saveWorkout, workoutVolume } from '../db'
+import { listWorkouts, deleteWorkout, updateWorkout, saveWorkout, workoutVolume, listRuns, deleteRun } from '../db'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
 import ImportCSV from './ImportCSV'
 import ExercisesByCategory from './ExercisesByCategory'
@@ -13,6 +13,9 @@ function ModeToggle({ mode, setMode }) {
       <button className={`chip${mode === 'bodypart' ? ' active' : ''}`} onClick={() => setMode('bodypart')}>
         By body part
       </button>
+      <button className={`chip${mode === 'runs' ? ' active' : ''}`} onClick={() => setMode('runs')}>
+        Runs
+      </button>
     </div>
   )
 }
@@ -20,6 +23,14 @@ function ModeToggle({ mode, setMode }) {
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatPace(distanceKm, durationMin) {
+  if (!distanceKm) return '—'
+  const paceMin = durationMin / distanceKm
+  const min = Math.floor(paceMin)
+  const sec = Math.round((paceMin - min) * 60)
+  return `${min}:${String(sec).padStart(2, '0')}/km`
 }
 
 function todayISO() {
@@ -48,7 +59,8 @@ export default function WorkoutHistory({ onRepeat }) {
   const [editDraft, setEditDraft] = useState(null) // non-null while editing
   const [editingId, setEditingId] = useState(null) // id being edited, null if editing a fresh copy
   const [importing, setImporting] = useState(false)
-  const [mode, setMode] = useState('sessions') // 'sessions' | 'bodypart'
+  const [mode, setMode] = useState('sessions') // 'sessions' | 'bodypart' | 'runs'
+  const [runs, setRuns] = useState([])
 
   useEffect(() => {
     refresh()
@@ -57,6 +69,7 @@ export default function WorkoutHistory({ onRepeat }) {
   async function refresh() {
     const all = await listWorkouts()
     setWorkouts(all)
+    setRuns(await listRuns())
     if (selected) {
       const fresh = all.find((w) => w.id === selected.id)
       setSelected(fresh || null)
@@ -66,6 +79,11 @@ export default function WorkoutHistory({ onRepeat }) {
   async function handleDelete(id) {
     await deleteWorkout(id)
     setSelected(null)
+    refresh()
+  }
+
+  async function handleDeleteRun(id) {
+    await deleteRun(id)
     refresh()
   }
 
@@ -144,6 +162,47 @@ export default function WorkoutHistory({ onRepeat }) {
       <div>
         <ModeToggle mode={mode} setMode={setMode} />
         <ExercisesByCategory />
+      </div>
+    )
+  }
+
+  // ---- Run log ----
+  if (mode === 'runs') {
+    return (
+      <div>
+        <ModeToggle mode={mode} setMode={setMode} />
+        {runs.length === 0 ? (
+          <div className="empty-state">
+            <div className="mark">—</div>
+            <p>No runs logged yet. Switch to "Run" on the Log tab.</p>
+          </div>
+        ) : (
+          <div className="card" style={{ padding: 4 }}>
+            {runs.map((r) => (
+              <div
+                key={r.id}
+                className="exercise-list-item"
+                style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2, cursor: 'default' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                  <span style={{ fontWeight: 600 }}>{r.distanceKm}km</span>
+                  <span className="category">{formatDate(r.date)}</span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--chalk-dim)' }}>
+                  {r.durationMin} min · {formatPace(r.distanceKm, r.durationMin)}
+                  {r.notes ? ` · ${r.notes}` : ''}
+                </div>
+                <button
+                  className="btn-ghost"
+                  style={{ color: 'var(--danger)', padding: '4px 0' }}
+                  onClick={() => handleDeleteRun(r.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }

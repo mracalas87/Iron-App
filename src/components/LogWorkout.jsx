@@ -9,7 +9,8 @@ import {
   CartesianGrid
 } from 'recharts'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
-import { saveWorkout, dailyVolume } from '../db'
+import RunLogger from './RunLogger'
+import { saveWorkout, dailyVolume, MUSCLE_GROUPS } from '../db'
 
 function todayISO() {
   const d = new Date()
@@ -23,9 +24,10 @@ function formatDateShort(iso) {
 }
 
 export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved }) {
-  const [draftTitle, setDraftTitle] = useState('')
+  const [draftMuscleGroups, setDraftMuscleGroups] = useState([])
   const [saved, setSaved] = useState(false)
   const [volumeData, setVolumeData] = useState([])
+  const [logMode, setLogMode] = useState('strength') // 'strength' | 'run'
 
   useEffect(() => {
     if (!activeWorkout) {
@@ -35,9 +37,20 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
     }
   }, [activeWorkout])
 
+  function toggleDraftGroup(group) {
+    setDraftMuscleGroups((groups) =>
+      groups.includes(group) ? groups.filter((g) => g !== group) : [...groups, group]
+    )
+  }
+
   function startWorkout() {
-    setActiveWorkout({ title: draftTitle.trim() || 'Workout', date: todayISO(), muscleGroups: [], exercises: [] })
-    setDraftTitle('')
+    setActiveWorkout({
+      title: draftMuscleGroups.length > 0 ? draftMuscleGroups.join(', ') : 'Workout',
+      date: todayISO(),
+      muscleGroups: draftMuscleGroups,
+      exercises: []
+    })
+    setDraftMuscleGroups([])
   }
 
   async function handleEnd() {
@@ -57,17 +70,39 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
 
     return (
       <div>
+        <div className="chip-row" style={{ marginBottom: 12 }}>
+          <button
+            className={`chip${logMode === 'strength' ? ' active' : ''}`}
+            onClick={() => setLogMode('strength')}
+          >
+            Strength
+          </button>
+          <button className={`chip${logMode === 'run' ? ' active' : ''}`} onClick={() => setLogMode('run')}>
+            Run
+          </button>
+        </div>
+
+        {logMode === 'run' && <RunLogger />}
+
+        {logMode === 'strength' && (
+          <>
         <div className="card">
           <div className="field">
-            <label>Workout title</label>
-            <input
-              type="text"
-              placeholder="e.g. Push Day"
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-            />
+            <label>Muscle groups</label>
+            <div className="chip-row">
+              {MUSCLE_GROUPS.map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={`chip${draftMuscleGroups.includes(g) ? ' active' : ''}`}
+                  onClick={() => toggleDraftGroup(g)}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
           </div>
-          <button className="btn btn-primary" onClick={startWorkout}>
+          <button className="btn btn-primary" onClick={startWorkout} style={{ marginTop: 14 }}>
             Record workout
           </button>
         </div>
@@ -110,6 +145,8 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
               </BarChart>
             </ResponsiveContainer>
           </div>
+        )}
+          </>
         )}
       </div>
     )

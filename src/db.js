@@ -1,7 +1,7 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'iron-log'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export const MUSCLE_GROUPS = [
   'Shoulders',
@@ -29,6 +29,10 @@ async function getDB() {
       }
       if (!db.objectStoreNames.contains('workouts')) {
         const store = db.createObjectStore('workouts', { keyPath: 'id', autoIncrement: true })
+        store.createIndex('by-date', 'date')
+      }
+      if (!db.objectStoreNames.contains('runs')) {
+        const store = db.createObjectStore('runs', { keyPath: 'id', autoIncrement: true })
         store.createIndex('by-date', 'date')
       }
     }
@@ -99,6 +103,26 @@ export async function listWorkouts() {
 export async function getWorkout(id) {
   const db = await getDB()
   return db.get('workouts', id)
+}
+
+// ---- Runs ----
+// run shape: { id, date, distanceKm, durationMin, notes, createdAt }
+
+export async function saveRun(run) {
+  const db = await getDB()
+  const id = await db.add('runs', run)
+  return id
+}
+
+export async function deleteRun(id) {
+  const db = await getDB()
+  await db.delete('runs', id)
+}
+
+export async function listRuns() {
+  const db = await getDB()
+  const all = await db.getAll('runs')
+  return all.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id)
 }
 
 // Returns chronological history for one exercise across all workouts, in a
