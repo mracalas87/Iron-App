@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -10,9 +10,11 @@ import {
   Tooltip,
   CartesianGrid
 } from 'recharts'
+import { listWorkouts, listRuns, workoutVolume } from '../db'
 
 const CACHE_KEY = 'iron-health-cache'
 const ACCESS_KEY_STORAGE = 'iron-garmin-key'
+const RECENT_DAYS = 14
 
 function formatDateShort(iso) {
   const d = new Date(iso + 'T00:00:00')
@@ -38,6 +40,13 @@ function average(arr, key) {
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
 }
 
+function isoDaysAgo(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 10)
+}
+
 export default function Health() {
   const [accessKey, setAccessKey] = useState(() => {
     try {
@@ -50,6 +59,38 @@ export default function Health() {
   const [data, setData] = useState(readCache)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [localEntries, setLocalEntries] = useState([])
+
+  useEffect(() => {
+    loadLocalEntries()
+  }, [])
+
+  async function loadLocalEntries() {
+    const [workouts, runs] = await Promise.all([listWorkouts(), listRuns()])
+    const cutoff = isoDaysAgo(RECENT_DAYS)
+
+    const workoutEntries = workouts
+      .filter((w) => w.date >= cutoff)
+      .map((w) => ({
+        key: `workout-${w.id}`,
+        date: w.date,
+        title: w.title,
+        subtitle: `${w.exercises.length} exercise${w.exercises.length !== 1 ? 's' : ''} · ${workoutVolume(w)}kg volume`,
+        source: 'Iron'
+      }))
+
+    const runEntries = runs
+      .filter((r) => r.date >= cutoff)
+      .map((r) => ({
+        key: `run-${r.id}`,
+        date: r.date,
+        title: 'Run',
+        subtitle: `${r.distanceKm}km · ${r.durationMin} min${r.notes ? ' · ' + r.notes : ''}`,
+        source: 'Iron'
+      }))
+
+    setLocalEntries([...workoutEntries, ...runEntries])
+  }
 
   async function refresh() {
     setLoading(true)
@@ -118,7 +159,23 @@ export default function Health() {
     label: formatDateShort(d.date),
     hours: secondsToHours(d.sleep?.dailySleepDTO?.sleepTimeSeconds)
   }))
-  const activities = data?.activities || []
+  const garminEntries = (data?.activities || []).map((a) => ({
+    key: `garmin-${a.activityId}`,
+    date: (a.startTimeLocal || '').slice(0, 10),
+    title: a.activityName,
+    subtitle: [
+      a.distance ? `${(a.distance / 1000).toFixed(1)}km` : null,
+      a.duration ? `${Math.round(a.duration / 60)} min` : null,
+      a.averageHR ? `${a.averageHR} bpm avg` : null
+    ]
+      .filter(Boolean)
+      .join(' · '),
+    source: 'Garmin'
+  }))
+
+  const allActivities = [...garminEntries, ...localEntries].sort((a, b) =>
+    a.date < b.date ? 1 : a.date > b.date ? -1 : 0
+  )
 
   return (
     <div>
@@ -134,13 +191,15 @@ export default function Health() {
         </p>
       )}
 
-      {!data ? (
+      {!data && allActivities.length === 0 ? (
         <div className="empty-state">
           <div className="mark">—</div>
           <p>No data yet. Tap "Refresh from Garmin" to pull your latest stats.</p>
         </div>
       ) : (
         <>
+          {data && (
+            <>
           <div className="metric-grid">
             <div className="metric-box">
               <div className="label">Avg resting HR</div>
@@ -158,7 +217,7 @@ export default function Health() {
             </div>
             <div className="metric-box">
               <div className="label">Activities</div>
-              <div className="value">{activities.length}</div>
+              <div className="value">{allActivities.length}</div>
             </div>
           </div>
 
@@ -274,8 +333,10 @@ export default function Health() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+            </>
+          )}
 
-          {activities.length > 0 && (
+          {allActivities.length > 0 && (
             <div className="card" style={{ padding: 4 }}>
               <div
                 style={{
@@ -288,20 +349,18 @@ export default function Health() {
               >
                 Recent activities
               </div>
-              {activities.map((a) => (
+              {allActivities.map((item) => (
                 <div
-                  key={a.activityId}
+                  key={item.key}
                   className="exercise-list-item"
                   style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2, cursor: 'default' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                    <span style={{ fontWeight: 600 }}>{a.activityName}</span>
-                    <span className="category">{formatDateShort((a.startTimeLocal || '').slice(0, 10))}</span>
+                    <span style={{ fontWeight: 600 }}>{item.title}</span>
+                    <span className="category">{formatDateShort(item.date)}</span>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--chalk-dim)' }}>
-                    {a.distance ? `${(a.distance / 1000).toFixed(1)}km · ` : ''}
-                    {a.duration ? `${Math.round(a.duration / 60)} min` : ''}
-                    {a.averageHR ? ` · ${a.averageHR} bpm avg` : ''}
+                    {item.subtitle} · {item.source}
                   </div>
                 </div>
               ))}
