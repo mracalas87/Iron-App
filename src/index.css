@@ -356,3 +356,26 @@ select:focus-visible {
   font-size: 12px;
   color: var(--chalk-dim);
 }
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--chalk-dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip.active {
+  border-color: var(--iron);
+  background: var(--iron-dim);
+  color: var(--chalk);
+}

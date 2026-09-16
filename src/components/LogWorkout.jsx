@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -36,7 +36,7 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
   }, [activeWorkout])
 
   function startWorkout() {
-    setActiveWorkout({ title: draftTitle.trim() || 'Workout', date: todayISO(), exercises: [] })
+    setActiveWorkout({ title: draftTitle.trim() || 'Workout', date: todayISO(), muscleGroups: [], exercises: [] })
     setDraftTitle('')
   }
 
@@ -83,7 +83,7 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
               Last 30 days (kg lifted/day)
             </div>
             <ResponsiveContainer width="100%" height={170}>
-              <LineChart data={volumeData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+              <BarChart data={volumeData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -104,9 +104,10 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
                   contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
                   labelStyle={{ color: '#e8e6e1' }}
                   itemStyle={{ color: '#c9f24b' }}
+                  cursor={{ fill: '#ffffff', opacity: 0.05 }}
                 />
-                <Line type="monotone" dataKey="volume" stroke="#c9f24b" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Bar dataKey="volume" fill="#c9f24b" radius={[2, 2, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         )}

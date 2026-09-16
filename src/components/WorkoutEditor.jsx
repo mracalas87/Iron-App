@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import ExercisePicker from './ExercisePicker'
-import { bestSet } from '../db'
+import { bestSet, MUSCLE_GROUPS } from '../db'
 
 export default function WorkoutEditor({ workout, setWorkout }) {
   const [addingExercise, setAddingExercise] = useState(false)
@@ -27,6 +27,16 @@ export default function WorkoutEditor({ workout, setWorkout }) {
 
   function updateDate(date) {
     setWorkout((w) => ({ ...w, date }))
+  }
+
+  function toggleMuscleGroup(group) {
+    setWorkout((w) => {
+      const current = w.muscleGroups || []
+      const next = current.includes(group)
+        ? current.filter((g) => g !== group)
+        : [...current, group]
+      return { ...w, muscleGroups: next }
+    })
   }
 
   function addExercise(exercise) {
@@ -82,9 +92,24 @@ export default function WorkoutEditor({ workout, setWorkout }) {
           <label>Title</label>
           <input type="text" value={workout.title} onChange={(e) => updateTitle(e.target.value)} />
         </div>
-        <div className="field" style={{ marginBottom: 0 }}>
+        <div className="field">
           <label>Date</label>
           <input type="date" value={workout.date} onChange={(e) => updateDate(e.target.value)} />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label>Muscle groups</label>
+          <div className="chip-row">
+            {MUSCLE_GROUPS.map((g) => (
+              <button
+                key={g}
+                type="button"
+                className={`chip${(workout.muscleGroups || []).includes(g) ? ' active' : ''}`}
+                onClick={() => toggleMuscleGroup(g)}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

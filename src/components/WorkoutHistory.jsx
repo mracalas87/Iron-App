@@ -2,6 +2,20 @@ import { useEffect, useState } from 'react'
 import { listWorkouts, deleteWorkout, updateWorkout, saveWorkout, workoutVolume } from '../db'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
 import ImportCSV from './ImportCSV'
+import ExercisesByCategory from './ExercisesByCategory'
+
+function ModeToggle({ mode, setMode }) {
+  return (
+    <div className="chip-row" style={{ marginBottom: 12 }}>
+      <button className={`chip${mode === 'sessions' ? ' active' : ''}`} onClick={() => setMode('sessions')}>
+        Workouts
+      </button>
+      <button className={`chip${mode === 'bodypart' ? ' active' : ''}`} onClick={() => setMode('bodypart')}>
+        By body part
+      </button>
+    </div>
+  )
+}
 
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00')
@@ -19,6 +33,7 @@ function toDraft(workout) {
   return {
     title: workout.title,
     date: workout.date,
+    muscleGroups: workout.muscleGroups || [],
     exercises: workout.exercises.map((ex) => ({
       exerciseId: ex.exerciseId,
       exerciseName: ex.exerciseName,
@@ -33,6 +48,7 @@ export default function WorkoutHistory({ onRepeat }) {
   const [editDraft, setEditDraft] = useState(null) // non-null while editing
   const [editingId, setEditingId] = useState(null) // id being edited, null if editing a fresh copy
   const [importing, setImporting] = useState(false)
+  const [mode, setMode] = useState('sessions') // 'sessions' | 'bodypart'
 
   useEffect(() => {
     refresh()
@@ -54,16 +70,7 @@ export default function WorkoutHistory({ onRepeat }) {
   }
 
   function handleRepeat(workout) {
-    const draft = {
-      title: workout.title,
-      date: todayISO(),
-      exercises: workout.exercises.map((ex) => ({
-        exerciseId: ex.exerciseId,
-        exerciseName: ex.exerciseName,
-        sets: [{ reps: '', weight: '' }]
-      }))
-    }
-    onRepeat(draft)
+    onRepeat({ ...toDraft(workout), date: todayISO() })
   }
 
   function startEdit(workout) {
@@ -131,9 +138,20 @@ export default function WorkoutHistory({ onRepeat }) {
     )
   }
 
+  // ---- Browsing exercise history by body part ----
+  if (mode === 'bodypart') {
+    return (
+      <div>
+        <ModeToggle mode={mode} setMode={setMode} />
+        <ExercisesByCategory />
+      </div>
+    )
+  }
+
   if (workouts.length === 0) {
     return (
       <div className="empty-state">
+        <ModeToggle mode={mode} setMode={setMode} />
         <div className="mark">—</div>
         <p>No workouts recorded yet. Start on the Log tab.</p>
         <button className="btn btn-secondary" onClick={() => setImporting(true)}>
@@ -153,9 +171,18 @@ export default function WorkoutHistory({ onRepeat }) {
         <h2 style={{ fontFamily: 'var(--mono)', fontSize: 17, margin: '4px 0 2px' }}>
           {selected.title}
         </h2>
-        <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginBottom: 8 }}>
           {formatDate(selected.date)}
         </div>
+        {selected.muscleGroups && selected.muscleGroups.length > 0 && (
+          <div className="chip-row" style={{ marginBottom: 12 }}>
+            {selected.muscleGroups.map((g) => (
+              <span key={g} className="chip active" style={{ cursor: 'default' }}>
+                {g}
+              </span>
+            ))}
+          </div>
+        )}
 
         {selected.exercises.map((ex, idx) => (
           <div className="card" key={idx}>
@@ -195,6 +222,7 @@ export default function WorkoutHistory({ onRepeat }) {
   // ---- Workout list ----
   return (
     <div>
+      <ModeToggle mode={mode} setMode={setMode} />
       <button className="btn-ghost" onClick={() => setImporting(true)} style={{ marginBottom: 8 }}>
         + Import from Strong CSV
       </button>

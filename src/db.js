@@ -3,7 +3,17 @@ import { openDB } from 'idb'
 const DB_NAME = 'iron-log'
 const DB_VERSION = 2
 
-export const CATEGORIES = ['Push', 'Pull', 'Legs', 'Core', 'Other']
+export const MUSCLE_GROUPS = [
+  'Shoulders',
+  'Chest',
+  'Back',
+  'Quads',
+  'Hamstrings',
+  'Biceps',
+  'Triceps',
+  'Abs'
+]
+export const CATEGORIES = [...MUSCLE_GROUPS, 'Other']
 
 async function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -51,6 +61,13 @@ export async function addExercise(name, category) {
     createdAt: new Date().toISOString()
   })
   return { id, name: trimmed, category: category || 'Other' }
+}
+
+export async function updateExerciseCategory(id, category) {
+  const db = await getDB()
+  const existing = await db.get('exercises', id)
+  if (!existing) return
+  await db.put('exercises', { ...existing, category })
 }
 
 // ---- Workouts ----
