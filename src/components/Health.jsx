@@ -243,17 +243,6 @@ export default function Health() {
             <>
               <div className="metric-grid">
                 <VitalTile
-                  label="Resting HR"
-                  value={round(v.restingHR.latest)}
-                  unit="bpm"
-                  sub={
-                    v.restingHR.avg != null
-                      ? `7d avg ${round(v.restingHR.avg)}${rhrTrend.text ? ' · ' + rhrTrend.text : ''}`
-                      : ''
-                  }
-                  subColor={rhrTrend.text ? rhrTrend.color : undefined}
-                />
-                <VitalTile
                   label="HRV (overnight)"
                   value={round(v.hrv.latest)}
                   unit="ms"
@@ -265,6 +254,17 @@ export default function Health() {
                       : 'Refresh to load HRV'
                   }
                   subColor={hasHrv && hrvTrend.text ? hrvTrend.color : undefined}
+                />
+                <VitalTile
+                  label="Resting HR"
+                  value={round(v.restingHR.latest)}
+                  unit="bpm"
+                  sub={
+                    v.restingHR.avg != null
+                      ? `7d avg ${round(v.restingHR.avg)}${rhrTrend.text ? ' · ' + rhrTrend.text : ''}`
+                      : ''
+                  }
+                  subColor={rhrTrend.text ? rhrTrend.color : undefined}
                 />
                 <VitalTile
                   label="Sleep"
@@ -284,31 +284,6 @@ export default function Health() {
                   unit="bpm"
                   sub={v.maxHR.avg != null ? `7d avg ${round(v.maxHR.avg)}` : ''}
                 />
-              </div>
-
-              <div className="card" style={{ overflow: 'hidden' }}>
-                <SectionLabel>Resting heart rate (bpm)</SectionLabel>
-                <ResponsiveContainer width="100%" height={140}>
-                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tick={axisTick}
-                      axisLine={{ stroke: '#33393f' }}
-                      tickLine={false}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis
-                      tick={{ fill: '#9aa0a6', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={30}
-                      domain={['dataMin - 3', 'dataMax + 3']}
-                    />
-                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#e8e6e1' }} itemStyle={{ color: '#c9f24b' }} />
-                    <Line type="monotone" dataKey="restingHR" stroke="#c9f24b" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                  </LineChart>
-                </ResponsiveContainer>
               </div>
 
               <div className="card" style={{ overflow: 'hidden' }}>
@@ -343,6 +318,31 @@ export default function Health() {
               </div>
 
               <div className="card" style={{ overflow: 'hidden' }}>
+                <SectionLabel>Resting heart rate (bpm)</SectionLabel>
+                <ResponsiveContainer width="100%" height={140}>
+                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={axisTick}
+                      axisLine={{ stroke: '#33393f' }}
+                      tickLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={30}
+                      domain={['dataMin - 3', 'dataMax + 3']}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#e8e6e1' }} itemStyle={{ color: '#c9f24b' }} />
+                    <Line type="monotone" dataKey="restingHR" stroke="#c9f24b" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="card" style={{ overflow: 'hidden' }}>
                 <SectionLabel>Sleep (hours)</SectionLabel>
                 <ResponsiveContainer width="100%" height={130}>
                   <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -370,12 +370,6 @@ export default function Health() {
                   </div>
                 )}
               </div>
-
-              {v.steps.avg != null && (
-                <p style={{ fontSize: 12, color: 'var(--chalk-dim)', margin: '0 0 12px' }}>
-                  Steps: {Math.round(v.steps.avg).toLocaleString()}/day average
-                </p>
-              )}
             </>
           )}
 

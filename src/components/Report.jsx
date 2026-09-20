@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
 import { listWorkouts, listRuns, workoutVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
-import { buildAiSummary } from '../healthSummary'
 import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
-const ACCESS_KEY_STORAGE = 'iron-garmin-key'
-const AI_CACHE_KEY = 'iron-ai-review'
 
 const ZONES = [
   { key: 'Strained', color: 'var(--danger)' },
@@ -14,15 +11,6 @@ const ZONES = [
 ]
 // Marker position (% along the gauge) for 0, 1, 2, 3, 4 and 5+ warning points.
 const MARKER_POSITIONS = [88, 60, 45, 25, 14, 6]
-
-function readAiCache() {
-  try {
-    const cached = localStorage.getItem(AI_CACHE_KEY)
-    return cached ? JSON.parse(cached) : null
-  } catch {
-    return null
-  }
-}
 
 function readHealthCache() {
   try {
@@ -252,38 +240,12 @@ function SectionLabel({ children }) {
 
 export default function Report() {
   const [stats, setStats] = useState(null)
-  const [review, setReview] = useState(readAiCache)
-  const [reviewLoading, setReviewLoading] = useState(false)
-  const [reviewError, setReviewError] = useState(null)
 
   useEffect(() => {
     syncRunsFromGarminCache()
       .then(buildReport)
       .then(setStats)
   }, [])
-
-  async function generateReview() {
-    setReviewLoading(true)
-    setReviewError(null)
-    try {
-      const accessKey = localStorage.getItem(ACCESS_KEY_STORAGE)
-      if (!accessKey) throw new Error('Enter your access key on the Health tab first.')
-      const summary = await buildAiSummary(stats)
-      const res = await fetch('/api/review', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-garmin-key': accessKey },
-        body: JSON.stringify({ summary })
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`)
-      setReview(json)
-      localStorage.setItem(AI_CACHE_KEY, JSON.stringify(json))
-    } catch (err) {
-      setReviewError(err.message)
-    } finally {
-      setReviewLoading(false)
-    }
-  }
 
   if (!stats) {
     return (
@@ -354,34 +316,6 @@ export default function Report() {
         <div className="metric-box">
           <div className="label">Run distance (7d)</div>
           <div className="value">{stats.runKmThisWeek}km</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <SectionLabel>AI review</SectionLabel>
-        {review?.review && (
-          <>
-            <div style={{ fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{review.review}</div>
-            {review.generatedAt && (
-              <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 8 }}>
-                Generated {new Date(review.generatedAt).toLocaleString('en-GB')}
-              </div>
-            )}
-          </>
-        )}
-        {reviewError && (
-          <p style={{ color: 'var(--danger)', fontSize: 13, margin: '8px 0 0' }}>{reviewError}</p>
-        )}
-        <button
-          className="btn btn-secondary"
-          onClick={generateReview}
-          disabled={reviewLoading}
-          style={{ marginTop: 12 }}
-        >
-          {reviewLoading ? 'Reviewing…' : review?.review ? 'Refresh AI review' : 'Generate AI review'}
-        </button>
-        <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 8 }}>
-          Sends your last four weeks of training and Garmin data to an AI service. Not medical advice.
         </div>
       </div>
 
