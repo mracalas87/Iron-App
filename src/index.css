@@ -9,6 +9,7 @@
   --iron-dim: #2c4a99;
   --pr: #c9f24b;
   --danger: #ff6b5e;
+  --warn: #f5b942;
 
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --sans: 'Inter', system-ui, sans-serif;
@@ -378,4 +379,119 @@ select:focus-visible {
   border-color: var(--iron);
   background: var(--iron-dim);
   color: var(--chalk);
+}
+
+.gauge {
+  position: relative;
+  margin: 18px 2px 4px;
+}
+
+.gauge-track {
+  display: flex;
+  gap: 4px;
+}
+
+.gauge-seg {
+  flex: 1;
+  height: 12px;
+  opacity: 0.3;
+}
+
+.gauge-seg:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.gauge-seg:last-child {
+  border-radius: 0 999px 999px 0;
+}
+
+.gauge-seg.active {
+  opacity: 1;
+}
+
+.gauge-marker {
+  position: absolute;
+  top: -6px;
+  width: 6px;
+  height: 24px;
+  border-radius: 3px;
+  background: var(--chalk);
+  box-shadow: 0 0 0 3px var(--surface);
+  transform: translateX(-50%);
+}
+
+.gauge-labels {
+  display: flex;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--chalk-dim);
+}
+
+.gauge-labels span {
+  flex: 1;
+  text-align: center;
+}
+
+.vital-tile {
+  background: var(--surface-raised);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.vital-tile .label {
+  font-size: 11px;
+  color: var(--chalk-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vital-tile .value {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.vital-tile .value .unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--chalk-dim);
+  margin-left: 4px;
+}
+
+.vital-tile .sub {
+  font-size: 12px;
+  color: var(--chalk-dim);
+  margin-top: 6px;
+}
+
+.vital-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.vital-row:last-child {
+  border-bottom: none;
+}
+
+.vital-row .name {
+  font-size: 14px;
+}
+
+.vital-row .detail {
+  font-size: 12px;
+  color: var(--chalk-dim);
+  margin-top: 2px;
+}
+
+.vital-row .figure {
+  font-family: var(--mono);
+  font-size: 15px;
+  text-align: right;
+  white-space: nowrap;
 }

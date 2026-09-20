@@ -11,18 +11,18 @@ import {
   CartesianGrid
 } from 'recharts'
 import { listWorkouts, listRuns, workoutVolume, importGarminRuns, syncRunsFromGarminCache } from '../db'
+import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
 
 const CACHE_KEY = 'iron-health-cache'
 const ACCESS_KEY_STORAGE = 'iron-garmin-key'
 const RECENT_DAYS = 14
 
+const tooltipStyle = { background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }
+const axisTick = { fill: '#9aa0a6', fontSize: 10 }
+
 function formatDateShort(iso) {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-}
-
-function secondsToHours(s) {
-  return s ? Math.round((s / 3600) * 10) / 10 : 0
 }
 
 function readCache() {
@@ -34,17 +34,42 @@ function readCache() {
   }
 }
 
-function average(arr, key) {
-  const vals = arr.map((x) => x[key]).filter((v) => v != null && v > 0)
-  if (!vals.length) return null
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
-}
-
 function isoDaysAgo(n) {
   const d = new Date()
   d.setDate(d.getDate() - n)
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
   return d.toISOString().slice(0, 10)
+}
+
+function SectionLabel({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: 12,
+        color: 'var(--chalk-dim)',
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em'
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function VitalTile({ label, value, unit, sub, subColor }) {
+  return (
+    <div className="vital-tile">
+      <div className="label">{label}</div>
+      <div className="value">
+        {value ?? '—'}
+        {value != null && unit && <span className="unit">{unit}</span>}
+      </div>
+      <div className="sub" style={subColor ? { color: subColor } : undefined}>
+        {sub || ' '}
+      </div>
+    </div>
+  )
 }
 
 export default function Health() {
@@ -150,19 +175,20 @@ export default function Health() {
     )
   }
 
-  const days = (data?.days || []).slice().reverse() // oldest -> newest
-  const stepsData = days.map((d) => ({
-    label: formatDateShort(d.date),
-    steps: !d.steps?.error ? d.steps : 0
+  const v = getVitals(data)
+  const labels = v.dates.map(formatDateShort)
+  const chartData = labels.map((label, i) => ({
+    label,
+    restingHR: v.restingHR.values[i],
+    hrv: v.hrv.values[i],
+    sleep: v.sleepHours.values[i] != null ? round(v.sleepHours.values[i], 1) : null
   }))
-  const hrData = days.map((d) => ({
-    label: formatDateShort(d.date),
-    restingHR: d.heartRate?.restingHeartRate || null
-  }))
-  const sleepData = days.map((d) => ({
-    label: formatDateShort(d.date),
-    hours: secondsToHours(d.sleep?.dailySleepDTO?.sleepTimeSeconds)
-  }))
+  const hasHrv = v.hrv.latest != null
+
+  const rhrTrend = trendLabel(v.restingHR.delta, 'bpm', false)
+  const hrvTrend = trendLabel(v.hrv.delta, 'ms', true)
+  const sleepTrend = trendLabel(v.sleepHours.delta != null ? v.sleepHours.delta * 60 : null, 'min', true)
+
   const garminEntries = (data?.activities || []).map((a) => ({
     key: `garmin-${a.activityId}`,
     date: (a.startTimeLocal || '').slice(0, 10),
@@ -215,139 +241,141 @@ export default function Health() {
         <>
           {data && (
             <>
-          <div className="metric-grid">
-            <div className="metric-box">
-              <div className="label">Avg resting HR</div>
-              <div className="value">{average(hrData, 'restingHR') ?? '—'} bpm</div>
-            </div>
-            <div className="metric-box">
-              <div className="label">Avg sleep</div>
-              <div className="value">{average(sleepData, 'hours') ?? '—'}h</div>
-            </div>
-          </div>
-          <div className="metric-grid">
-            <div className="metric-box">
-              <div className="label">Avg steps</div>
-              <div className="value">{average(stepsData, 'steps')?.toLocaleString() ?? '—'}</div>
-            </div>
-            <div className="metric-box">
-              <div className="label">Activities</div>
-              <div className="value">{allActivities.length}</div>
-            </div>
-          </div>
+              <div className="metric-grid">
+                <VitalTile
+                  label="Resting HR"
+                  value={round(v.restingHR.latest)}
+                  unit="bpm"
+                  sub={
+                    v.restingHR.avg != null
+                      ? `7d avg ${round(v.restingHR.avg)}${rhrTrend.text ? ' · ' + rhrTrend.text : ''}`
+                      : ''
+                  }
+                  subColor={rhrTrend.text ? rhrTrend.color : undefined}
+                />
+                <VitalTile
+                  label="HRV (overnight)"
+                  value={round(v.hrv.latest)}
+                  unit="ms"
+                  sub={
+                    hasHrv
+                      ? `${formatHrvStatus(v.hrvStatus) ? formatHrvStatus(v.hrvStatus) + ' · ' : ''}${
+                          hrvTrend.text || `avg ${round(v.hrv.avg)}`
+                        }`
+                      : 'Refresh to load HRV'
+                  }
+                  subColor={hasHrv && hrvTrend.text ? hrvTrend.color : undefined}
+                />
+                <VitalTile
+                  label="Sleep"
+                  value={v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) : null}
+                  unit="h"
+                  sub={
+                    v.sleepHours.avg != null
+                      ? `avg ${round(v.sleepHours.avg, 1)}h${
+                          v.deepSleepHours.latest != null ? ` · deep ${round(v.deepSleepHours.latest, 1)}h` : ''
+                        }`
+                      : ''
+                  }
+                />
+                <VitalTile
+                  label="Max HR (24h)"
+                  value={round(v.maxHR.latest)}
+                  unit="bpm"
+                  sub={v.maxHR.avg != null ? `7d avg ${round(v.maxHR.avg)}` : ''}
+                />
+              </div>
 
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--chalk-dim)',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
-              }}
-            >
-              Steps
-            </div>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={stepsData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: '#9aa0a6', fontSize: 10 }}
-                  axisLine={{ stroke: '#33393f' }}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tick={{ fill: '#9aa0a6', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={36}
-                  tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 100) / 10}k` : v)}
-                />
-                <Tooltip
-                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
-                  labelStyle={{ color: '#e8e6e1' }}
-                  itemStyle={{ color: '#4c7eff' }}
-                  cursor={{ fill: '#ffffff', opacity: 0.05 }}
-                />
-                <Bar dataKey="steps" fill="#4c7eff" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <SectionLabel>Resting heart rate (bpm)</SectionLabel>
+                <ResponsiveContainer width="100%" height={140}>
+                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={axisTick}
+                      axisLine={{ stroke: '#33393f' }}
+                      tickLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={30}
+                      domain={['dataMin - 3', 'dataMax + 3']}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#e8e6e1' }} itemStyle={{ color: '#c9f24b' }} />
+                    <Line type="monotone" dataKey="restingHR" stroke="#c9f24b" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
 
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--chalk-dim)',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
-              }}
-            >
-              Resting heart rate
-            </div>
-            <ResponsiveContainer width="100%" height={140}>
-              <LineChart data={hrData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: '#9aa0a6', fontSize: 10 }}
-                  axisLine={{ stroke: '#33393f' }}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tick={{ fill: '#9aa0a6', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={30}
-                  domain={['dataMin - 3', 'dataMax + 3']}
-                />
-                <Tooltip
-                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
-                  labelStyle={{ color: '#e8e6e1' }}
-                  itemStyle={{ color: '#c9f24b' }}
-                />
-                <Line type="monotone" dataKey="restingHR" stroke="#c9f24b" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <SectionLabel>HRV (ms)</SectionLabel>
+                {hasHrv ? (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={axisTick}
+                        axisLine={{ stroke: '#33393f' }}
+                        tickLine={false}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={30}
+                        domain={['dataMin - 8', 'dataMax + 8']}
+                      />
+                      <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#e8e6e1' }} itemStyle={{ color: '#4c7eff' }} />
+                      <Line type="monotone" dataKey="hrv" stroke="#4c7eff" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ fontSize: 13, color: 'var(--chalk-dim)' }}>
+                    No HRV in the saved data yet. Tap Refresh from Garmin to load it.
+                  </div>
+                )}
+              </div>
 
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--chalk-dim)',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
-              }}
-            >
-              Sleep (hours)
-            </div>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={sleepData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: '#9aa0a6', fontSize: 10 }}
-                  axisLine={{ stroke: '#33393f' }}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={24} />
-                <Tooltip
-                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
-                  labelStyle={{ color: '#e8e6e1' }}
-                  itemStyle={{ color: '#4c7eff' }}
-                  cursor={{ fill: '#ffffff', opacity: 0.05 }}
-                />
-                <Bar dataKey="hours" fill="#4c7eff" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <SectionLabel>Sleep (hours)</SectionLabel>
+                <ResponsiveContainer width="100%" height={130}>
+                  <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={axisTick}
+                      axisLine={{ stroke: '#33393f' }}
+                      tickLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={24} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      labelStyle={{ color: '#e8e6e1' }}
+                      itemStyle={{ color: '#4c7eff' }}
+                      cursor={{ fill: '#ffffff', opacity: 0.05 }}
+                    />
+                    <Bar dataKey="sleep" fill="#4c7eff" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                {sleepTrend.text && (
+                  <div style={{ fontSize: 12, color: sleepTrend.color, marginTop: 6 }}>
+                    Last 3 nights vs before: {sleepTrend.text}
+                  </div>
+                )}
+              </div>
+
+              {v.steps.avg != null && (
+                <p style={{ fontSize: 12, color: 'var(--chalk-dim)', margin: '0 0 12px' }}>
+                  Steps: {Math.round(v.steps.avg).toLocaleString()}/day average
+                </p>
+              )}
             </>
           )}
 

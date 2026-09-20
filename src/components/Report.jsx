@@ -1,14 +1,32 @@
 import { useEffect, useState } from 'react'
 import { listWorkouts, listRuns, workoutVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
 import { buildAiSummary } from '../healthSummary'
+import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 const ACCESS_KEY_STORAGE = 'iron-garmin-key'
 const AI_CACHE_KEY = 'iron-ai-review'
 
+const ZONES = [
+  { key: 'Strained', color: 'var(--danger)' },
+  { key: 'Fair', color: 'var(--warn)' },
+  { key: 'Good', color: 'var(--pr)' }
+]
+// Marker position (% along the gauge) for 0, 1, 2, 3, 4 and 5+ warning points.
+const MARKER_POSITIONS = [88, 60, 45, 25, 14, 6]
+
 function readAiCache() {
   try {
     const cached = localStorage.getItem(AI_CACHE_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+function readHealthCache() {
+  try {
+    const cached = localStorage.getItem(HEALTH_CACHE_KEY)
     return cached ? JSON.parse(cached) : null
   } catch {
     return null
@@ -22,23 +40,14 @@ function isoDaysAgo(n) {
   return d.toISOString().slice(0, 10)
 }
 
-function readHealthCache() {
-  try {
-    const cached = localStorage.getItem(HEALTH_CACHE_KEY)
-    return cached ? JSON.parse(cached) : null
-  } catch {
-    return null
-  }
-}
-
-function average(nums) {
-  if (!nums.length) return null
-  return nums.reduce((a, b) => a + b, 0) / nums.length
-}
-
 function pctChange(current, previous) {
   if (!previous) return null
   return Math.round(((current - previous) / previous) * 100)
+}
+
+function spread(values) {
+  const present = values.filter((x) => x != null)
+  return present.length ? { min: Math.min(...present), max: Math.max(...present) } : null
 }
 
 async function buildReport() {
@@ -56,40 +65,89 @@ async function buildReport() {
   thisWeekWorkouts.forEach((w) => (w.muscleGroups || []).forEach((g) => groupsThisWeek.add(g)))
   const missedGroups = MUSCLE_GROUPS.filter((g) => !groupsThisWeek.has(g))
 
-  const volumeThisWeek = thisWeekWorkouts.reduce((sum, w) => sum + workoutVolume(w), 0)
-  const volumeLastWeek = lastWeekWorkouts.reduce((sum, w) => sum + workoutVolume(w), 0)
+  const volumeThisWeek = Math.round(thisWeekWorkouts.reduce((sum, w) => sum + workoutVolume(w), 0))
+  const volumeLastWeek = Math.round(lastWeekWorkouts.reduce((sum, w) => sum + workoutVolume(w), 0))
   const volumeChange = pctChange(volumeThisWeek, volumeLastWeek)
 
   const runDistThisWeek = thisWeekRuns.reduce((sum, r) => sum + r.distanceKm, 0)
   const runDistLastWeek = lastWeekRuns.reduce((sum, r) => sum + r.distanceKm, 0)
 
   const health = readHealthCache()
-  const healthDays = (health?.days || []).slice().reverse() // oldest -> newest
+  const v = getVitals(health)
 
-  const restingHRs = healthDays.map((d) => d.heartRate?.restingHeartRate).filter((v) => v != null)
-  const avgRestingHR = average(restingHRs)
-  const recentHR = average(restingHRs.slice(-3))
-  const earlierHR = average(restingHRs.slice(0, Math.max(restingHRs.length - 3, 0)))
-  const hrDelta = recentHR != null && earlierHR != null ? recentHR - earlierHR : null
+  // ---- Status: each warning adds points by severity ----
+  const reasons = []
+  let points = 0
+  const warn = (pts, text) => {
+    points += pts
+    reasons.push(text)
+  }
 
-  const sleepHours = healthDays
-    .map((d) => d.sleep?.dailySleepDTO?.sleepTimeSeconds)
-    .filter((v) => v != null)
-    .map((s) => s / 3600)
-  const avgSleep = average(sleepHours)
+  const sleepAvg = v.sleepHours.avg
+  if (sleepAvg != null && sleepAvg < 6.5) warn(2, `Sleep averaging ${round(sleepAvg, 1)}h, well under 7h`)
+  else if (sleepAvg != null && sleepAvg < 7) warn(1, `Sleep averaging ${round(sleepAvg, 1)}h, under 7h`)
 
-  const stepsVals = healthDays.map((d) => (!d.steps?.error ? d.steps : null)).filter((v) => v != null)
-  const avgSteps = average(stepsVals)
+  const rhrDelta = v.restingHR.delta
+  if (rhrDelta != null && rhrDelta >= 5) warn(2, `Resting HR up ${round(rhrDelta)} bpm over the last 3 days`)
+  else if (rhrDelta != null && rhrDelta >= 2) warn(1, `Resting HR up ${round(rhrDelta)} bpm over the last 3 days`)
 
-  // ---- Status heuristic ----
-  const flags = []
-  if (avgSleep != null && avgSleep < 7) flags.push('sleep')
-  if (hrDelta != null && hrDelta >= 2) flags.push('hr')
+  if (['LOW', 'POOR'].includes(v.hrvStatus)) warn(2, `HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()}`)
+  else if (v.hrvStatus === 'UNBALANCED') warn(1, 'HRV status is unbalanced')
+  else if (v.hrv.deltaPct != null && v.hrv.deltaPct <= -25) warn(2, `HRV down ${Math.abs(round(v.hrv.deltaPct))}% over the last 3 days`)
+  else if (v.hrv.deltaPct != null && v.hrv.deltaPct <= -15) warn(1, `HRV down ${Math.abs(round(v.hrv.deltaPct))}% over the last 3 days`)
 
-  let status = 'Good'
-  if (flags.length >= 2) status = 'Strained'
-  else if (flags.length === 1) status = 'Fair'
-  if (!health) status = '—'
+  const hasHealth = v.hasData
+  const status = !hasHealth ? '—' : points === 0 ? 'Good' : points <= 2 ? 'Fair' : 'Strained'
+  const position = hasHealth ? MARKER_POSITIONS[Math.min(points, MARKER_POSITIONS.length - 1)] : null
+
+  // ---- Detailed vitals rows ----
+  const rhrRange = spread(v.restingHR.values)
+  const hrvRange = spread(v.hrv.values)
+  const sleepRange = spread(v.sleepHours.values)
+  const hrvStatusText = formatHrvStatus(v.hrvStatus)
+
+  const vitalRows = !hasHealth
+    ? []
+    : [
+        {
+          name: 'Resting heart rate',
+          figure: v.restingHR.latest != null ? `${round(v.restingHR.latest)} bpm` : '—',
+          trend: trendLabel(v.restingHR.delta, 'bpm', false),
+          detail: rhrRange ? `avg ${round(v.restingHR.avg)} · range ${round(rhrRange.min)}-${round(rhrRange.max)}` : ''
+        },
+        {
+          name: 'HRV (overnight)',
+          figure: v.hrv.latest != null ? `${round(v.hrv.latest)} ms` : '—',
+          trend: trendLabel(v.hrv.delta, 'ms', true),
+          detail: hrvRange
+            ? `${hrvStatusText ? hrvStatusText + ' · ' : ''}avg ${round(v.hrv.avg)} · range ${round(hrvRange.min)}-${round(hrvRange.max)}`
+            : 'Not in saved data yet, refresh on the Health tab'
+        },
+        {
+          name: 'Sleep',
+          figure: v.sleepHours.latest != null ? `${round(v.sleepHours.latest, 1)} h` : '—',
+          trend: trendLabel(v.sleepHours.delta != null ? v.sleepHours.delta * 60 : null, 'min', true),
+          detail: sleepRange ? `avg ${round(v.sleepHours.avg, 1)}h · shortest ${round(sleepRange.min, 1)}h` : ''
+        },
+        {
+          name: 'Deep sleep',
+          figure: v.deepSleepHours.latest != null ? `${round(v.deepSleepHours.latest, 1)} h` : '—',
+          trend: trendLabel(v.deepSleepHours.delta != null ? v.deepSleepHours.delta * 60 : null, 'min', true),
+          detail: v.deepSleepHours.avg != null ? `avg ${round(v.deepSleepHours.avg, 1)}h` : ''
+        },
+        {
+          name: 'Max heart rate (24h)',
+          figure: v.maxHR.latest != null ? `${round(v.maxHR.latest)} bpm` : '—',
+          trend: { text: '', color: 'var(--chalk-dim)' },
+          detail: v.maxHR.avg != null ? `avg ${round(v.maxHR.avg)}` : ''
+        },
+        {
+          name: 'Steps',
+          figure: v.steps.avg != null ? Math.round(v.steps.avg).toLocaleString() : '—',
+          trend: { text: '', color: 'var(--chalk-dim)' },
+          detail: 'daily average'
+        }
+      ]
 
   // ---- Plain-language notes ----
   const notes = []
@@ -102,7 +160,7 @@ async function buildReport() {
       parts.push(`${thisWeekWorkouts.length} strength session${thisWeekWorkouts.length !== 1 ? 's' : ''}`)
     }
     if (thisWeekRuns.length > 0) {
-      parts.push(`${thisWeekRuns.length} run${thisWeekRuns.length !== 1 ? 's' : ''} (${Math.round(runDistThisWeek * 10) / 10}km)`)
+      parts.push(`${thisWeekRuns.length} run${thisWeekRuns.length !== 1 ? 's' : ''} (${round(runDistThisWeek, 1)}km)`)
     }
     notes.push(`This week: ${parts.join(' and ')}.`)
   }
@@ -128,41 +186,68 @@ async function buildReport() {
     }
   }
 
-  if (!health) {
-    notes.push('No Garmin data yet — go to the Health tab and tap "Refresh from Garmin".')
-  } else {
-    if (avgSleep != null) {
-      notes.push(
-        `Averaging ${Math.round(avgSleep * 10) / 10}h sleep${avgSleep < 7 ? ' — below the 7-9h recommended range' : ''}.`
-      )
-    }
-    if (avgRestingHR != null) {
-      let hrNote = `Resting heart rate averaging ${Math.round(avgRestingHR)} bpm`
-      if (hrDelta != null && hrDelta >= 2) hrNote += `, trending up (${hrDelta >= 0 ? '+' : ''}${Math.round(hrDelta)} bpm recently) — a sign of accumulating fatigue`
-      else if (hrDelta != null && hrDelta <= -2) hrNote += ', trending down — good recovery sign'
-      notes.push(hrNote + '.')
-    }
-    if (avgSteps != null) {
-      notes.push(`Averaging ${Math.round(avgSteps).toLocaleString()} steps/day.`)
-    }
+  if (!hasHealth) {
+    notes.push('No Garmin data yet. Go to the Health tab and tap "Refresh from Garmin".')
+  } else if (reasons.length === 0) {
+    notes.push('Recovery signals (sleep, resting HR, HRV) all look steady.')
   }
 
   return {
     status,
+    position,
+    reasons,
     sessionsThisWeek: thisWeekWorkouts.length,
     runsThisWeek: thisWeekRuns.length,
-    avgRestingHR,
-    avgSleep,
+    runKmThisWeek: round(runDistThisWeek, 1),
+    volumeThisWeek,
+    vitalRows,
     lastSynced: health?.fetchedAt || null,
     notes
   }
 }
 
 function statusColor(status) {
-  if (status === 'Good') return 'var(--pr)'
-  if (status === 'Fair') return 'var(--iron)'
-  if (status === 'Strained') return 'var(--danger)'
-  return 'var(--chalk-dim)'
+  return ZONES.find((z) => z.key === status)?.color || 'var(--chalk-dim)'
+}
+
+function StatusGauge({ status, position }) {
+  return (
+    <div className="gauge">
+      <div className="gauge-track">
+        {ZONES.map((z) => (
+          <div
+            key={z.key}
+            className={`gauge-seg${status === z.key ? ' active' : ''}`}
+            style={{ background: z.color, opacity: position == null ? 0.15 : undefined }}
+          />
+        ))}
+      </div>
+      {position != null && <div className="gauge-marker" style={{ left: `${position}%` }} />}
+      <div className="gauge-labels">
+        {ZONES.map((z) => (
+          <span key={z.key} style={status === z.key ? { color: z.color, fontWeight: 700 } : undefined}>
+            {z.key}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SectionLabel({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: 12,
+        color: 'var(--chalk-dim)',
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        marginBottom: 8
+      }}
+    >
+      {children}
+    </div>
+  )
 }
 
 export default function Report() {
@@ -211,61 +296,69 @@ export default function Report() {
 
   return (
     <div>
-      <div className="card" style={{ textAlign: 'center' }}>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--chalk-dim)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            marginBottom: 6
-          }}
-        >
-          Today's status
-        </div>
+      <div className="card">
+        <SectionLabel>Today's status</SectionLabel>
         <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--mono)', color: statusColor(stats.status) }}>
           {stats.status}
         </div>
+        <StatusGauge status={stats.status} position={stats.position} />
+        {stats.reasons.length > 0 && (
+          <div style={{ fontSize: 13, marginTop: 12, color: 'var(--chalk-dim)' }}>
+            {stats.reasons.map((r) => (
+              <div key={r} style={{ padding: '2px 0' }}>
+                {r}
+              </div>
+            ))}
+          </div>
+        )}
         {stats.lastSynced && (
-          <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 10 }}>
             Garmin data as of {new Date(stats.lastSynced).toLocaleString('en-GB')}
           </div>
         )}
       </div>
 
+      {stats.vitalRows.length > 0 && (
+        <div className="card">
+          <SectionLabel>Vitals in detail</SectionLabel>
+          {stats.vitalRows.map((row) => (
+            <div className="vital-row" key={row.name}>
+              <div>
+                <div className="name">{row.name}</div>
+                {row.detail && <div className="detail">{row.detail}</div>}
+              </div>
+              <div className="figure">
+                <div>{row.figure}</div>
+                {row.trend.text && (
+                  <div style={{ fontSize: 11, color: row.trend.color, marginTop: 2 }}>{row.trend.text}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="metric-grid">
         <div className="metric-box">
-          <div className="label">Sessions this week</div>
+          <div className="label">Strength sessions (7d)</div>
           <div className="value">{stats.sessionsThisWeek}</div>
         </div>
         <div className="metric-box">
-          <div className="label">Runs this week</div>
+          <div className="label">Lifted (7d)</div>
+          <div className="value">{stats.volumeThisWeek.toLocaleString()}kg</div>
+        </div>
+        <div className="metric-box">
+          <div className="label">Runs (7d)</div>
           <div className="value">{stats.runsThisWeek}</div>
         </div>
-      </div>
-      <div className="metric-grid">
         <div className="metric-box">
-          <div className="label">Avg resting HR</div>
-          <div className="value">{stats.avgRestingHR != null ? Math.round(stats.avgRestingHR) : '—'} bpm</div>
-        </div>
-        <div className="metric-box">
-          <div className="label">Avg sleep</div>
-          <div className="value">{stats.avgSleep != null ? Math.round(stats.avgSleep * 10) / 10 : '—'}h</div>
+          <div className="label">Run distance (7d)</div>
+          <div className="value">{stats.runKmThisWeek}km</div>
         </div>
       </div>
 
       <div className="card">
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--chalk-dim)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            marginBottom: 8
-          }}
-        >
-          AI review
-        </div>
+        <SectionLabel>AI review</SectionLabel>
         {review?.review && (
           <>
             <div style={{ fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{review.review}</div>
@@ -293,17 +386,7 @@ export default function Report() {
       </div>
 
       <div className="card">
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--chalk-dim)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            marginBottom: 8
-          }}
-        >
-          Notes
-        </div>
+        <SectionLabel>Notes</SectionLabel>
         {stats.notes.map((n, i) => (
           <div
             key={i}
