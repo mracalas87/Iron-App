@@ -106,7 +106,69 @@ export async function getWorkout(id) {
 }
 
 // ---- Runs ----
-// run shape: { id, date, distanceKm, durationMin, notes, createdAt }
+// run shape: { id, date, distanceKm, durationMin, notes, createdAt, garminId? }
+// garminId is set on runs imported from Garmin so they aren't imported twice.
+
+export function formatPace(distanceKm, durationMin) {
+  if (!distanceKm) return '—'
+  const paceMin = durationMin / distanceKm
+  let min = Math.floor(paceMin)
+  let sec = Math.round((paceMin - min) * 60)
+  if (sec === 60) {
+    min += 1
+    sec = 0
+  }
+  return `${min}:${String(sec).padStart(2, '0')}/km`
+}
+
+// Adds Garmin running activities to the run log. Skips ones already imported,
+// and ones that match a manually logged run (same day, within 0.3km).
+export async function importGarminRuns(activities) {
+  const db = await getDB()
+  // One readwrite transaction so overlapping imports queue up instead of both adding the same run.
+  const tx = db.transaction('runs', 'readwrite')
+  const existing = await tx.store.getAll()
+  const importedIds = new Set(existing.filter((r) => r.garminId != null).map((r) => r.garminId))
+  let added = 0
+
+  for (const a of Array.isArray(activities) ? activities : []) {
+    const type = a.activityType?.typeKey || ''
+    if (!type.includes('running') || !a.distance || !a.duration) continue
+    if (importedIds.has(a.activityId)) continue
+
+    const date = (a.startTimeLocal || '').slice(0, 10)
+    const distanceKm = Math.round(a.distance / 10) / 100
+    const durationMin = Math.round((a.duration / 60) * 10) / 10
+    const manualMatch = existing.some(
+      (r) => r.garminId == null && r.date === date && Math.abs(r.distanceKm - distanceKm) < 0.3
+    )
+    if (manualMatch) continue
+
+    await tx.store.add({
+      date,
+      distanceKm,
+      durationMin,
+      notes: a.activityName || '',
+      garminId: a.activityId,
+      createdAt: new Date().toISOString()
+    })
+    importedIds.add(a.activityId)
+    added++
+  }
+  await tx.done
+  return added
+}
+
+// Imports runs from the Health tab's cached Garmin response, if there is one.
+export async function syncRunsFromGarminCache() {
+  try {
+    const cached = localStorage.getItem('iron-health-cache')
+    if (!cached) return 0
+    return await importGarminRuns(JSON.parse(cached).activities)
+  } catch {
+    return 0
+  }
+}
 
 export async function saveRun(run) {
   const db = await getDB()

@@ -10,7 +10,7 @@ import {
   Tooltip,
   CartesianGrid
 } from 'recharts'
-import { listWorkouts, listRuns, workoutVolume } from '../db'
+import { listWorkouts, listRuns, workoutVolume, importGarminRuns, syncRunsFromGarminCache } from '../db'
 
 const CACHE_KEY = 'iron-health-cache'
 const ACCESS_KEY_STORAGE = 'iron-garmin-key'
@@ -62,7 +62,7 @@ export default function Health() {
   const [localEntries, setLocalEntries] = useState([])
 
   useEffect(() => {
-    loadLocalEntries()
+    syncRunsFromGarminCache().then(loadLocalEntries)
   }, [])
 
   async function loadLocalEntries() {
@@ -86,7 +86,9 @@ export default function Health() {
         date: r.date,
         title: 'Run',
         subtitle: `${r.distanceKm}km · ${r.durationMin} min${r.notes ? ' · ' + r.notes : ''}`,
-        source: 'Iron'
+        source: 'Iron',
+        runKm: r.distanceKm,
+        fromGarmin: r.garminId != null
       }))
 
     setLocalEntries([...workoutEntries, ...runEntries])
@@ -101,6 +103,8 @@ export default function Health() {
       if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`)
       setData(json)
       localStorage.setItem(CACHE_KEY, JSON.stringify(json))
+      await importGarminRuns(json.activities)
+      await loadLocalEntries()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -170,10 +174,21 @@ export default function Health() {
     ]
       .filter(Boolean)
       .join(' · '),
-    source: 'Garmin'
+    source: 'Garmin',
+    runKm: (a.activityType?.typeKey || '').includes('running') && a.distance ? a.distance / 1000 : null
   }))
 
-  const allActivities = [...garminEntries, ...localEntries].sort((a, b) =>
+  // Runs imported from Garmin (or matching a Garmin run) are already shown as Garmin entries.
+  const ownEntries = localEntries.filter(
+    (e) =>
+      !e.fromGarmin &&
+      !(
+        e.runKm != null &&
+        garminEntries.some((g) => g.runKm != null && g.date === e.date && Math.abs(g.runKm - e.runKm) < 0.3)
+      )
+  )
+
+  const allActivities = [...garminEntries, ...ownEntries].sort((a, b) =>
     a.date < b.date ? 1 : a.date > b.date ? -1 : 0
   )
 

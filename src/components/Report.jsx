@@ -1,7 +1,19 @@
 import { useEffect, useState } from 'react'
-import { listWorkouts, listRuns, workoutVolume, MUSCLE_GROUPS } from '../db'
+import { listWorkouts, listRuns, workoutVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
+import { buildAiSummary } from '../healthSummary'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
+const ACCESS_KEY_STORAGE = 'iron-garmin-key'
+const AI_CACHE_KEY = 'iron-ai-review'
+
+function readAiCache() {
+  try {
+    const cached = localStorage.getItem(AI_CACHE_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
 
 function isoDaysAgo(n) {
   const d = new Date()
@@ -155,10 +167,38 @@ function statusColor(status) {
 
 export default function Report() {
   const [stats, setStats] = useState(null)
+  const [review, setReview] = useState(readAiCache)
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [reviewError, setReviewError] = useState(null)
 
   useEffect(() => {
-    buildReport().then(setStats)
+    syncRunsFromGarminCache()
+      .then(buildReport)
+      .then(setStats)
   }, [])
+
+  async function generateReview() {
+    setReviewLoading(true)
+    setReviewError(null)
+    try {
+      const accessKey = localStorage.getItem(ACCESS_KEY_STORAGE)
+      if (!accessKey) throw new Error('Enter your access key on the Health tab first.')
+      const summary = await buildAiSummary(stats)
+      const res = await fetch('/api/review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-garmin-key': accessKey },
+        body: JSON.stringify({ summary })
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`)
+      setReview(json)
+      localStorage.setItem(AI_CACHE_KEY, JSON.stringify(json))
+    } catch (err) {
+      setReviewError(err.message)
+    } finally {
+      setReviewLoading(false)
+    }
+  }
 
   if (!stats) {
     return (
@@ -211,6 +251,44 @@ export default function Report() {
         <div className="metric-box">
           <div className="label">Avg sleep</div>
           <div className="value">{stats.avgSleep != null ? Math.round(stats.avgSleep * 10) / 10 : '—'}h</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--chalk-dim)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            marginBottom: 8
+          }}
+        >
+          AI review
+        </div>
+        {review?.review && (
+          <>
+            <div style={{ fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{review.review}</div>
+            {review.generatedAt && (
+              <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 8 }}>
+                Generated {new Date(review.generatedAt).toLocaleString('en-GB')}
+              </div>
+            )}
+          </>
+        )}
+        {reviewError && (
+          <p style={{ color: 'var(--danger)', fontSize: 13, margin: '8px 0 0' }}>{reviewError}</p>
+        )}
+        <button
+          className="btn btn-secondary"
+          onClick={generateReview}
+          disabled={reviewLoading}
+          style={{ marginTop: 12 }}
+        >
+          {reviewLoading ? 'Reviewing…' : review?.review ? 'Refresh AI review' : 'Generate AI review'}
+        </button>
+        <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 8 }}>
+          Sends your last four weeks of training and Garmin data to an AI service. Not medical advice.
         </div>
       </div>
 

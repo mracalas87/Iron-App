@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { listWorkouts, deleteWorkout, updateWorkout, saveWorkout, workoutVolume, listRuns, deleteRun } from '../db'
+import {
+  listWorkouts,
+  deleteWorkout,
+  updateWorkout,
+  saveWorkout,
+  workoutVolume,
+  listRuns,
+  deleteRun,
+  formatPace,
+  syncRunsFromGarminCache
+} from '../db'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
 import ImportCSV from './ImportCSV'
 import ExercisesByCategory from './ExercisesByCategory'
@@ -23,14 +33,6 @@ function ModeToggle({ mode, setMode }) {
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-function formatPace(distanceKm, durationMin) {
-  if (!distanceKm) return '—'
-  const paceMin = durationMin / distanceKm
-  const min = Math.floor(paceMin)
-  const sec = Math.round((paceMin - min) * 60)
-  return `${min}:${String(sec).padStart(2, '0')}/km`
 }
 
 function todayISO() {
@@ -63,7 +65,7 @@ export default function WorkoutHistory({ onRepeat }) {
   const [runs, setRuns] = useState([])
 
   useEffect(() => {
-    refresh()
+    syncRunsFromGarminCache().then(refresh)
   }, [])
 
   async function refresh() {
@@ -191,6 +193,7 @@ export default function WorkoutHistory({ onRepeat }) {
                 <div style={{ fontSize: 12, color: 'var(--chalk-dim)' }}>
                   {r.durationMin} min · {formatPace(r.distanceKm, r.durationMin)}
                   {r.notes ? ` · ${r.notes}` : ''}
+                  {r.garminId != null ? ' · Garmin' : ''}
                 </div>
                 <button
                   className="btn-ghost"
