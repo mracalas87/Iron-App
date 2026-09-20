@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
   ResponsiveContainer,
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -10,7 +11,7 @@ import {
 } from 'recharts'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
 import RunLogger from './RunLogger'
-import { saveWorkout, dailyVolume, MUSCLE_GROUPS } from '../db'
+import { saveWorkout, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
 
 function todayISO() {
   const d = new Date()
@@ -31,9 +32,9 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
 
   useEffect(() => {
     if (!activeWorkout) {
-      dailyVolume(30).then((data) =>
-        setVolumeData(data.map((d) => ({ ...d, label: formatDateShort(d.date) })))
-      )
+      syncRunsFromGarminCache()
+        .then(() => dailyVolume(30))
+        .then((data) => setVolumeData(data.map((d) => ({ ...d, label: formatDateShort(d.date) }))))
     }
   }, [activeWorkout])
 
@@ -66,7 +67,8 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
   }
 
   if (!activeWorkout) {
-    const hasVolume = volumeData.some((d) => d.volume > 0)
+    const hasLifts = volumeData.some((d) => d.volume > 0)
+    const hasRuns = volumeData.some((d) => d.runKm != null)
 
     return (
       <div>
@@ -112,13 +114,26 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
           </p>
         )}
 
-        {hasVolume && (
+          </>
+        )}
+
+        {(hasLifts || hasRuns) && (
           <div className="card" style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Last 30 days (kg lifted/day)
+              Last 30 days
             </div>
-            <ResponsiveContainer width="100%" height={170}>
-              <BarChart data={volumeData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+            <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 6 }}>
+              <span>
+                <span style={{ color: '#c9f24b' }}>■</span> Lifted (kg)
+              </span>
+              {hasRuns && (
+                <span>
+                  <span style={{ color: '#4c7eff' }}>●</span> Run (km)
+                </span>
+              )}
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <ComposedChart data={volumeData} margin={{ top: 8, right: hasRuns ? 0 : 8, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -129,24 +144,46 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
                   minTickGap={24}
                 />
                 <YAxis
+                  yAxisId="kg"
                   tick={{ fill: '#9aa0a6', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={36}
                   tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 100) / 10}k` : v)}
                 />
+                {hasRuns && (
+                  <YAxis
+                    yAxisId="km"
+                    orientation="right"
+                    tick={{ fill: '#4c7eff', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={30}
+                    domain={[0, (max) => Math.max(5, Math.ceil(max))]}
+                  />
+                )}
                 <Tooltip
                   contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
                   labelStyle={{ color: '#e8e6e1' }}
-                  itemStyle={{ color: '#c9f24b' }}
                   cursor={{ fill: '#ffffff', opacity: 0.05 }}
+                  formatter={(value, name) =>
+                    name === 'volume' ? [`${Number(value).toLocaleString()} kg`, 'Lifted'] : [`${value} km`, 'Run']
+                  }
                 />
-                <Bar dataKey="volume" fill="#c9f24b" radius={[2, 2, 0, 0]} />
-              </BarChart>
+                <Bar yAxisId="kg" dataKey="volume" fill="#c9f24b" radius={[2, 2, 0, 0]} />
+                {hasRuns && (
+                  <Line
+                    yAxisId="km"
+                    dataKey="runKm"
+                    stroke="transparent"
+                    dot={{ r: 4, fill: '#4c7eff', stroke: '#14171a', strokeWidth: 1 }}
+                    activeDot={{ r: 5 }}
+                    isAnimationActive={false}
+                  />
+                )}
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
-        )}
-          </>
         )}
       </div>
     )

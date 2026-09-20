@@ -247,13 +247,17 @@ function localISODate(d) {
   return copy.toISOString().slice(0, 10)
 }
 
-// Total weight lifted per calendar day for the last `days` days (including
-// rest days at 0), oldest first: [{ date: 'YYYY-MM-DD', volume }]
+// Per calendar day for the last `days` days (including rest days), oldest first:
+// [{ date: 'YYYY-MM-DD', volume (kg lifted, 0 if none), runKm (null if no run) }]
 export async function dailyVolume(days = 30) {
-  const workouts = await listWorkouts()
+  const [workouts, runs] = await Promise.all([listWorkouts(), listRuns()])
   const byDate = new Map()
   for (const w of workouts) {
     byDate.set(w.date, (byDate.get(w.date) || 0) + workoutVolume(w))
+  }
+  const runsByDate = new Map()
+  for (const r of runs) {
+    runsByDate.set(r.date, (runsByDate.get(r.date) || 0) + r.distanceKm)
   }
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -262,7 +266,8 @@ export async function dailyVolume(days = 30) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     const iso = localISODate(d)
-    result.push({ date: iso, volume: byDate.get(iso) || 0 })
+    const km = runsByDate.get(iso)
+    result.push({ date: iso, volume: byDate.get(iso) || 0, runKm: km ? Math.round(km * 10) / 10 : null })
   }
   return result
 }
