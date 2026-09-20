@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listWorkouts, listRuns, workoutVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
 import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
+import { buildAdvice, ADVICE_ZONES } from '../trainingAdvice'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 
@@ -180,10 +181,21 @@ async function buildReport() {
     notes.push('Recovery signals (sleep, resting HR, HRV) all look steady.')
   }
 
+  const advice = buildAdvice({
+    hasHealth,
+    statusPoints: points,
+    sleepLastNight: v.sleepHours.latest,
+    workouts,
+    runs,
+    muscleGroups: MUSCLE_GROUPS,
+    daysAgo: isoDaysAgo
+  })
+
   return {
     status,
     position,
     reasons,
+    advice,
     sessionsThisWeek: thisWeekWorkouts.length,
     runsThisWeek: thisWeekRuns.length,
     runKmThisWeek: round(runDistThisWeek, 1),
@@ -198,11 +210,11 @@ function statusColor(status) {
   return ZONES.find((z) => z.key === status)?.color || 'var(--chalk-dim)'
 }
 
-function StatusGauge({ status, position }) {
+function StatusGauge({ zones = ZONES, status, position }) {
   return (
     <div className="gauge">
       <div className="gauge-track">
-        {ZONES.map((z) => (
+        {zones.map((z) => (
           <div
             key={z.key}
             className={`gauge-seg${status === z.key ? ' active' : ''}`}
@@ -212,7 +224,7 @@ function StatusGauge({ status, position }) {
       </div>
       {position != null && <div className="gauge-marker" style={{ left: `${position}%` }} />}
       <div className="gauge-labels">
-        {ZONES.map((z) => (
+        {zones.map((z) => (
           <span key={z.key} style={status === z.key ? { color: z.color, fontWeight: 700 } : undefined}>
             {z.key}
           </span>
@@ -273,8 +285,41 @@ export default function Report() {
             ))}
           </div>
         )}
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 14 }}>
+          <SectionLabel>Training advice</SectionLabel>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: ADVICE_ZONES.find((z) => z.key === stats.advice.zone)?.color || 'var(--chalk-dim)'
+            }}
+          >
+            {stats.advice.headline}
+          </div>
+          <StatusGauge zones={ADVICE_ZONES} status={stats.advice.zone} position={stats.advice.position} />
+          {stats.advice.strength && (
+            <div style={{ fontSize: 13, marginTop: 12, lineHeight: 1.5 }}>
+              <div>
+                <span style={{ color: 'var(--chalk-dim)' }}>Strength: </span>
+                {stats.advice.strength}
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <span style={{ color: 'var(--chalk-dim)' }}>Run: </span>
+                {stats.advice.run}
+              </div>
+            </div>
+          )}
+          {stats.advice.reasons.length > 0 && (
+            <div style={{ fontSize: 12, marginTop: 10, color: 'var(--chalk-dim)' }}>
+              Also: {stats.advice.reasons.join('. ')}.
+            </div>
+          )}
+          {stats.advice.tip && (
+            <div style={{ fontSize: 12, marginTop: 6, color: 'var(--chalk-dim)' }}>{stats.advice.tip}</div>
+          )}
+        </div>
         {stats.lastSynced && (
-          <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 12 }}>
             Garmin data as of {new Date(stats.lastSynced).toLocaleString('en-GB')}
           </div>
         )}
