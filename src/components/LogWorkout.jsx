@@ -128,7 +128,7 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
               </span>
               {hasRuns && (
                 <span>
-                  <span style={{ color: '#4c7eff' }}>●</span> Run (km)
+                  <span style={{ color: '#4c7eff' }}>━</span> Run (km)
                 </span>
               )}
             </div>
@@ -175,8 +175,11 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
                   <Line
                     yAxisId="km"
                     dataKey="runKm"
-                    stroke="transparent"
-                    dot={{ r: 4, fill: '#4c7eff', stroke: '#14171a', strokeWidth: 1 }}
+                    type="monotone"
+                    stroke="#4c7eff"
+                    strokeWidth={2}
+                    connectNulls
+                    dot={{ r: 3, fill: '#4c7eff', stroke: '#14171a', strokeWidth: 1 }}
                     activeDot={{ r: 5 }}
                     isAnimationActive={false}
                   />
