@@ -3,6 +3,7 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
+  Cell,
   Line,
   XAxis,
   YAxis,
@@ -18,6 +19,10 @@ function todayISO() {
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
   return d.toISOString().slice(0, 10)
 }
+
+// Bar colours by kind of lifting day (see loadType.js). Blue is kept for the run line.
+const TYPE_COLOURS = { Heavy: '#ff8a4c', Volume: '#c9f24b', Mixed: '#5ad1c0' }
+const NO_TYPE_COLOUR = '#9aa0a6'
 
 function formatDateShort(iso) {
   const d = new Date(iso + 'T00:00:00')
@@ -123,9 +128,18 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
               Last 30 days
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 6 }}>
-              <span>
-                <span style={{ color: '#c9f24b' }}>■</span> Lifted (kg)
-              </span>
+              {['Heavy', 'Volume', 'Mixed']
+                .filter((t) => volumeData.some((d) => d.volume > 0 && d.loadType === t))
+                .map((t) => (
+                  <span key={t}>
+                    <span style={{ color: TYPE_COLOURS[t] }}>■</span> {t}
+                  </span>
+                ))}
+              {volumeData.some((d) => d.volume > 0 && !d.loadType) && (
+                <span>
+                  <span style={{ color: NO_TYPE_COLOUR }}>■</span> Other
+                </span>
+              )}
               {hasRuns && (
                 <span>
                   <span style={{ color: '#4c7eff' }}>━</span> Run (km)
@@ -166,11 +180,18 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
                   contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
                   labelStyle={{ color: '#e8e6e1' }}
                   cursor={{ fill: '#ffffff', opacity: 0.05 }}
-                  formatter={(value, name) =>
-                    name === 'volume' ? [`${Number(value).toLocaleString()} kg`, 'Lifted'] : [`${value} km`, 'Run']
-                  }
+                  formatter={(value, name, item) => {
+                    if (name !== 'volume') return [`${value} km`, 'Run']
+                    const p = item && item.payload
+                    const detail = p && p.loadType ? ` · ${p.loadType}, median ${p.medianReps} reps, ${p.intensity}% of your best` : ''
+                    return [`${Number(value).toLocaleString()} kg${detail}`, 'Lifted']
+                  }}
                 />
-                <Bar yAxisId="kg" dataKey="volume" fill="#c9f24b" radius={[2, 2, 0, 0]} />
+                <Bar yAxisId="kg" dataKey="volume" fill="#c9f24b" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                  {volumeData.map((d) => (
+                    <Cell key={d.date} fill={TYPE_COLOURS[d.loadType] || NO_TYPE_COLOUR} />
+                  ))}
+                </Bar>
                 {hasRuns && (
                   <Line
                     yAxisId="km"

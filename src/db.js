@@ -1,4 +1,5 @@
 import { openDB } from 'idb'
+import { buildReference, classifyDay } from './loadType'
 
 const DB_NAME = 'iron-log'
 const DB_VERSION = 3
@@ -248,13 +249,18 @@ function localISODate(d) {
 }
 
 // Per calendar day for the last `days` days (including rest days), oldest first:
-// [{ date: 'YYYY-MM-DD', volume (kg lifted, 0 if none), runKm (null if no run) }]
+// [{ date, volume (kg lifted, 0 if none), runKm (null if no run),
+//    loadType ('Heavy' | 'Volume' | 'Mixed' | null), intensity, medianReps }]
+// loadType comes from rep range and weight against your own best on each lift, not total kg.
 export async function dailyVolume(days = 30) {
   const [workouts, runs] = await Promise.all([listWorkouts(), listRuns()])
   const byDate = new Map()
+  const workoutsByDate = new Map()
   for (const w of workouts) {
     byDate.set(w.date, (byDate.get(w.date) || 0) + workoutVolume(w))
+    workoutsByDate.set(w.date, [...(workoutsByDate.get(w.date) || []), w])
   }
+  const reference = buildReference(workouts)
   const runsByDate = new Map()
   for (const r of runs) {
     runsByDate.set(r.date, (runsByDate.get(r.date) || 0) + r.distanceKm)
@@ -267,7 +273,15 @@ export async function dailyVolume(days = 30) {
     d.setDate(d.getDate() - i)
     const iso = localISODate(d)
     const km = runsByDate.get(iso)
-    result.push({ date: iso, volume: byDate.get(iso) || 0, runKm: km ? Math.round(km * 10) / 10 : null })
+    const kind = workoutsByDate.has(iso) ? classifyDay(workoutsByDate.get(iso), reference) : null
+    result.push({
+      date: iso,
+      volume: byDate.get(iso) || 0,
+      runKm: km ? Math.round(km * 10) / 10 : null,
+      loadType: kind ? kind.type : null,
+      intensity: kind ? Math.round(kind.intensity * 100) : null,
+      medianReps: kind ? kind.medianReps : null
+    })
   }
   return result
 }
