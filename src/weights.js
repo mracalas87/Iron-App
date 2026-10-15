@@ -66,6 +66,15 @@ export function getWeightSessions(health) {
   return sessions.sort((a, b) => (a.date === b.date ? a.start - b.start : a.date < b.date ? -1 : 1))
 }
 
+// Same sessions, read from the Garmin response the Health tab saved on this phone.
+export function readCachedWeightSessions() {
+  try {
+    return getWeightSessions(JSON.parse(localStorage.getItem('iron-health-cache') || 'null'))
+  } catch {
+    return []
+  }
+}
+
 export function clock(minutes) {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }

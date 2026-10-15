@@ -114,9 +114,17 @@ export function buildAdvice({
         Rest: 'Skip it, or 15-20 minutes of mobility.'
       }[zone]
 
+  // Which muscles were trained comes from the muscle groups chosen when each workout was logged.
+  const legsOn = (date) => workouts.some((w) => w.date === date && (w.muscleGroups || []).some((g) => g === 'Quads' || g === 'Hamstrings'))
+  const legsToday = legsOn(today)
+  const legsYesterday = legsOn(yesterday)
+  if (legsYesterday) reasons.push('Legs trained yesterday')
+
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
   else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
+  else if (legsToday) run = `Legs done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
+  else if (legsYesterday) run = `Legs were yesterday, so keep it easy and flat, heart rate under ${EASY_HR_CAP}, and leave hard efforts for another day.`
   else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
   else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
 

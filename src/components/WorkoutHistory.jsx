@@ -13,6 +13,7 @@ import {
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
 import ImportCSV from './ImportCSV'
 import ExercisesByCategory from './ExercisesByCategory'
+import { readCachedWeightSessions, clock } from '../weights'
 
 function ModeToggle({ mode, setMode }) {
   return (
@@ -63,6 +64,9 @@ export default function WorkoutHistory({ onRepeat }) {
   const [importing, setImporting] = useState(false)
   const [mode, setMode] = useState('sessions') // 'sessions' | 'bodypart' | 'runs'
   const [runs, setRuns] = useState([])
+  // Morning heart-rate blocks from the Garmin data saved on this phone; matched to workouts by date.
+  const [blocks] = useState(readCachedWeightSessions)
+  const blockFor = (date) => blocks.find((b) => b.date === date) || null
 
   useEffect(() => {
     syncRunsFromGarminCache().then(refresh)
@@ -235,6 +239,8 @@ export default function WorkoutHistory({ onRepeat }) {
         </h2>
         <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginBottom: 8 }}>
           {formatDate(selected.date)}
+          {blockFor(selected.date) &&
+            ` · heart rate up ${clock(blockFor(selected.date).start)}-${clock(blockFor(selected.date).end)}, peak ${blockFor(selected.date).peak} bpm`}
         </div>
         {selected.muscleGroups && selected.muscleGroups.length > 0 && (
           <div className="chip-row" style={{ marginBottom: 12 }}>
@@ -302,6 +308,7 @@ export default function WorkoutHistory({ onRepeat }) {
             </div>
             <div style={{ fontSize: 12, color: 'var(--chalk-dim)' }}>
               {w.exercises.length} exercise{w.exercises.length !== 1 ? 's' : ''} · {workoutVolume(w)}kg volume
+              {blockFor(w.date) && ` · ${clock(blockFor(w.date).start)}-${clock(blockFor(w.date).end)}`}
             </div>
           </button>
         ))}
