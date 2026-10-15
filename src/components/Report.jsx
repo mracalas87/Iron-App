@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { listWorkouts, listRuns, workoutVolume, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
 import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
-import { buildAdvice, ADVICE_ZONES } from '../trainingAdvice'
+import { buildAdvice, ADVICE_ZONES, HARD_HR_FROM } from '../trainingAdvice'
+import { RACE } from '../config'
 import { getWeightSessions } from '../weights'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
@@ -242,6 +243,22 @@ async function buildReport() {
     )
   }
 
+  // Hard run yesterday (average heart rate in his threshold zone or above), and how far back run data goes.
+  const garminActs = health?.activities || []
+  const actDate = (a) => (a.startTimeLocal || '').slice(0, 10)
+  const hardRun =
+    garminActs
+      .filter((a) => (a.activityType?.typeKey || '').includes('running') && (a.averageHR || 0) >= HARD_HR_FROM && (a.duration || 0) >= 600)
+      .map((a) => ({ date: actDate(a), avgHR: a.averageHR }))
+      .filter((a) => a.date >= isoDaysAgo(1))
+      .sort((a, b) => (a.date < b.date ? 1 : -1))[0] || null
+  const historyStart = [...runs.map((r) => r.date), ...garminActs.map(actDate)].filter(Boolean).sort()[0] || null
+  const liftDays14 = Array.from({ length: 14 }, (_, i) => isoDaysAgo(i)).filter(
+    (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
+  ).length
+  const runs28 = runs.filter((r) => r.date >= isoDaysAgo(27)).length
+  const basis = `Based on ${v.dates.length} days of sleep, resting HR and HRV, ${liftDays14} lifting days in 14 days, and ${runs28} runs in 28 days.`
+
   const advice = buildAdvice({
     hasHealth,
     statusPoints: points,
@@ -252,7 +269,10 @@ async function buildReport() {
     daysAgo: isoDaysAgo,
     weightDates,
     weightsToday,
-    loadTypes
+    loadTypes,
+    hardRun,
+    historyStart,
+    race: RACE
   })
 
   return {
@@ -260,6 +280,7 @@ async function buildReport() {
     position,
     reasons,
     advice,
+    basis,
     sessionsThisWeek: weightDays7.size,
     runsThisWeek: thisWeekRuns.length,
     runKmThisWeek: round(runDistThisWeek, 1),
@@ -381,6 +402,11 @@ export default function Report() {
           {stats.advice.tip && (
             <div style={{ fontSize: 12, marginTop: 6, color: 'var(--chalk-dim)' }}>{stats.advice.tip}</div>
           )}
+          <div style={{ fontSize: 11, marginTop: 10, color: 'var(--chalk-dim)', lineHeight: 1.45 }}>
+            {stats.basis} Rules: sleep 7h or more (AASM/SRS 2015), multi-day HRV and resting-HR trends (Plews 2013), a week of
+            running over 1.5x your recent average (Gabbett 2016), hard days followed by easy ones (convention), taper (Bosquet 2007).
+            Not medical advice.
+          </div>
         </div>
         {stats.lastSynced && (
           <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 12 }}>

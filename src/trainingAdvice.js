@@ -12,8 +12,10 @@ const r1 = (n) => Math.round(n * 10) / 10
 // Tuned for someone who has trained daily for years and works long weekdays: a
 // mild recovery flag still allows training, and it takes several stacked
 // signals (poor sleep, raised resting HR, low HRV, no rest day) to say Rest.
-// Top of Andy's easy range (his measured aerobic threshold), in bpm.
+// Heart-rate lines from Andy's measured zones: top of easy running (aerobic threshold) and the
+// start of threshold/hard running, in bpm.
 const EASY_HR_CAP = 148
+export const HARD_HR_FROM = 160
 
 // weightDates: dates with an inferred morning weights session (see weights.js).
 // weightsToday: that session if there is one today, so a morning lift does not
@@ -29,6 +31,9 @@ export function buildAdvice({
   weightDates = new Set(),
   weightsToday = null,
   loadTypes = new Map(), // date -> 'Heavy' | 'Volume' | 'Mixed' for logged lifting days (loadType.js)
+  hardRun = null, // a recorded run in the last two days that was hard: { date, avgHR }
+  historyStart = null, // earliest date this phone has any run or activity data for
+  race = null, // { name, date }
   now = new Date()
 }) {
   if (!hasHealth) {
@@ -66,6 +71,17 @@ export function buildAdvice({
     reasons.push('No full rest day in the last 14 days')
   }
 
+  // One week of running well above the previous three is the clearest simple injury-risk flag
+  // (workload ratio above about 1.5, Gabbett 2016). It only means something with four weeks of history.
+  const kmBetween = (from, to) =>
+    runs.filter((r) => r.date >= daysAgo(from) && r.date <= daysAgo(to)).reduce((s, r) => s + r.distanceKm, 0)
+  const lastWeekKm = kmBetween(6, 0)
+  const priorWeeklyKm = (kmBetween(13, 7) + kmBetween(20, 14) + kmBetween(27, 21)) / 3
+  if (historyStart && historyStart <= daysAgo(27) && priorWeeklyKm >= 10 && lastWeekKm / priorWeeklyKm > 1.5) {
+    readiness += 1
+    reasons.push(`Last 7 days of running is ${r1(lastWeekKm / priorWeeklyKm)}x the weekly average of the 3 weeks before`)
+  }
+
   // Several heavy days close together build fatigue even when sleep and HRV look fine.
   const heavyRecent = [0, 1, 2, 3].filter((i) => loadTypes.get(daysAgo(i)) === 'Heavy').length
   if (heavyRecent >= 3) {
@@ -89,7 +105,12 @@ export function buildAdvice({
   const workDay = dow >= 1 && dow <= 5
   const fitText = workDay ? ' A 30-45 minute session fits a work day.' : ''
 
-  const tip = readiness >= 3 ? 'An earlier night will do more for you than an extra session.' : null
+  let tip = readiness >= 3 ? 'An earlier night will do more for you than an extra session.' : null
+  // Taper: 8-14 days, volume cut about 40-60%, intensity kept (Bosquet 2007 meta-analysis).
+  const daysToRace = race ? Math.round((new Date(race.date + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 86400000) : null
+  if (daysToRace != null && daysToRace >= 0 && daysToRace <= 14) {
+    tip = `Taper, ${daysToRace} days to the ${race.name}: cut weekly running by about 40-60%, keep a few short efforts at race pace, and skip new or heavy leg work.`
+  }
 
   // A recorded run today means the day's session is done. A morning lift does not: it can be
   // an inferred heart-rate block or a workout logged in the Log tab, and either way an
@@ -131,10 +152,14 @@ export function buildAdvice({
     return t === 'Heavy' ? 'Heavy legs' : t === 'Volume' ? 'High-volume legs' : 'Legs'
   }
   if (legsYesterday) reasons.push(`${legsLabel(yesterday)} yesterday`)
+  // Hard sessions are normally followed by an easy day (hard/easy spacing; a training convention).
+  const hardRunYesterday = hardRun && hardRun.date === yesterday
+  if (hardRunYesterday) reasons.push(`Hard run yesterday (average ${hardRun.avgHR} bpm)`)
 
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
   else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
+  else if (hardRunYesterday) run = `Hard run yesterday, so keep today easy, heart rate under ${EASY_HR_CAP}.`
   else if (legsToday) run = `${legsLabel(today)} done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
   else if (legsYesterday) run = `${legsLabel(yesterday)} were yesterday, so keep it easy and flat, heart rate under ${EASY_HR_CAP}, and leave hard efforts for another day.`
   else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'

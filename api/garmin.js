@@ -4,7 +4,7 @@ export const config = { maxDuration: 30 }
 
 const DAYS_BACK = 14
 const DAY_CONCURRENCY = 4
-const ACTIVITY_LIMIT = 20
+const ACTIVITY_LIMIT = 60
 
 // The phone sends its local date (?today=YYYY-MM-DD) so days match the user's day
 // even though this server runs in UTC. Falls back to the server date.
