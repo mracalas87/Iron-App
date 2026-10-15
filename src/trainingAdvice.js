@@ -83,15 +83,20 @@ export function buildAdvice({
 
   const tip = readiness >= 3 ? 'An earlier night will do more for you than an extra session.' : null
 
-  if (activeDays.has(today)) {
+  // A recorded run today means the day's session is done. A morning lift does not: it can be
+  // an inferred heart-rate block or a workout logged in the Log tab, and either way an
+  // easy run later can still be advised.
+  if (runs.some((r) => r.date === today)) {
     return { zone, position, headline: 'Already trained today. Recover well tonight.', strength: null, run: null, tip, reasons }
   }
+  const loggedToday = workouts.find((w) => w.date === today) || null
+  const liftedToday = weightsToday || loggedToday
 
-  const headline = weightsToday
+  const headline = liftedToday
     ? {
-        Go: 'Lifted this morning. An easy run later is fine.',
-        Easy: 'Lifted this morning. Keep anything else easy.',
-        Rest: 'Lifted this morning. Rest for the rest of the day.'
+        Go: 'Lifted today. An easy run later is fine.',
+        Easy: 'Lifted today. Keep anything else easy.',
+        Rest: 'Lifted today. Rest for the rest of the day.'
       }[zone]
     : {
         Go: 'Green light. Train as you normally would.',
@@ -99,8 +104,10 @@ export function buildAdvice({
         Rest: 'Rest or very light movement today.'
       }[zone]
 
-  const strength = weightsToday
-    ? `Done this morning (${weightsToday.hotMin} min of raised heart rate, peak ${weightsToday.peak} bpm).`
+  const strength = liftedToday
+    ? loggedToday
+      ? `Done today (${loggedToday.title}).`
+      : `Done this morning (${weightsToday.hotMin} min of raised heart rate, peak ${weightsToday.peak} bpm).`
     : {
         Go: `Fine.${freshText}${fitText}`,
         Easy: `Moderate loads, stop a rep or two short of failure.${freshText}${fitText}`,
@@ -110,7 +117,7 @@ export function buildAdvice({
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
   else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
-  else if (zone === 'Go') run = weightsToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
+  else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
   else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
 
   return { zone, position, headline, strength, run, tip, reasons }

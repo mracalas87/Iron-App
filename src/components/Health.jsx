@@ -218,7 +218,14 @@ export default function Health() {
 
   // Morning weights found from raised heart rate. Skipped on days you logged a workout
   // in Iron yourself, since that entry already covers it.
-  const weightEntries = getWeightSessions(data)
+  const sessions = getWeightSessions(data)
+  // A workout logged in the Log tab picks up that morning's heart-rate details, so the two read as one session.
+  const linkedOwn = ownEntries.map((e) => {
+    if (e.runKm != null) return e
+    const s = sessions.find((x) => x.date === e.date)
+    return s ? { ...e, subtitle: `${e.subtitle} · ${clock(s.start)}-${clock(s.end)}, peak ${s.peak} bpm` } : e
+  })
+  const weightEntries = sessions
     .filter((s) => !ownEntries.some((e) => e.date === s.date && e.runKm == null))
     .map((s) => ({
       key: `weights-${s.date}-${s.start}`,
@@ -228,7 +235,7 @@ export default function Health() {
       source: 'Garmin heart rate'
     }))
 
-  const allActivities = [...garminEntries, ...ownEntries, ...weightEntries]
+  const allActivities = [...garminEntries, ...linkedOwn, ...weightEntries]
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
     .slice(0, 20)
 
