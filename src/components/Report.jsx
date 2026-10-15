@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { listWorkouts, listRuns, workoutVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
 import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
 import { buildAdvice, ADVICE_ZONES } from '../trainingAdvice'
+import { getWeightSessions } from '../weights'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 
@@ -63,6 +64,18 @@ async function buildReport() {
 
   const health = readHealthCache()
   const v = getVitals(health)
+
+  // Morning weights are not recorded; they are found from raised-heart-rate blocks (weights.js).
+  const hrAvailable = (health?.days || []).some((d) => Array.isArray(d.hrHigh))
+  const weightSessions = getWeightSessions(health)
+  const weightDates = new Set(weightSessions.map((s) => s.date))
+  const todayDate = isoDaysAgo(0)
+  const weightsToday = weightSessions.find((s) => s.date === todayDate) || null
+  const weightDays7 = new Set([
+    ...thisWeekWorkouts.map((w) => w.date),
+    ...weightSessions.filter((s) => s.date >= thisWeekStart).map((s) => s.date)
+  ])
+  const trainedDates = new Set([...weightDates, ...workouts.map((w) => w.date), ...runs.map((r) => r.date)])
 
   // ---- Status: each warning adds points by severity ----
   const reasons = []
@@ -141,12 +154,12 @@ async function buildReport() {
   // ---- Plain-language notes ----
   const notes = []
 
-  if (thisWeekWorkouts.length === 0 && thisWeekRuns.length === 0) {
+  if (weightDays7.size === 0 && thisWeekRuns.length === 0) {
     notes.push('Nothing logged this week yet.')
   } else {
     const parts = []
-    if (thisWeekWorkouts.length > 0) {
-      parts.push(`${thisWeekWorkouts.length} strength session${thisWeekWorkouts.length !== 1 ? 's' : ''}`)
+    if (weightDays7.size > 0) {
+      parts.push(`weights on ${weightDays7.size} day${weightDays7.size !== 1 ? 's' : ''}`)
     }
     if (thisWeekRuns.length > 0) {
       parts.push(`${thisWeekRuns.length} run${thisWeekRuns.length !== 1 ? 's' : ''} (${round(runDistThisWeek, 1)}km)`)
@@ -181,6 +194,21 @@ async function buildReport() {
     notes.push('Recovery signals (sleep, resting HR, HRV) all look steady.')
   }
 
+  if (hasHealth && !hrAvailable) {
+    notes.push('Refresh from Garmin on the Health tab to include your morning weights sessions.')
+  } else if (hasHealth) {
+    const last14 = Array.from({ length: 14 }, (_, i) => isoDaysAgo(i))
+    const liftDays = last14.filter((d) => weightDates.has(d) || workouts.some((w) => w.date === d)).length
+    notes.push(`Weights on ${liftDays} of the last 14 days (found from your morning heart-rate blocks).`)
+    const restDays = last14.slice(1).filter((d) => !trainedDates.has(d))
+    const label = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    notes.push(
+      restDays.length
+        ? `Full rest days in the last 13: ${restDays.length}, most recent ${label(restDays[0])}.`
+        : 'No full rest day in the last 13 days.'
+    )
+  }
+
   const advice = buildAdvice({
     hasHealth,
     statusPoints: points,
@@ -188,7 +216,9 @@ async function buildReport() {
     workouts,
     runs,
     muscleGroups: MUSCLE_GROUPS,
-    daysAgo: isoDaysAgo
+    daysAgo: isoDaysAgo,
+    weightDates,
+    weightsToday
   })
 
   return {
@@ -196,7 +226,7 @@ async function buildReport() {
     position,
     reasons,
     advice,
-    sessionsThisWeek: thisWeekWorkouts.length,
+    sessionsThisWeek: weightDays7.size,
     runsThisWeek: thisWeekRuns.length,
     runKmThisWeek: round(runDistThisWeek, 1),
     volumeThisWeek,
@@ -347,7 +377,7 @@ export default function Report() {
 
       <div className="metric-grid">
         <div className="metric-box">
-          <div className="label">Strength sessions (7d)</div>
+          <div className="label">Weights days (7d)</div>
           <div className="value">{stats.sessionsThisWeek}</div>
         </div>
         <div className="metric-box">

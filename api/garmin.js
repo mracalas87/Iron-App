@@ -2,12 +2,26 @@ import { GarminConnect } from 'garmin-connect'
 
 export const config = { maxDuration: 30 }
 
-const DAYS_BACK = 7
+const DAYS_BACK = 14
+const DAY_CONCURRENCY = 4
 const ACTIVITY_LIMIT = 20
 
-function dateNDaysAgo(n) {
+// The phone sends its local date (?today=YYYY-MM-DD) so days match the user's day
+// even though this server runs in UTC. Falls back to the server date.
+function baseDate(req) {
+  const t = req.query && req.query.today
+  if (typeof t === 'string' && /^d{4}-d{2}-d{2}$/.test(t)) {
+    const d = new Date(t + 'T12:00:00Z')
+    if (Math.abs(d.getTime() - Date.now()) < 3 * 86400000) return d
+  }
   const d = new Date()
-  d.setDate(d.getDate() - n)
+  d.setUTCHours(12, 0, 0, 0)
+  return d
+}
+
+function dateNDaysAgo(base, n) {
+  const d = new Date(base)
+  d.setUTCDate(d.getUTCDate() - n)
   return d
 }
 
@@ -59,6 +73,13 @@ function slimSleep(s) {
   }
 }
 
+// Only the raised-heart-rate samples ([epochMs, bpm], 90+ bpm). The app reads these to
+// spot morning weight sessions, so the full-day trace is not sent.
+function elevatedHeartRate(h) {
+  if (!h || h.error) return []
+  return (h.heartRateValues || []).filter((v) => v && v[1] != null && v[1] >= 90).map((v) => [v[0], v[1]])
+}
+
 function slimHeartRate(h) {
   if (!h || h.error) return h
   return {
@@ -88,15 +109,30 @@ export default async function handler(req, res) {
     const rawActivities = await safe(() => client.getActivities(0, ACTIVITY_LIMIT))
     const activities = Array.isArray(rawActivities) ? rawActivities.map(slimActivity) : []
 
-    const days = []
-    for (let i = 0; i < DAYS_BACK; i++) {
-      const date = dateNDaysAgo(i)
-      const [sleep, steps, heartRate] = await Promise.all([
-        safe(() => client.getSleepData(date)),
-        safe(() => client.getSteps(date)),
-        safe(() => client.getHeartRate(date))
-      ])
-      days.push({ date: toDateStr(date), sleep: slimSleep(sleep), steps, heartRate: slimHeartRate(heartRate) })
+    const base = baseDate(req)
+    const days = new Array(DAYS_BACK)
+    for (let i = 0; i < DAYS_BACK; i += DAY_CONCURRENCY) {
+      const batch = []
+      for (let k = i; k < Math.min(i + DAY_CONCURRENCY, DAYS_BACK); k++) {
+        batch.push(
+          (async () => {
+            const date = dateNDaysAgo(base, k)
+            const [sleep, steps, heartRate] = await Promise.all([
+              safe(() => client.getSleepData(date)),
+              safe(() => client.getSteps(date)),
+              safe(() => client.getHeartRate(date))
+            ])
+            days[k] = {
+              date: toDateStr(date),
+              sleep: slimSleep(sleep),
+              steps,
+              heartRate: slimHeartRate(heartRate),
+              hrHigh: elevatedHeartRate(heartRate)
+            }
+          })()
+        )
+      }
+      await Promise.all(batch)
     }
 
     res.status(200).json({ fetchedAt: new Date().toISOString(), activities, days })

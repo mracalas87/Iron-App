@@ -12,7 +12,24 @@ const r1 = (n) => Math.round(n * 10) / 10
 // Tuned for someone who has trained daily for years and works long weekdays: a
 // mild recovery flag still allows training, and it takes several stacked
 // signals (poor sleep, raised resting HR, low HRV, no rest day) to say Rest.
-export function buildAdvice({ hasHealth, statusPoints, sleepLastNight, workouts, runs, muscleGroups, daysAgo, now = new Date() }) {
+// Top of Andy's easy range (his measured aerobic threshold), in bpm.
+const EASY_HR_CAP = 148
+
+// weightDates: dates with an inferred morning weights session (see weights.js).
+// weightsToday: that session if there is one today, so a morning lift does not
+// count as "already trained" and block advice for an evening run.
+export function buildAdvice({
+  hasHealth,
+  statusPoints,
+  sleepLastNight,
+  workouts,
+  runs,
+  muscleGroups,
+  daysAgo,
+  weightDates = new Set(),
+  weightsToday = null,
+  now = new Date()
+}) {
   if (!hasHealth) {
     return {
       zone: null,
@@ -40,10 +57,12 @@ export function buildAdvice({ hasHealth, statusPoints, sleepLastNight, workouts,
   }
 
   const activeDays = new Set([...workouts.map((w) => w.date), ...runs.map((r) => r.date)])
-  const noRestWeek = Array.from({ length: 7 }, (_, i) => daysAgo(i + 1)).every((d) => activeDays.has(d))
-  if (noRestWeek) {
+  const trainedDays = new Set([...activeDays, ...weightDates])
+  // He lifts most mornings, so a quiet week is normal; only a full fortnight with no rest counts.
+  const noRestFortnight = Array.from({ length: 14 }, (_, i) => daysAgo(i + 1)).every((d) => trainedDays.has(d))
+  if (noRestFortnight) {
     readiness += 1
-    reasons.push('No full rest day in the last 7 days')
+    reasons.push('No full rest day in the last 14 days')
   }
 
   const zone = readiness <= 2 ? 'Go' : readiness <= 4 ? 'Easy' : 'Rest'
@@ -68,22 +87,31 @@ export function buildAdvice({ hasHealth, statusPoints, sleepLastNight, workouts,
     return { zone, position, headline: 'Already trained today. Recover well tonight.', strength: null, run: null, tip, reasons }
   }
 
-  const headline = {
-    Go: 'Green light. Train as you normally would.',
-    Easy: 'Train, but keep it easy today.',
-    Rest: 'Rest or very light movement today.'
-  }[zone]
+  const headline = weightsToday
+    ? {
+        Go: 'Lifted this morning. An easy run later is fine.',
+        Easy: 'Lifted this morning. Keep anything else easy.',
+        Rest: 'Lifted this morning. Rest for the rest of the day.'
+      }[zone]
+    : {
+        Go: 'Green light. Train as you normally would.',
+        Easy: 'Train, but keep it easy today.',
+        Rest: 'Rest or very light movement today.'
+      }[zone]
 
-  const strength = {
-    Go: `Fine.${freshText}${fitText}`,
-    Easy: `Moderate loads, stop a rep or two short of failure.${freshText}${fitText}`,
-    Rest: 'Skip it, or 15-20 minutes of mobility.'
-  }[zone]
+  const strength = weightsToday
+    ? `Done this morning (${weightsToday.hotMin} min of raised heart rate, peak ${weightsToday.peak} bpm).`
+    : {
+        Go: `Fine.${freshText}${fitText}`,
+        Easy: `Moderate loads, stop a rep or two short of failure.${freshText}${fitText}`,
+        Rest: 'Skip it, or 15-20 minutes of mobility.'
+      }[zone]
 
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
   else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
-  else run = zone === 'Go' ? 'A normal session is fine.' : 'Easy conversational pace, shorter than usual.'
+  else if (zone === 'Go') run = weightsToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
+  else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
 
   return { zone, position, headline, strength, run, tip, reasons }
 }

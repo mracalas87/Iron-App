@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { listWorkouts, listRuns, workoutVolume, importGarminRuns, syncRunsFromGarminCache } from '../db'
 import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
+import { getWeightSessions, clock } from '../weights'
 
 const CACHE_KEY = 'iron-health-cache'
 const ACCESS_KEY_STORAGE = 'iron-garmin-key'
@@ -123,7 +124,8 @@ export default function Health() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/garmin', { headers: { 'x-garmin-key': accessKey } })
+      const today = new Date().toLocaleDateString('en-CA') // the phone's own date, so days line up with yours
+      const res = await fetch(`/api/garmin?today=${today}`, { headers: { 'x-garmin-key': accessKey } })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`)
       setData(json)
@@ -214,9 +216,21 @@ export default function Health() {
       )
   )
 
-  const allActivities = [...garminEntries, ...ownEntries].sort((a, b) =>
-    a.date < b.date ? 1 : a.date > b.date ? -1 : 0
-  )
+  // Morning weights found from raised heart rate. Skipped on days you logged a workout
+  // in Iron yourself, since that entry already covers it.
+  const weightEntries = getWeightSessions(data)
+    .filter((s) => !ownEntries.some((e) => e.date === s.date && e.runKm == null))
+    .map((s) => ({
+      key: `weights-${s.date}-${s.start}`,
+      date: s.date,
+      title: 'Weights',
+      subtitle: `${clock(s.start)}-${clock(s.end)} · ${s.hotMin} min raised heart rate · peak ${s.peak} bpm`,
+      source: 'Garmin heart rate'
+    }))
+
+  const allActivities = [...garminEntries, ...ownEntries, ...weightEntries]
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    .slice(0, 20)
 
   return (
     <div>
