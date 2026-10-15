@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listWorkouts, listRuns, workoutVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
+import { listWorkouts, listRuns, workoutVolume, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
 import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
 import { buildAdvice, ADVICE_ZONES } from '../trainingAdvice'
 import { getWeightSessions } from '../weights'
@@ -41,7 +41,7 @@ function spread(values) {
 }
 
 async function buildReport() {
-  const [workouts, runs] = await Promise.all([listWorkouts(), listRuns()])
+  const [workouts, runs, recentDays] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(14)])
 
   const thisWeekStart = isoDaysAgo(6)
   const lastWeekStart = isoDaysAgo(13)
@@ -194,6 +194,39 @@ async function buildReport() {
     notes.push('Recovery signals (sleep, resting HR, HRV) all look steady.')
   }
 
+  // How heavy or high-volume each logged lifting day was (loadType.js), and how you responded.
+  const typedDays = recentDays.filter((d) => d.loadType)
+  const loadTypes = new Map(typedDays.map((d) => [d.date, d.loadType]))
+  const mix = { Heavy: 0, Volume: 0, Mixed: 0 }
+  typedDays.filter((d) => d.date >= thisWeekStart).forEach((d) => mix[d.loadType]++)
+  if (mix.Heavy + mix.Volume + mix.Mixed > 0) {
+    const bits = [`${mix.Heavy} heavy`, `${mix.Volume} volume`]
+    if (mix.Mixed) bits.push(`${mix.Mixed} mixed`)
+    notes.push(`Logged lifting in the last 7 days: ${bits.join(', ')}.`)
+  }
+  if (hasHealth) {
+    const byDate = new Map((health?.days || []).map((d) => [d.date, d]))
+    const nextDay = (iso) => {
+      const d = new Date(iso + 'T12:00:00Z')
+      d.setUTCDate(d.getUTCDate() + 1)
+      return d.toISOString().slice(0, 10)
+    }
+    const meanOf = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null)
+    const after = (type) => {
+      const rows = typedDays.filter((d) => d.loadType === type).map((d) => byDate.get(nextDay(d.date))).filter(Boolean)
+      return {
+        n: rows.length,
+        hrv: meanOf(rows.map((r) => r.sleep?.avgOvernightHrv).filter((x) => x != null)),
+        rhr: meanOf(rows.map((r) => r.heartRate?.restingHeartRate).filter((x) => x != null))
+      }
+    }
+    const parts = ['Heavy', 'Volume']
+      .map((t) => [t, after(t)])
+      .filter(([, a]) => a.n >= 2 && a.hrv != null && a.rhr != null)
+      .map(([t, a]) => `after ${t.toLowerCase()} days (${a.n}): HRV ${round(a.hrv)}, resting HR ${round(a.rhr)}`)
+    if (parts.length) notes.push(`Next morning, ${parts.join('; ')}. Small samples, so treat as a hint.`)
+  }
+
   if (hasHealth && !hrAvailable) {
     notes.push('Refresh from Garmin on the Health tab to include your morning weights sessions.')
   } else if (hasHealth) {
@@ -218,7 +251,8 @@ async function buildReport() {
     muscleGroups: MUSCLE_GROUPS,
     daysAgo: isoDaysAgo,
     weightDates,
-    weightsToday
+    weightsToday,
+    loadTypes
   })
 
   return {

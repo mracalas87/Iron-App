@@ -28,6 +28,7 @@ export function buildAdvice({
   daysAgo,
   weightDates = new Set(),
   weightsToday = null,
+  loadTypes = new Map(), // date -> 'Heavy' | 'Volume' | 'Mixed' for logged lifting days (loadType.js)
   now = new Date()
 }) {
   if (!hasHealth) {
@@ -63,6 +64,13 @@ export function buildAdvice({
   if (noRestFortnight) {
     readiness += 1
     reasons.push('No full rest day in the last 14 days')
+  }
+
+  // Several heavy days close together build fatigue even when sleep and HRV look fine.
+  const heavyRecent = [0, 1, 2, 3].filter((i) => loadTypes.get(daysAgo(i)) === 'Heavy').length
+  if (heavyRecent >= 3) {
+    readiness += 1
+    reasons.push(`${heavyRecent} heavy lifting days in the last 4`)
   }
 
   const zone = readiness <= 2 ? 'Go' : readiness <= 4 ? 'Easy' : 'Rest'
@@ -106,7 +114,7 @@ export function buildAdvice({
 
   const strength = liftedToday
     ? loggedToday
-      ? `Done today (${loggedToday.title}).`
+      ? `Done today (${loggedToday.title}${loadTypes.get(today) ? `, ${loadTypes.get(today).toLowerCase()} day` : ''}).`
       : `Done this morning (${weightsToday.hotMin} min of raised heart rate, peak ${weightsToday.peak} bpm).`
     : {
         Go: `Fine.${freshText}${fitText}`,
@@ -118,13 +126,17 @@ export function buildAdvice({
   const legsOn = (date) => workouts.some((w) => w.date === date && (w.muscleGroups || []).some((g) => g === 'Quads' || g === 'Hamstrings'))
   const legsToday = legsOn(today)
   const legsYesterday = legsOn(yesterday)
-  if (legsYesterday) reasons.push('Legs trained yesterday')
+  const legsLabel = (date) => {
+    const t = loadTypes.get(date)
+    return t === 'Heavy' ? 'Heavy legs' : t === 'Volume' ? 'High-volume legs' : 'Legs'
+  }
+  if (legsYesterday) reasons.push(`${legsLabel(yesterday)} yesterday`)
 
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
   else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
-  else if (legsToday) run = `Legs done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
-  else if (legsYesterday) run = `Legs were yesterday, so keep it easy and flat, heart rate under ${EASY_HR_CAP}, and leave hard efforts for another day.`
+  else if (legsToday) run = `${legsLabel(today)} done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
+  else if (legsYesterday) run = `${legsLabel(yesterday)} were yesterday, so keep it easy and flat, heart rate under ${EASY_HR_CAP}, and leave hard efforts for another day.`
   else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
   else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
 
