@@ -75,7 +75,7 @@ function rideText(d, lastRideKm) {
 
 // today: ISO date. nowHour: local hour, used to tell whether today's lift is still to come.
 // weightDates: Set of dates with a morning heart-rate block. rides: [{ date, km }].
-export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), days = 4 }) {
+export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), strain = 'steady', days = 4 }) {
   const lifted = (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
   const logged = workouts
     .map((w) => {
@@ -115,7 +115,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     forcedOff.set(race.date, 'race day')
     forcedOff.set(addDays(race.date, -1), 'day before the race')
     for (let k = 0; k <= 7; k++) legsBlocked.set(addDays(race.date, -k), 'taper: no heavy leg work')
-    if (race.kind === 'run') for (let k = 1; k <= 3; k++) legsBlocked.set(addDays(race.date, k), 'recovering from the race')
+    if (race.kind === 'run') for (let k = 1; k <= 5; k++) legsBlocked.set(addDays(race.date, k), 'recovering from the race')
   }
 
   // A long run already done in the last 3 days also keeps legs off for the 2 days after it.
@@ -123,6 +123,14 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     if (r.distanceKm >= 15 && r.date <= today && gap(r.date, today) <= 3) {
       for (let k = 1; k <= 2; k++) if (!legsBlocked.has(addDays(r.date, k))) legsBlocked.set(addDays(r.date, k), 'recovering from the long run')
     }
+  }
+
+  // A recovery trend that has held for days (trends.js) keeps legs out of the next two days; when it
+  // is bad enough, tomorrow is a full rest day.
+  const strained = strain === 'concern' || strain === 'alert'
+  if (strained) {
+    for (const k of [0, 1]) if (!legsBlocked.has(addDays(today, k))) legsBlocked.set(addDays(today, k), 'recovery trend')
+    if (strain === 'alert' && !forcedOff.has(addDays(today, 1))) forcedOff.set(addDays(today, 1), 'recovery trend, rest day')
   }
 
   // When each lift was last done (or scheduled). A lift is not repeated within 5 days, so the same
@@ -187,7 +195,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     cycleDue = byOldest().filter((t) => !fresh(t)).map((t) => CYCLE[t])
     const pendingToday = !lifted(today) && nowHour < 10
     if (pendingToday) {
-      const pick = restNeeded(today) ? undefined : byOldest().find((t) => allowed(t, today))
+      const pick = restNeeded(today) || strain === 'alert' ? undefined : byOldest().find((t) => allowed(t, today))
       todayToken = pick ?? OFF
       if (pick != null) {
         lastDate.set(pick, today)
@@ -234,7 +242,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       // the lift that has gone longest without being done, unless a rule holds it back
       const order = byOldest()
       const pick = restNeeded(d) ? undefined : order.find((t) => allowed(t, d))
-      if (pick != null && pick !== order[0]) row.note = `${CYCLE[order[0]]} moved (${whyBlocked(order[0], d)})`
+      if (pick != null && strained && n === 1) row.note = 'Keep it light (recovery trend)'
+      else if (pick != null && pick !== order[0]) row.note = `${CYCLE[order[0]]} moved (${whyBlocked(order[0], d)})`
       if (pick == null) {
         off = true
         row.lift = 'Off day'

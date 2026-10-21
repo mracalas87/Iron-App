@@ -130,7 +130,11 @@ export default function Home({ activeWorkout, onOpenLog }) {
   }))
   const feed = buildFeed(garmin.data, local, 5)
   const advice = stats?.advice
-  const reasonsLine = stats ? [...stats.reasons, ...(advice?.reasons || [])].slice(0, 2).join(' · ') : ''
+  // the Trend line already carries the trend signals, so they are left out here
+  const trendTexts = new Set((stats?.trend?.signals || []).map((s) => s.text))
+  const reasonsLine = stats
+    ? [...stats.reasons, ...(advice?.reasons || [])].filter((r) => !trendTexts.has(r) || stats.trend.level === 'steady').slice(0, 2).join(' · ')
+    : ''
   const sleepTrend = trendLabel(v.sleepHours.delta != null ? v.sleepHours.delta * 60 : null, 'min', true)
 
   return (
@@ -178,12 +182,17 @@ export default function Home({ activeWorkout, onOpenLog }) {
                   )}
                   {advice.strength && (
                     <div className="advice-line">
-                      <span>Lift</span> {firstSentence(advice.strength)}
+                      <span>Lift</span> {advice.liftBrief || firstSentence(advice.strength)}
                     </div>
                   )}
                   {advice.run && (
                     <div className="advice-line">
                       <span>Run</span> {firstSentence(advice.run)}
+                    </div>
+                  )}
+                  {stats.trend && stats.trend.level !== 'steady' && (
+                    <div className={`trend-line ${stats.trend.level}`}>
+                      <span>Trend</span> {stats.trend.summary}
                     </div>
                   )}
                   {reasonsLine && <div className="advice-why">{reasonsLine}</div>}

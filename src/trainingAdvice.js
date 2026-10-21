@@ -1,5 +1,6 @@
 import { currentPhase, liftRuleFor } from './plan'
 import { longRunSlot } from './upcoming'
+import { trendNote } from './trends'
 
 export const ADVICE_ZONES = [
   { key: 'Rest', color: 'var(--danger)' },
@@ -87,7 +88,8 @@ export function buildAdvice({
   weightDates = new Set(),
   weightsToday = null,
   loadTypes = new Map(), // date -> 'Heavy' | 'Volume' | 'Mixed' for logged lifting days (loadType.js)
-  drift = false, // resting HR or HRV off normal over the last 3 days
+  trend = null, // multi-day recovery trend from trends.js: { level: 'steady' | 'watch' | 'concern' | 'alert' }
+  dueLift = null, // today's lift from the cycle, e.g. 'Chest · heavy' or 'Off day' (upcoming.js)
   hardRun = null, // a recorded run in the last two days that was hard: { date, avgHR }
   historyStart = null, // earliest date this phone has any run or activity data for
   race = null, // { name, date }
@@ -149,6 +151,11 @@ export function buildAdvice({
     reasons.push(`${heavyRecent} heavy lifting days in the last 4`)
   }
 
+  // A recovery trend that has held for days is not cancelled by one good night: it sets a floor.
+  const level = trend ? trend.level : 'steady'
+  if (level === 'concern') readiness = Math.max(readiness, 3)
+  else if (level === 'alert') readiness = Math.max(readiness, 5)
+
   const zone = readiness <= 2 ? 'Go' : readiness <= 4 ? 'Easy' : 'Rest'
   const position = POSITIONS[Math.min(readiness, POSITIONS.length - 1)]
 
@@ -168,6 +175,9 @@ export function buildAdvice({
   let tip = readiness >= 3 ? 'An earlier night will do more for you than an extra session.' : null
   // Taper: 8-14 days, volume cut about 40-60%, intensity kept (Bosquet 2007 meta-analysis).
   const daysToRace = race ? Math.round((new Date(race.date + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 86400000) : null
+  if (level === 'concern' || level === 'alert') {
+    tip = 'Your recovery numbers have been off for several days. Sleep fixes this fastest. If you feel unwell, or it lasts over a week, see a doctor.'
+  }
   if (daysToRace != null && daysToRace >= 0 && daysToRace <= 14) {
     const load = race.kind === 'triathlon' ? 'weekly training' : 'weekly running'
     tip = `Taper, ${daysToRace} days to the ${race.name}: cut ${load} by about 40-60%, keep a few short efforts at race pace, and skip new or heavy leg work.`
@@ -195,7 +205,14 @@ export function buildAdvice({
       }[zone]
 
   const liftRule = !liftedToday && zone !== 'Rest' ? liftRuleFor(today) : null
-  const liftNote = !liftedToday && zone !== 'Rest' && plan && plan.phase.liftNote ? plan.phase.liftNote : null
+  const offDay = dueLift === 'Off day'
+  const liftNote = !liftedToday && !offDay && zone !== 'Rest' && plan && plan.phase.liftNote ? plan.phase.liftNote : null
+  const legsNote =
+    !liftedToday && zone !== 'Rest' && dueLift && dueLift.startsWith('Legs') && plan && plan.phase.legsNote ? plan.phase.legsNote : null
+  // "Chest · heavy" reads as "Chest day, heavy."
+  const [dueName, dueStyle] = dueLift ? dueLift.split(' · ') : []
+  const dueText =
+    !liftedToday && zone !== 'Rest' && dueLift ? (offDay ? 'Off day, no lifting.' : `${dueName} day${dueStyle ? `, ${dueStyle}` : ''}.`) : null
   const strengthBase = liftedToday
     ? loggedToday
       ? `Done today (${loggedToday.title}${loadTypes.get(today) ? `, ${loadTypes.get(today).toLowerCase()} day` : ''}).`
@@ -205,8 +222,11 @@ export function buildAdvice({
         Easy: `Moderate loads, stop a rep or two short of failure.${freshText}${fitText}`,
         Rest: 'Skip it, or 15-20 minutes of mobility.'
       }[zone]
-  const driftNote = drift && !liftedToday && zone !== 'Rest' ? 'Recovery is drifting: keep today\'s lift short (plan rule).' : null
-  const strength = [liftRule && `${liftRule}.`, driftNote, liftNote, strengthBase].filter(Boolean).join(' ')
+  // The plan rule: when recovery drifts, shorten lifting first (before cutting runs).
+  const driftNote = !liftedToday && !offDay && zone !== 'Rest' ? trendNote(level) : null
+  const strength = [dueText, liftRule && `${liftRule}.`, driftNote, liftNote, legsNote, strengthBase].filter(Boolean).join(' ')
+  // The short version for Home: today's lift and the one note that matters most.
+  const liftBrief = [dueText, driftNote || legsNote || liftNote].filter(Boolean).join(' ') || null
 
   // Which muscles were trained comes from the muscle groups chosen when each workout was logged.
   const legsOn = (date) => workouts.some((w) => w.date === date && (w.muscleGroups || []).some((g) => g === 'Quads' || g === 'Hamstrings'))
@@ -238,6 +258,7 @@ export function buildAdvice({
 
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
+  else if (level === 'concern' && plan?.runKind !== 'race' && !(plan?.runKind === 'long-due' && plan.slot === today)) run = `Recovery trend is down: easy and short, heart rate under ${EASY_HR_CAP}, or skip it.`
   else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
   else if (hardRunYesterday) run = `Hard run yesterday, so keep today easy, heart rate under ${EASY_HR_CAP}.`
   else if (legsToday) run = `${legsLabel(today)} done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
@@ -246,5 +267,5 @@ export function buildAdvice({
   else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
   else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
 
-  return { zone, position, headline, plan: plan ? plan.line : null, strength, run, tip, reasons }
+  return { zone, position, headline, plan: plan ? plan.line : null, strength, liftBrief, run, tip, reasons }
 }

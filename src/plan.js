@@ -31,7 +31,9 @@ export const PHASES = [
     start: '2026-10-21',
     end: '2026-11-01',
     instruction: 'Long run 18 to 20 km. Keep it easy: heart rate under 148. Then taper.',
-    run: { kind: 'long', min: 18, max: 20, label: 'last long run' }
+    run: { kind: 'long', min: 18, max: 20, label: 'last long run' },
+    liftNote: 'Keep the weights heavy, but trim the sets.',
+    legsNote: 'Legs: about 40% fewer sets.'
   },
   {
     id: 'marathon-taper',
@@ -39,7 +41,9 @@ export const PHASES = [
     start: '2026-11-02',
     end: '2026-11-08',
     instruction: 'Taper. Long run 10 to 12 km.',
-    run: { kind: 'long', min: 10, max: 12, label: 'taper long run' }
+    run: { kind: 'long', min: 10, max: 12, label: 'taper long run' },
+    liftNote: 'Taper the lifting too: same weights, about 40% fewer sets, nothing new.',
+    legsNote: 'Legs: light, or skip.'
   },
   {
     id: 'marathon-race',
@@ -47,21 +51,26 @@ export const PHASES = [
     start: '2026-11-09',
     end: '2026-11-14',
     instruction: 'Race week: 6 to 8 km. Race on Saturday 14 Nov. Start at 6:15 to 6:30 per km, walk the aid stations, fuel from 45 minutes.',
-    run: { kind: 'cap', max: 8 }
+    run: { kind: 'cap', max: 8 },
+    liftNote: 'Race week: short and easy, upper body only.',
+    legsNote: 'No legs this week.'
   },
   {
     id: 'recovery',
     name: 'Recovery and baseline tests',
     start: '2026-11-15',
     end: '2026-11-30',
-    instruction: 'Recover first, then baseline tests: a 400 m swim and a 30 km ride.'
+    instruction: 'Recover first, then baseline tests: a 400 m swim and a 30 km ride.',
+    liftNote: 'Recovering: lift light and stop well short of failure.',
+    legsNote: 'Legs: half the usual sets.'
   },
   {
     id: 'base',
     name: 'Base',
     start: '2026-12-01',
     end: '2027-02-28',
-    instruction: 'Swim technique. Rides of 25 to 60 km. Checkpoint: a 1,500 m swim and a 60 km ride.'
+    instruction: 'Swim technique. Rides of 25 to 60 km. Checkpoint: a 1,500 m swim and a 60 km ride.',
+    liftNote: 'Muscle phase: lift as normal while swim and ride stay at the minimum.'
   },
   {
     id: 'build',
@@ -69,7 +78,9 @@ export const PHASES = [
     start: '2027-03-01',
     end: '2027-06-30',
     instruction:
-      'Swim up to 2,500 m. Rides of 60 to 85 km, hilly. Road bike by March; first sea swims and the wetsuit by May. Checkpoint: a 1,900 m swim and an 85 km ride in 4 to 4.5 hours.'
+      'Swim up to 2,500 m. Rides of 60 to 85 km, hilly. Road bike by March; first sea swims and the wetsuit by May. Checkpoint: a 1,900 m swim and an 85 km ride in 4 to 4.5 hours.',
+    liftNote: 'Keep upper body heavy.',
+    legsNote: 'Legs: about 30% fewer sets.'
   },
   {
     id: 'summer',
@@ -90,14 +101,18 @@ export const PHASES = [
     name: 'Final weeks',
     start: '2027-09-01',
     end: '2027-10-08',
-    instruction: '3 sessions a week. Dress rehearsal on 18 Sep. Last long session on 2 Oct.'
+    instruction: '3 sessions a week. Dress rehearsal on 18 Sep. Last long session on 2 Oct.',
+    liftNote: 'Maintenance: about 30 minutes, heavy, few sets.',
+    legsNote: 'Legs: light.'
   },
   {
     id: 'taper',
     name: 'Taper',
     start: '2027-10-09',
     end: '2027-10-22',
-    instruction: 'Taper. Race on Saturday 23 Oct.'
+    instruction: 'Taper. Race on Saturday 23 Oct.',
+    liftNote: 'Taper: same weights, half the sets, nothing new.',
+    legsNote: 'No heavy legs this week.'
   },
   {
     id: 'race-day',
@@ -135,6 +150,11 @@ export const LIFTING_RULES = [
   },
   { title: 'Saturday ride', text: 'No legs from Thursday to Saturday.' },
   { title: 'When recovery drifts', text: 'If HRV or resting HR drifts off normal for 3 days, shorten lifting first.' },
+  {
+    title: 'Heavy, fewer sets',
+    text: 'Heavy loads keep muscle; volume is what costs recovery. In race phases keep the weight and trim sets, legs first.'
+  },
+  { title: 'Hard sessions apart', text: 'Keep hard runs, rides and leg days on different days, or at least 6 hours apart.' },
   { title: 'Summer block', text: 'Lifting 30 to 40 minutes, light.' }
 ]
 

@@ -626,6 +626,23 @@ select:focus-visible {
   margin-top: 8px;
 }
 
+.trend-line {
+  font-size: 13px;
+  color: var(--chalk);
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 4px solid var(--warn);
+  background: var(--bg);
+}
+.trend-line.alert {
+  border-left-color: var(--danger);
+}
+.trend-line span {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
 .mini-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

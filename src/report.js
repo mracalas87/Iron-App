@@ -5,6 +5,8 @@ import { buildAdvice, HARD_HR_FROM } from './trainingAdvice'
 import { RACE } from './config'
 import { getWeightSessions } from './weights'
 import { buildUpcoming } from './upcoming'
+import { analyzeTrends } from './trends'
+import { mergeHealthDays } from './healthHistory'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 
@@ -95,14 +97,18 @@ export async function buildReport() {
   if (sleepAvg != null && sleepAvg < 6.5) warn(2, `Sleep averaging ${round(sleepAvg, 1)}h, well under 7h`)
   else if (sleepAvg != null && sleepAvg < 7) warn(1, `Sleep averaging ${round(sleepAvg, 1)}h, under 7h`)
 
-  const rhrDelta = v.restingHR.delta
-  if (rhrDelta != null && rhrDelta >= 5) warn(2, `Resting HR up ${round(rhrDelta)} bpm over the last 3 days`)
-  else if (rhrDelta != null && rhrDelta >= 2) warn(1, `Resting HR up ${round(rhrDelta)} bpm over the last 3 days`)
-
+  const hrvStatusWarned = ['LOW', 'POOR', 'UNBALANCED'].includes(v.hrvStatus)
   if (['LOW', 'POOR'].includes(v.hrvStatus)) warn(2, `HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()}`)
   else if (v.hrvStatus === 'UNBALANCED') warn(1, 'HRV status is unbalanced')
-  else if (v.hrv.deltaPct != null && v.hrv.deltaPct <= -25) warn(2, `HRV down ${Math.abs(round(v.hrv.deltaPct))}% over the last 3 days`)
-  else if (v.hrv.deltaPct != null && v.hrv.deltaPct <= -15) warn(1, `HRV down ${Math.abs(round(v.hrv.deltaPct))}% over the last 3 days`)
+
+  // Trends over several days against your own baseline (trends.js). Garmin's own HRV status and the
+  // sleep average above already count, so the same thing is not counted twice.
+  const trend = analyzeTrends(mergeHealthDays(health))
+  for (const s of trend.signals) {
+    if (s.key === 'hrv' && hrvStatusWarned) continue
+    if (s.key === 'sleep' && sleepAvg != null && sleepAvg < 7) continue
+    warn(s.points, s.text)
+  }
 
   const hasHealth = v.hasData
   const status = !hasHealth ? '—' : points === 0 ? 'Good' : points <= 2 ? 'Fair' : 'Strained'
@@ -274,7 +280,8 @@ export async function buildReport() {
     weightDates,
     runs,
     rides,
-    loadTypes
+    loadTypes,
+    strain: trend.level
   })
 
   const advice = buildAdvice({
@@ -288,21 +295,18 @@ export async function buildReport() {
     weightDates,
     weightsToday,
     loadTypes,
-    drift: (v.restingHR.delta != null && v.restingHR.delta >= 2) || (v.hrv.deltaPct != null && v.hrv.deltaPct <= -15),
+    dueLift: upcoming.todayLift,
+    trend,
     hardRun,
     historyStart,
     race: RACE
   })
 
-  // Say which lift is due today when the cycle knows it and nothing has been lifted yet.
-  if (upcoming.todayLift && advice.strength && !advice.strength.startsWith('Done')) {
-    advice.strength = `${upcoming.todayLift === 'Off day' ? 'Off day, no lifting.' : upcoming.todayLift + ' day.'} ${advice.strength}`
-  }
-
   return {
     status,
     position,
     reasons,
+    trend,
     advice,
     upcoming,
     basis,
