@@ -3,6 +3,10 @@ import {
   MONTH_TARGETS,
   LIFTING_RULES,
   GROUND_RULES,
+  RACE_PLANS,
+  RUN_GUIDE,
+  weekPlan,
+  nextRace,
   localToday,
   daysUntil,
   currentPhase,
@@ -84,8 +88,18 @@ function MonthRow({ m, current }) {
   )
 }
 
+function Bullets({ lines }) {
+  return lines.map((t, i) => (
+    <div key={i} style={{ fontSize: 14, lineHeight: 1.5, padding: '6px 0', borderBottom: i < lines.length - 1 ? '1px solid var(--border)' : 'none' }}>
+      {t}
+    </div>
+  ))
+}
+
 export default function Plan() {
   const today = localToday()
+  const week = weekPlan(today)
+  const race = nextRace(today)
   const phase = currentPhase(today)
   const thisMonth = monthTarget(today)
   const thisMonthKey = today.slice(0, 7)
@@ -131,6 +145,37 @@ export default function Plan() {
           <div style={{ fontSize: 14 }}>The plan starts on {formatDate(phase.next.start)}: {phase.next.name}.</div>
         )}
         {phase.state === 'after' && <div style={{ fontSize: 14 }}>The plan is complete. Well done.</div>}
+      </div>
+
+      {week && (
+        <div className="card">
+          <Label>This week</Label>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{week.label}</div>
+          {week.km && <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginTop: 2 }}>{week.km}</div>}
+          <div style={{ marginTop: 6 }}>
+            <Bullets lines={week.sessions} />
+          </div>
+        </div>
+      )}
+
+      {RACE_PLANS[race.id] && (
+        <div className="card">
+          <Label>Race plan: {race.name}</Label>
+          <Bullets lines={RACE_PLANS[race.id]} />
+        </div>
+      )}
+
+      <div className="card">
+        <Label>Running pace and heart rate</Label>
+        {RUN_GUIDE.map((z, i) => (
+          <div key={z.name} style={{ padding: '8px 0', borderBottom: i < RUN_GUIDE.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>
+              {z.name} <span style={{ fontWeight: 400, color: 'var(--chalk-dim)' }}>· {z.hr} bpm</span>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginTop: 2 }}>{z.pace}</div>
+          </div>
+        ))}
+        <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginTop: 8 }}>Estimates from your Garmin runs, not a lab test.</div>
       </div>
 
       <div className="card">

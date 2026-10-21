@@ -123,6 +123,143 @@ export const PHASES = [
   }
 ]
 
+// ---------- coaching: what each week looks like ----------
+// Built from Andy's Garmin history (Feb to Oct 2026): 12 to 20 km of running a week in 1 or 2 runs,
+// a 30.1 km run on 26 Sep at 6:49 per km and heart rate 144, a 17 km run at 5:58 per km and heart rate
+// 145, VO2 max 47 rising to 49, 5K 21:51, 10K 45:45, half 1:57. Fitness is ahead of the weekly running
+// volume, so the marathon plan protects the legs and adds nothing new.
+
+// Dated weeks (Monday to Sunday) for the marathon and the weeks after it.
+export const WEEKS = [
+  {
+    start: '2026-10-19',
+    end: '2026-10-25',
+    label: 'Last long run week',
+    km: 'about 26 km running',
+    sessions: [
+      'Thu or Fri: 6 to 8 km easy, heart rate under 148 (the off-day run).',
+      'Sat 24 Oct: long run 18 to 20 km, easy. Practise race fuelling: a gel at 45 minutes, then every 30 to 40. Race shoes and kit.',
+      'No hard runs from now. The 5K and tempo work is done; more adds injury risk, not fitness.',
+      'No legs on the day before or the two days after the long run.'
+    ]
+  },
+  {
+    start: '2026-10-26',
+    end: '2026-11-01',
+    label: 'Hold',
+    km: 'about 20 km running',
+    sessions: [
+      'Two easy runs of 6 to 8 km, heart rate under 148. Finish one with 4 relaxed strides.',
+      'If the long run slipped, Sat 31 Oct is the last day for it: 18 km at most.',
+      'Lifting stays heavy; trim leg sets by about 40%.'
+    ]
+  },
+  {
+    start: '2026-11-02',
+    end: '2026-11-08',
+    label: 'Taper',
+    km: 'about 16 km running',
+    sessions: [
+      'Easy 5 km, then easy 5 km with 4 strides.',
+      'Sat 7 Nov: 10 to 12 km easy, with the middle 3 km at race pace (6:15 to 6:30 per km).',
+      'Lifting: same weights, about 40% fewer sets, nothing new. Legs light or skipped.',
+      'Sleep is the main job this week: 7.5 hours or more.'
+    ]
+  },
+  {
+    start: '2026-11-09',
+    end: '2026-11-14',
+    label: 'Race week',
+    km: '6 to 8 km running',
+    sessions: [
+      'Tue: 4 km easy with 4 strides. Thu: 3 km shake-out.',
+      'Upper body only, short and easy, until Wednesday. No lifting Thursday or Friday.',
+      'Thu and Fri: raise carbohydrate (about 8 g per kg a day), nothing new to eat, early nights.',
+      'Fri: collect the number, lay out kit, gels and shoes. Sat 14 Nov: race.'
+    ]
+  },
+  {
+    start: '2026-11-15',
+    end: '2026-11-21',
+    label: 'Recover',
+    km: 'little running',
+    sessions: [
+      'Sun to Wed: no running. Walk, easy spin, mobility.',
+      'From Thu: 20 to 30 minutes of easy jogging if the legs feel normal, heart rate under 140.',
+      'Lifting light, stop well short of failure. Legs from the following week.'
+    ]
+  },
+  {
+    start: '2026-11-22',
+    end: '2026-11-30',
+    label: 'Baseline tests',
+    km: '12 to 16 km running',
+    sessions: [
+      'Tue 24 Nov, 5 to 6pm: 400 m swim test. Time it, note how it felt.',
+      'Sat 28 Nov: 30 km easy ride. Note average speed and heart rate.',
+      'One or two easy runs of 6 to 8 km.'
+    ]
+  }
+]
+
+// A typical week for each longer phase, used once the dated weeks run out.
+export const PHASE_WEEKS = {
+  base: [
+    'Tue 5 to 6pm: swim for technique, 30 to 40 minutes of drills and easy lengths (about 800 to 1,200 m). Book a few lessons or a video check in the first month.',
+    'Sat: long easy ride, 25 to 60 km, adding 5 to 10 km a month. Keep heart rate under about 140 on the bike until you have measured it.',
+    'Off day from lifting: easy run of 40 to 60 minutes, heart rate under 148. This keeps your run base at 15 to 25 km a week.',
+    'Strongly recommended: a second short swim (25 to 30 minutes) each week. Swimming skill comes from frequency more than distance.'
+  ],
+  build: [
+    'Tue: swim, building to 2,500 m a session (drills, then steady sets). First sea swims in May, in the wetsuit.',
+    'Sat: long ride of 60 to 85 km, hilly, 10 km longer than the last at most. From May, one ride a month ends with a 15 minute easy run.',
+    'Off day: easy run of 45 to 75 minutes. A long run of 14 to 18 km every second week keeps the half marathon legs.',
+    'Keep 80% of it easy. One short hard effort a week is plenty.'
+  ],
+  summer: [
+    'Each week: 2 swims, 2 rides (one long), 2 runs and 1 brick (ride then run), plus 30 to 40 minutes of light lifting.',
+    'Peak weeks: long rides of 90, 95, 100 and 90 km. After one a week, run 5 to 8 km easy straight off the bike.',
+    'Easier week: cut everything by about a third.',
+    'Practise race fuelling on every long ride: 60 to 90 g of carbohydrate an hour.'
+  ],
+  final: [
+    'Three sessions a week: one swim, one ride, one run, at race effort in short blocks.',
+    'Sat 18 Sep dress rehearsal: sea swim 1.9 km, ride 60 to 70 km, run 5 km. Race kit, race food.',
+    'Last long session Sat 2 Oct. After that nothing new.'
+  ],
+  taper: [
+    'Cut volume by about 40% the first week and 60% the second. Keep a few short efforts at race pace.',
+    'Mon of race week: equipment check (tyres, gears, goggles, wetsuit fit). Fri: rack the bike, rest.',
+    'Lifting: same weights, half the sets, nothing new. No heavy legs in the last 7 days.'
+  ]
+}
+
+export const RACE_PLANS = {
+  lisbon: [
+    'Pace: 6:15 to 6:30 per km for the first 30 km, with the first 5 km on the slow side.',
+    'Heart rate: stay under 155. If it is higher before 25 km, ease off by 10 to 15 seconds per km.',
+    'Your 30 km on 26 Sep was 6:49 per km at heart rate 144, so this pace is well inside what you have shown.',
+    'Expect 4:20 to 4:35. Your half marathon (1:57) predicts faster on paper, but your weekly running is low, so protect the last 10 km.',
+    'Fuel: a gel at 45 minutes, then every 30 to 40 (about 60 g of carbohydrate an hour). Walk the aid stations and drink there.',
+    'From 32 km, if heart rate is under 158 and the legs are good, you may lift the pace a little. Otherwise hold.'
+  ],
+  cascais: [
+    'Swim: calm and wide at the start, no sprint. Set the pace from your 1,900 m checkpoint.',
+    'Bike: easy-steady, heart rate under about 145. Eat 60 to 90 g of carbohydrate an hour from the first 15 minutes.',
+    'Run: first 3 km at 6:20 to 6:40 per km whatever your heart rate says, then settle. Walk the aid stations.',
+    'Finish 7:00 to 7:30; the cut-off is about 8:30.'
+  ]
+}
+
+// Heart rate and pace guide for running, from Andy's set zones and his own runs.
+export const RUN_GUIDE = [
+  { name: 'Easy', hr: 'under 148', pace: 'about 6:00 to 6:50 per km on your recent runs' },
+  { name: 'Marathon', hr: '140 to 152, drifting up late', pace: '6:15 to 6:30 per km' },
+  { name: 'Steady', hr: '149 to 159', pace: 'about 5:20 to 5:50 per km' },
+  { name: 'Threshold', hr: '160 to 170', pace: 'about 4:35 to 5:00 per km (10K was 45:45)' },
+  { name: 'Hard', hr: '171 and up', pace: 'short efforts only' }
+]
+
 // Month by month swim and ride targets. A dash means the brief sets no target.
 export const MONTH_TARGETS = [
   { month: '2026-11', swim: '400 m baseline test, after the 15 Nov recovery', ride: '30 km baseline test', note: 'Lisbon marathon on 14 Nov.' },
@@ -216,6 +353,17 @@ export function currentPhase(today = localToday()) {
     }
   }
   return { state: 'active', phase, week, totalWeeks, daysLeft: daysBetween(today, phase.end), label, next: PHASES[idx + 1] || null }
+}
+
+// This week's sessions: the dated week if there is one, else the phase's usual week.
+export function weekPlan(today = localToday()) {
+  const dated = WEEKS.find((w) => today >= w.start && today <= w.end)
+  if (dated) return dated
+  const cp = currentPhase(today)
+  if (cp.state === 'active' && PHASE_WEEKS[cp.phase.id]) {
+    return { label: cp.label ? `${cp.phase.name}, ${cp.label.toLowerCase()} week` : cp.phase.name, km: null, sessions: PHASE_WEEKS[cp.phase.id] }
+  }
+  return null
 }
 
 export function monthTarget(today = localToday()) {
