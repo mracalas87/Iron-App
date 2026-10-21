@@ -72,9 +72,9 @@ function Trend({ title, data, dataKey, color, domain }) {
       <ResponsiveContainer width="100%" height={110}>
         <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={28} domain={domain} />
-          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#1b1f24' }} itemStyle={{ color }} />
+          <XAxis dataKey="label" tick={{ fill: '#3a4250', fontSize: 10 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} interval="preserveStartEnd" />
+          <YAxis tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={false} tickLine={false} width={28} domain={domain} />
+          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#0f1318' }} itemStyle={{ color }} />
           <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={{ r: 2 }} connectNulls />
         </LineChart>
       </ResponsiveContainer>

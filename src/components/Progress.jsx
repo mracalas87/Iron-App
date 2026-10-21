@@ -119,11 +119,11 @@ export default function Progress() {
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <XAxis dataKey="date" tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
+                <YAxis tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
                   contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
-                  labelStyle={{ color: '#1b1f24' }}
+                  labelStyle={{ color: '#0f1318' }}
                   itemStyle={{ color: '#3d6bff' }}
                 />
                 <Line
@@ -145,11 +145,11 @@ export default function Progress() {
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <XAxis dataKey="date" tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
+                <YAxis tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
                   contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
-                  labelStyle={{ color: '#1b1f24' }}
+                  labelStyle={{ color: '#0f1318' }}
                   itemStyle={{ color: '#78b000' }}
                 />
                 <Line type="monotone" dataKey="volume" stroke="#78b000" strokeWidth={2} dot={false} />

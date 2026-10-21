@@ -4,7 +4,7 @@ import { dailyVolume, syncRunsFromGarminCache } from '../db'
 
 // Bar colours by kind of lifting day (see loadType.js). Blue is kept for the run line.
 const TYPE_COLOURS = { Heavy: '#f07a2d', Volume: '#78b000', Mixed: '#1fb5a3' }
-const NO_TYPE_COLOUR = '#6b7280'
+const NO_TYPE_COLOUR = '#3a4250'
 
 function formatDateShort(iso) {
   const d = new Date(iso + 'T00:00:00')
@@ -55,7 +55,7 @@ export default function LiftChart({ refreshKey }) {
                 <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: '#6b7280', fontSize: 10 }}
+                  tick={{ fill: '#3a4250', fontSize: 10 }}
                   axisLine={{ stroke: '#dfe3e8' }}
                   tickLine={false}
                   interval="preserveStartEnd"
@@ -63,7 +63,7 @@ export default function LiftChart({ refreshKey }) {
                 />
                 <YAxis
                   yAxisId="kg"
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  tick={{ fill: '#3a4250', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={36}
@@ -82,7 +82,7 @@ export default function LiftChart({ refreshKey }) {
                 )}
                 <Tooltip
                   contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
-                  labelStyle={{ color: '#1b1f24' }}
+                  labelStyle={{ color: '#0f1318' }}
                   cursor={{ fill: '#000000', opacity: 0.05 }}
                   formatter={(value, name, item) => {
                     if (name !== 'volume') return [`${value} km`, 'Run']
