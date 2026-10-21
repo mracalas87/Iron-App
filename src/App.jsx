@@ -1,27 +1,27 @@
 import { useState } from 'react'
-import LogWorkout from './components/LogWorkout'
-import WorkoutHistory from './components/WorkoutHistory'
-import Progress from './components/Progress'
-import Health from './components/Health'
-import Report from './components/Report'
+import Home from './components/Home'
+import Lift from './components/Lift'
 import Plan from './components/Plan'
 
 const TABS = [
-  { id: 'log', label: 'Log' },
-  { id: 'history', label: 'History' },
-  { id: 'progress', label: 'Progress' },
-  { id: 'health', label: 'Health' },
-  { id: 'report', label: 'Report' },
+  { id: 'home', label: 'Home' },
+  { id: 'lift', label: 'Lift' },
   { id: 'plan', label: 'Plan' }
 ]
 
 export default function App() {
-  const [tab, setTab] = useState('log')
+  const [tab, setTab] = useState('home')
+  const [liftView, setLiftView] = useState('log') // 'log' | 'history' | 'progress'
   const [activeWorkout, setActiveWorkout] = useState(null)
+
+  function openLog() {
+    setLiftView('log')
+    setTab('lift')
+  }
 
   function handleRepeat(draftWorkout) {
     setActiveWorkout(draftWorkout)
-    setTab('log')
+    openLog()
   }
 
   return (
@@ -34,23 +34,22 @@ export default function App() {
       </header>
 
       <main className="app-content">
-        {tab === 'log' && (
-          <LogWorkout activeWorkout={activeWorkout} setActiveWorkout={setActiveWorkout} />
+        {tab === 'home' && <Home activeWorkout={activeWorkout} onOpenLog={openLog} />}
+        {tab === 'lift' && (
+          <Lift
+            view={liftView}
+            setView={setLiftView}
+            activeWorkout={activeWorkout}
+            setActiveWorkout={setActiveWorkout}
+            onRepeat={handleRepeat}
+          />
         )}
-        {tab === 'history' && <WorkoutHistory onRepeat={handleRepeat} />}
-        {tab === 'progress' && <Progress />}
-        {tab === 'health' && <Health />}
-        {tab === 'report' && <Report />}
         {tab === 'plan' && <Plan />}
       </main>
 
       <nav className="tab-bar">
         {TABS.map((t) => (
-          <button
-            key={t.id}
-            className={tab === t.id ? 'active' : ''}
-            onClick={() => setTab(t.id)}
-          >
+          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
             {t.label}
           </button>
         ))}

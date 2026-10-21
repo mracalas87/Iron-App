@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react'
-import { listWorkouts, listRuns, workoutVolume, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from '../db'
-import { getVitals, trendLabel, formatHrvStatus, round } from '../vitals'
-import { buildAdvice, ADVICE_ZONES, HARD_HR_FROM } from '../trainingAdvice'
-import { RACE } from '../config'
-import { getWeightSessions } from '../weights'
+import { listWorkouts, listRuns, workoutVolume, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from './db'
+import { getVitals, trendLabel, formatHrvStatus, round } from './vitals'
+import { buildAdvice, HARD_HR_FROM } from './trainingAdvice'
+import { RACE } from './config'
+import { getWeightSessions } from './weights'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 
-const ZONES = [
+export const ZONES = [
   { key: 'Strained', color: 'var(--danger)' },
   { key: 'Fair', color: 'var(--warn)' },
   { key: 'Good', color: 'var(--pr)' }
@@ -41,7 +40,7 @@ function spread(values) {
   return present.length ? { min: Math.min(...present), max: Math.max(...present) } : null
 }
 
-async function buildReport() {
+export async function buildReport() {
   const [workouts, runs, recentDays] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(14)])
 
   const thisWeekStart = isoDaysAgo(6)
@@ -291,184 +290,6 @@ async function buildReport() {
   }
 }
 
-function statusColor(status) {
+export function statusColor(status) {
   return ZONES.find((z) => z.key === status)?.color || 'var(--chalk-dim)'
-}
-
-function StatusGauge({ zones = ZONES, status, position }) {
-  return (
-    <div className="gauge">
-      <div className="gauge-track">
-        {zones.map((z) => (
-          <div
-            key={z.key}
-            className={`gauge-seg${status === z.key ? ' active' : ''}`}
-            style={{ background: z.color, opacity: position == null ? 0.15 : undefined }}
-          />
-        ))}
-      </div>
-      {position != null && <div className="gauge-marker" style={{ left: `${position}%` }} />}
-      <div className="gauge-labels">
-        {zones.map((z) => (
-          <span key={z.key} style={status === z.key ? { color: z.color, fontWeight: 700 } : undefined}>
-            {z.key}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function SectionLabel({ children }) {
-  return (
-    <div
-      style={{
-        fontSize: 12,
-        color: 'var(--chalk-dim)',
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        marginBottom: 8
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
-export default function Report() {
-  const [stats, setStats] = useState(null)
-
-  useEffect(() => {
-    syncRunsFromGarminCache()
-      .then(buildReport)
-      .then(setStats)
-  }, [])
-
-  if (!stats) {
-    return (
-      <div className="empty-state">
-        <div className="mark">—</div>
-        <p>Loading…</p>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <div className="card">
-        <SectionLabel>Today's status</SectionLabel>
-        <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--mono)', color: statusColor(stats.status) }}>
-          {stats.status}
-        </div>
-        <StatusGauge status={stats.status} position={stats.position} />
-        {stats.reasons.length > 0 && (
-          <div style={{ fontSize: 13, marginTop: 12, color: 'var(--chalk-dim)' }}>
-            {stats.reasons.map((r) => (
-              <div key={r} style={{ padding: '2px 0' }}>
-                {r}
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 14 }}>
-          <SectionLabel>Training advice</SectionLabel>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: ADVICE_ZONES.find((z) => z.key === stats.advice.zone)?.color || 'var(--chalk-dim)'
-            }}
-          >
-            {stats.advice.headline}
-          </div>
-          <StatusGauge zones={ADVICE_ZONES} status={stats.advice.zone} position={stats.advice.position} />
-          {stats.advice.strength && (
-            <div style={{ fontSize: 13, marginTop: 12, lineHeight: 1.5 }}>
-              <div>
-                <span style={{ color: 'var(--chalk-dim)' }}>Strength: </span>
-                {stats.advice.strength}
-              </div>
-              <div style={{ marginTop: 6 }}>
-                <span style={{ color: 'var(--chalk-dim)' }}>Run: </span>
-                {stats.advice.run}
-              </div>
-            </div>
-          )}
-          {stats.advice.reasons.length > 0 && (
-            <div style={{ fontSize: 12, marginTop: 10, color: 'var(--chalk-dim)' }}>
-              Also: {stats.advice.reasons.join('. ')}.
-            </div>
-          )}
-          {stats.advice.tip && (
-            <div style={{ fontSize: 12, marginTop: 6, color: 'var(--chalk-dim)' }}>{stats.advice.tip}</div>
-          )}
-          <div style={{ fontSize: 11, marginTop: 10, color: 'var(--chalk-dim)', lineHeight: 1.45 }}>
-            {stats.basis} Rules: sleep 7h or more (AASM/SRS 2015), multi-day HRV and resting-HR trends (Plews 2013), a week of
-            running over 1.5x your recent average (Gabbett 2016), hard days followed by easy ones (convention), taper (Bosquet 2007).
-            Not medical advice.
-          </div>
-        </div>
-        {stats.lastSynced && (
-          <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 12 }}>
-            Garmin data as of {new Date(stats.lastSynced).toLocaleString('en-GB')}
-          </div>
-        )}
-      </div>
-
-      {stats.vitalRows.length > 0 && (
-        <div className="card">
-          <SectionLabel>Vitals in detail</SectionLabel>
-          {stats.vitalRows.map((row) => (
-            <div className="vital-row" key={row.name}>
-              <div>
-                <div className="name">{row.name}</div>
-                {row.detail && <div className="detail">{row.detail}</div>}
-              </div>
-              <div className="figure">
-                <div>{row.figure}</div>
-                {row.trend.text && (
-                  <div style={{ fontSize: 11, color: row.trend.color, marginTop: 2 }}>{row.trend.text}</div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="metric-grid">
-        <div className="metric-box">
-          <div className="label">Weights days (7d)</div>
-          <div className="value">{stats.sessionsThisWeek}</div>
-        </div>
-        <div className="metric-box">
-          <div className="label">Lifted (7d)</div>
-          <div className="value">{stats.volumeThisWeek.toLocaleString()}kg</div>
-        </div>
-        <div className="metric-box">
-          <div className="label">Runs (7d)</div>
-          <div className="value">{stats.runsThisWeek}</div>
-        </div>
-        <div className="metric-box">
-          <div className="label">Run distance (7d)</div>
-          <div className="value">{stats.runKmThisWeek}km</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <SectionLabel>Notes</SectionLabel>
-        {stats.notes.map((n, i) => (
-          <div
-            key={i}
-            style={{
-              fontSize: 14,
-              padding: '8px 0',
-              borderBottom: i < stats.notes.length - 1 ? '1px solid var(--border)' : 'none'
-            }}
-          >
-            {n}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 }
