@@ -150,74 +150,49 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     return 'Saturday ride'
   }
 
-  // ---- where the rolling cycle stands ----
-  // Lifts already done in the current cycle are ticked off whatever order they were done in, so a
-  // chest day taken early is not suggested again. Days with a heart-rate block but no log are
-  // assumed to be the next lift not yet done.
+  // ---- where the cycle stands ----
+  // Each lift is ranked by how long since it was last done, oldest first, so a lift taken out of
+  // order (chest early, back late) does not confuse what comes next. Days with a heart-rate block
+  // but no log are assumed to be whichever lift has gone longest. A lift is not repeated within
+  // 5 days, and after 5 lifting days in a row there is an off day.
   const known = !!last
-  let queue = []
   let todayToken = null
   let cycleDone = []
   let cycleDue = []
-  const refill = () => {
-    while (queue.length < 8) queue.push(((queue[queue.length - 1] ?? 4) + 1) % 6)
-  }
-  const consume = (token) => {
-    const i = queue.indexOf(token)
-    if (i >= 0) queue.splice(i, 1)
-    refill()
-  }
+  let lastTok = null
+  const liftDays = new Set()
+  const rank = (t) => (t - ((lastTok ?? -1) + 1) + 5) % 5
+  const byOldest = () =>
+    [0, 1, 2, 3, 4].sort((x, y) => {
+      const a = lastDate.get(x) || '0000'
+      const b = lastDate.get(y) || '0000'
+      return a < b ? -1 : a > b ? 1 : rank(x) - rank(y)
+    })
+  const restNeeded = (d) => [1, 2, 3, 4, 5].every((k) => liftDays.has(addDays(d, -k)))
   if (known) {
-    const done = new Set()
-    let lastTok = null
     const loggedTokens = (d) => [...new Set(logged.filter((w) => w.date === d).flatMap((w) => w.tokens))]
-    for (let d = addDays(today, -14); d <= today; d = addDays(d, 1)) {
+    for (let d = addDays(today, -30); d <= today; d = addDays(d, 1)) {
       let tokens = loggedTokens(d)
-      const pendingToday = d === today && !lifted(d) && nowHour < 10
-      if (!tokens.length && weightDates.has(d)) {
-        if (done.size === 5) done.clear()
-        let guess = null
-        for (let k = 1; k <= 5 && guess == null; k++) {
-          const t = ((lastTok ?? -1) + k) % 5
-          if (!done.has(t)) guess = t
-        }
-        tokens = [guess ?? 0]
-      }
+      if (!tokens.length && weightDates.has(d)) tokens = [byOldest().find((t) => !lastDate.has(t) || gap(lastDate.get(t), d) >= 5) ?? byOldest()[0]]
       if (tokens.length) {
-        if (done.size === 5) done.clear()
+        liftDays.add(d)
         for (const t of tokens) {
-          if (done.has(t)) done.clear()
-          done.add(t)
-          lastTok = t
           lastDate.set(t, d)
+          lastTok = t
         }
-      } else if (!pendingToday && done.size === 5) {
-        done.clear() // the off day after a full cycle
       }
     }
-    const from = ((lastTok ?? -1) + 1) % 5
-    const order = [0, 1, 2, 3, 4].map((i) => (from + i) % 5)
-    // A lift that has gone 9+ days without being done is pulled to the front, so it is not pushed
-    // back by the cycle order or by rule clashes for long.
-    const lastSeen = new Map()
-    for (const w of logged) for (const t of w.tokens) if (!lastSeen.has(t)) lastSeen.set(t, w.date)
-    const since = (t) => (lastSeen.has(t) ? gap(lastSeen.get(t), today) : 99)
-    const pending = order.filter((t) => !done.has(t))
-    const overdue = pending.filter((t) => since(t) >= 9).sort((x, y) => since(y) - since(x))
-    const remaining = [...overdue, ...pending.filter((t) => !overdue.includes(t))]
-    cycleDone = [0, 1, 2, 3, 4].filter((t) => done.has(t)).map((t) => CYCLE[t])
-    cycleDue = remaining.map((t) => CYCLE[t])
-    // what is left of this cycle (in his order), then the off day, then the usual order again
-    queue = done.size === 5 ? [OFF, 0, 1, 2, 3, 4] : [...remaining, OFF, 0, 1, 2, 3, 4]
-    refill()
+    const fresh = (t) => lastDate.has(t) && gap(lastDate.get(t), today) < 5
+    cycleDone = byOldest().filter(fresh).map((t) => CYCLE[t])
+    cycleDue = byOldest().filter((t) => !fresh(t)).map((t) => CYCLE[t])
     const pendingToday = !lifted(today) && nowHour < 10
     if (pendingToday) {
-      const pool = queue.indexOf(OFF) >= 0 ? queue.indexOf(OFF) + 1 : queue.length
-      const pick = queue.slice(0, pool).find((t) => allowed(t, today))
+      const pick = restNeeded(today) ? undefined : byOldest().find((t) => allowed(t, today))
+      todayToken = pick ?? OFF
       if (pick != null) {
-        todayToken = pick
-        if (pick !== OFF) lastDate.set(pick, today)
-        consume(pick)
+        lastDate.set(pick, today)
+        lastTok = pick
+        liftDays.add(today)
       }
     }
   }
@@ -243,12 +218,6 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     return style ? `${name} · ${style}` : name
   }
 
-  const legsName = () => {
-    const g = lastLegs ? lastLegs.groups : []
-    if (g.includes('Quads') && !g.includes('Hamstrings')) return 'Legs (hamstring-dominant)'
-    if (g.includes('Hamstrings') && !g.includes('Quads')) return 'Legs (quad-dominant)'
-    return 'Legs'
-  }
   const todayLift = todayToken == null ? null : todayToken === OFF ? 'Off day' : liftLabel(todayToken)
 
   const rows = []
@@ -261,21 +230,19 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       off = true
       row.lift = 'No lifting'
       row.note = forcedOff.get(d)
-      if (queue[0] === OFF) queue.shift()
     } else if (known) {
-      // pick from this cycle's lifts (up to its off day); the next cycle only starts after that
-      const pool = queue.indexOf(OFF) >= 0 ? queue.indexOf(OFF) + 1 : queue.length
-      const idx = queue.slice(0, pool).findIndex((t) => allowed(t, d))
-      const token = idx >= 0 ? queue[idx] : OFF
-      if (idx > 0) row.note = `${CYCLE[queue[0]]} moved (${whyBlocked(queue[0], d)})`
-      if (idx >= 0) queue.splice(idx, 1)
-      refill()
-      if (token === OFF) {
+      // the lift that has gone longest without being done, unless a rule holds it back
+      const order = byOldest()
+      const pick = restNeeded(d) ? undefined : order.find((t) => allowed(t, d))
+      if (pick != null && pick !== order[0]) row.note = `${CYCLE[order[0]]} moved (${whyBlocked(order[0], d)})`
+      if (pick == null) {
         off = true
         row.lift = 'Off day'
       } else {
-        row.lift = liftLabel(token)
-        lastDate.set(token, d)
+        row.lift = liftLabel(pick)
+        lastDate.set(pick, d)
+        lastTok = pick
+        liftDays.add(d)
       }
     }
 
