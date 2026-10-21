@@ -1,2 +1,5 @@
-// The race being built towards. Change it here if the race changes.
-export const RACE = { name: 'Lisbon marathon', date: '2026-11-14', distanceKm: 42.195 }
+// The race being built towards: the next upcoming race in the plan (src/plan.js).
+// It moves on to the next race by itself once a race date has passed.
+import { nextRace } from './plan'
+
+export const RACE = nextRace()

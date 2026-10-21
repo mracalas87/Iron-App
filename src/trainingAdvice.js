@@ -109,7 +109,8 @@ export function buildAdvice({
   // Taper: 8-14 days, volume cut about 40-60%, intensity kept (Bosquet 2007 meta-analysis).
   const daysToRace = race ? Math.round((new Date(race.date + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 86400000) : null
   if (daysToRace != null && daysToRace >= 0 && daysToRace <= 14) {
-    tip = `Taper, ${daysToRace} days to the ${race.name}: cut weekly running by about 40-60%, keep a few short efforts at race pace, and skip new or heavy leg work.`
+    const load = race.kind === 'triathlon' ? 'weekly training' : 'weekly running'
+    tip = `Taper, ${daysToRace} days to the ${race.name}: cut ${load} by about 40-60%, keep a few short efforts at race pace, and skip new or heavy leg work.`
   }
 
   // A recorded run today means the day's session is done. A morning lift does not: it can be

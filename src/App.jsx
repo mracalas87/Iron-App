@@ -4,13 +4,15 @@ import WorkoutHistory from './components/WorkoutHistory'
 import Progress from './components/Progress'
 import Health from './components/Health'
 import Report from './components/Report'
+import Plan from './components/Plan'
 
 const TABS = [
   { id: 'log', label: 'Log' },
   { id: 'history', label: 'History' },
   { id: 'progress', label: 'Progress' },
   { id: 'health', label: 'Health' },
-  { id: 'report', label: 'Report' }
+  { id: 'report', label: 'Report' },
+  { id: 'plan', label: 'Plan' }
 ]
 
 export default function App() {
@@ -39,6 +41,7 @@ export default function App() {
         {tab === 'progress' && <Progress />}
         {tab === 'health' && <Health />}
         {tab === 'report' && <Report />}
+        {tab === 'plan' && <Plan />}
       </main>
 
       <nav className="tab-bar">
