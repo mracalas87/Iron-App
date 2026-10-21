@@ -30,21 +30,24 @@ export const PHASES = [
     name: 'Marathon: last long run',
     start: '2026-10-21',
     end: '2026-11-01',
-    instruction: 'Long run 18 to 20 km. Keep it easy: heart rate under 148. Then taper.'
+    instruction: 'Long run 18 to 20 km. Keep it easy: heart rate under 148. Then taper.',
+    run: { kind: 'long', min: 18, max: 20, label: 'last long run' }
   },
   {
     id: 'marathon-taper',
     name: 'Marathon: taper',
     start: '2026-11-02',
     end: '2026-11-08',
-    instruction: 'Taper. Long run 10 to 12 km.'
+    instruction: 'Taper. Long run 10 to 12 km.',
+    run: { kind: 'long', min: 10, max: 12, label: 'taper long run' }
   },
   {
     id: 'marathon-race',
     name: 'Marathon: race week',
     start: '2026-11-09',
     end: '2026-11-14',
-    instruction: 'Race week: 6 to 8 km. Race on Saturday 14 Nov. Start at 6:15 to 6:30 per km, walk the aid stations, fuel from 45 minutes.'
+    instruction: 'Race week: 6 to 8 km. Race on Saturday 14 Nov. Start at 6:15 to 6:30 per km, walk the aid stations, fuel from 45 minutes.',
+    run: { kind: 'cap', max: 8 }
   },
   {
     id: 'recovery',
@@ -75,6 +78,7 @@ export const PHASES = [
     end: '2027-08-31',
     instruction:
       'Main block, 7 to 8 sessions a week: 2 weeks ramp-up, 5 peak weeks, 1 easier week. Long rides of 90, 95, 100 and 90 km. Lifting 30 to 40 minutes, light.',
+    liftNote: 'Keep lifting to 30 to 40 minutes and light.',
     sequence: [
       { label: 'Ramp-up', weeks: 2 },
       { label: 'Peak', weeks: 5 },
@@ -142,6 +146,19 @@ export const GROUND_RULES = [
   { title: 'School holidays', text: '4 to 6 sessions a week.' },
   { title: 'July and August', text: 'Main block, 7 to 8 sessions a week.' }
 ]
+
+// The weekday lifting rules start once swim and ride sessions begin (after the 15 Nov recovery).
+export const SWIM_RIDE_FROM = '2026-11-15'
+
+// What the lifting rules mean for a given date, or null if nothing applies.
+export function liftRuleFor(iso) {
+  if (iso < SWIM_RIDE_FROM) return null
+  const dow = new Date(iso + 'T12:00:00Z').getUTCDay() // 0 = Sunday
+  if (dow === 1) return 'No chest, back or shoulders today (swim tomorrow)'
+  if (dow === 2) return 'Legs, arms or off only today (swim tonight)'
+  if (dow === 4 || dow === 5 || dow === 6) return 'No legs today (Saturday ride)'
+  return null
+}
 
 // ---------- dates ----------
 export const localToday = () => new Date().toLocaleDateString('en-CA')

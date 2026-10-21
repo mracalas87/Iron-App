@@ -750,3 +750,32 @@ select:focus-visible {
 .seg.three {
   grid-template-columns: 1fr 1fr 1fr;
 }
+
+.up-row {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.up-row:last-child {
+  border-bottom: none;
+}
+
+.up-day {
+  font-weight: 600;
+}
+
+.up-body span {
+  color: var(--chalk-dim);
+  margin-right: 4px;
+}
+
+.up-note {
+  font-size: 11px;
+  color: var(--chalk-dim);
+  margin-top: 2px;
+}

@@ -3,6 +3,7 @@ import { getVitals, trendLabel, formatHrvStatus, round } from './vitals'
 import { buildAdvice, HARD_HR_FROM } from './trainingAdvice'
 import { RACE } from './config'
 import { getWeightSessions } from './weights'
+import { buildUpcoming } from './upcoming'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 
@@ -258,6 +259,18 @@ export async function buildReport() {
   const runs28 = runs.filter((r) => r.date >= isoDaysAgo(27)).length
   const basis = `Based on ${v.dates.length} days of sleep, resting HR and HRV, ${liftDays14} lifting days in 14 days, and ${runs28} runs in 28 days.`
 
+  const rides = garminActs
+    .filter((a) => /cycl|biking/.test(a.activityType?.typeKey || '') && a.distance)
+    .map((a) => ({ date: actDate(a), km: a.distance / 1000 }))
+  const upcoming = buildUpcoming({
+    today: todayDate,
+    nowHour: new Date().getHours(),
+    workouts,
+    weightDates,
+    runs,
+    rides
+  })
+
   const advice = buildAdvice({
     hasHealth,
     statusPoints: points,
@@ -274,11 +287,17 @@ export async function buildReport() {
     race: RACE
   })
 
+  // Say which lift is due today when the cycle knows it and nothing has been lifted yet.
+  if (upcoming.todayLift && advice.strength && !advice.strength.startsWith('Done')) {
+    advice.strength = `${upcoming.todayLift === 'Off day' ? 'Off day, no lifting.' : upcoming.todayLift + ' day.'} ${advice.strength}`
+  }
+
   return {
     status,
     position,
     reasons,
     advice,
+    upcoming,
     basis,
     sessionsThisWeek: weightDays7.size,
     runsThisWeek: thisWeekRuns.length,

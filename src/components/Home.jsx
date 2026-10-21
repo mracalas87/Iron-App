@@ -171,6 +171,11 @@ export default function Home({ activeWorkout, onOpenLog }) {
 
                 <div className="advice">
                   <div className="advice-headline">{advice.headline}</div>
+                  {advice.plan && (
+                    <div className="advice-line">
+                      <span>Plan</span> {advice.plan}
+                    </div>
+                  )}
                   {advice.strength && (
                     <div className="advice-line">
                       <span>Lift</span> {firstSentence(advice.strength)}
@@ -185,6 +190,33 @@ export default function Home({ activeWorkout, onOpenLog }) {
                 </div>
               </>
             )
+          )}
+        </div>
+      )}
+
+      {stats && stats.upcoming.rows.length > 0 && (
+        <div className="card" style={{ padding: '4px 14px' }}>
+          <div className="dim-label" style={{ margin: '10px 0 2px' }}>Coming up</div>
+          {stats.upcoming.rows.filter((row) => row.lift || row.cardio.length > 0).map((row) => (
+            <div className="up-row" key={row.date}>
+              <div className="up-day">{row.label}</div>
+              <div className="up-body">
+                {row.lift && (
+                  <div>
+                    <span>Lift</span> {row.lift}
+                  </div>
+                )}
+                {row.cardio.map((c) => (
+                  <div key={c.kind + c.text}>
+                    <span>{c.kind}</span> {c.text}
+                  </div>
+                ))}
+                {row.note && <div className="up-note">{row.note}</div>}
+              </div>
+            </div>
+          ))}
+          {!stats.upcoming.liftKnown && (
+            <div className="up-note" style={{ padding: '8px 0 10px' }}>Log your lifts to see which one is next.</div>
           )}
         </div>
       )}
@@ -248,6 +280,7 @@ export default function Home({ activeWorkout, onOpenLog }) {
 
           <div className="card">
             <div className="dim-label">Advice in full</div>
+            {advice.plan && <div className="detail-line"><span>Plan</span> {advice.plan}</div>}
             {advice.strength && <div className="detail-line"><span>Lift</span> {advice.strength}</div>}
             {advice.run && <div className="detail-line"><span>Run</span> {advice.run}</div>}
             {advice.tip && <div className="detail-line">{advice.tip}</div>}
