@@ -22,10 +22,17 @@ const dow = (iso) => new Date(iso + 'T12:00:00Z').getUTCDay() // 0 = Sunday
 const label = (iso) =>
   new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
 
-// Highest cycle position among a workout's muscle groups, so "Chest, Triceps" counts as arms.
-export function tokenOfGroups(groups) {
-  const hits = (groups || []).map((g) => GROUP_TOKEN[g]).filter((t) => t != null)
-  return hits.length ? Math.max(...hits) : null
+// The cycle lifts a workout counts for. Biceps or triceps added to another muscle group are
+// accessory work, so "Chest, Triceps" ticks off chest only; arms count when they are the
+// whole workout.
+export function tokensOfGroups(groups) {
+  const list = groups || []
+  const armsOnly = list.every((g) => g === 'Biceps' || g === 'Triceps')
+  const hits = list
+    .filter((g) => armsOnly || (g !== 'Biceps' && g !== 'Triceps'))
+    .map((g) => GROUP_TOKEN[g])
+    .filter((t) => t != null)
+  return [...new Set(hits)]
 }
 
 // The day for a phase's long run: the first weekend day from `from` that is at least 3 days
@@ -71,11 +78,14 @@ function rideText(d, lastRideKm) {
 export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], days = 4 }) {
   const lifted = (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
   const logged = workouts
-    .map((w) => ({ date: w.date, token: tokenOfGroups(w.muscleGroups), groups: w.muscleGroups || [] }))
-    .filter((w) => w.token != null && w.date <= today)
+    .map((w) => {
+      const tokens = tokensOfGroups(w.muscleGroups)
+      return { date: w.date, tokens, token: tokens[0], groups: w.muscleGroups || [] }
+    })
+    .filter((w) => w.tokens.length > 0 && w.date <= today)
     .sort((a, b) => (a.date < b.date ? 1 : -1))
   const last = logged[0] && gap(logged[0].date, today) <= 10 ? logged[0] : null
-  const lastLegs = logged.find((w) => w.token === 2)
+  const lastLegs = logged.find((w) => w.tokens.includes(2))
   const lastRideKm = rides.length ? rides.slice().sort((a, b) => (a.date < b.date ? 1 : -1))[0].km : null
 
   // ---- fixed points: the long run, the race, and how legs clash with them ----
@@ -141,6 +151,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   const known = !!last
   let queue = []
   let todayToken = null
+  let cycleDone = []
+  let cycleDue = []
   const refill = () => {
     while (queue.length < 8) queue.push(((queue[queue.length - 1] ?? 4) + 1) % 6)
   }
@@ -152,8 +164,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   if (known) {
     const done = new Set()
     let lastTok = null
-    const loggedTokens = (d) => [...new Set(logged.filter((w) => w.date === d).map((w) => w.token))]
-    for (let d = addDays(today, -8); d <= today; d = addDays(d, 1)) {
+    const loggedTokens = (d) => [...new Set(logged.filter((w) => w.date === d).flatMap((w) => w.tokens))]
+    for (let d = addDays(today, -14); d <= today; d = addDays(d, 1)) {
       let tokens = loggedTokens(d)
       const pendingToday = d === today && !lifted(d) && nowHour < 10
       if (!tokens.length && weightDates.has(d)) {
@@ -178,7 +190,16 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     }
     const from = ((lastTok ?? -1) + 1) % 5
     const order = [0, 1, 2, 3, 4].map((i) => (from + i) % 5)
-    const remaining = order.filter((t) => !done.has(t))
+    // A lift that has gone 9+ days without being done is pulled to the front, so it is not pushed
+    // back by the cycle order or by rule clashes for long.
+    const lastSeen = new Map()
+    for (const w of logged) for (const t of w.tokens) if (!lastSeen.has(t)) lastSeen.set(t, w.date)
+    const since = (t) => (lastSeen.has(t) ? gap(lastSeen.get(t), today) : 99)
+    const pending = order.filter((t) => !done.has(t))
+    const overdue = pending.filter((t) => since(t) >= 9).sort((x, y) => since(y) - since(x))
+    const remaining = [...overdue, ...pending.filter((t) => !overdue.includes(t))]
+    cycleDone = [0, 1, 2, 3, 4].filter((t) => done.has(t)).map((t) => CYCLE[t])
+    cycleDue = remaining.map((t) => CYCLE[t])
     // what is left of this cycle (in his order), then the off day, then the usual order again
     queue = done.size === 5 ? [OFF, 0, 1, 2, 3, 4] : [...remaining, OFF, 0, 1, 2, 3, 4]
     refill()
@@ -253,5 +274,5 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     rows.push(row)
   }
 
-  return { rows, todayLift, liftKnown: known, lastLogged: last ? { date: last.date, name: CYCLE[last.token] } : null }
+  return { rows, todayLift, cycle: { done: cycleDone, due: cycleDue }, liftKnown: known, lastLogged: last ? { date: last.date, name: CYCLE[last.token] } : null }
 }

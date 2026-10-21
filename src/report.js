@@ -1,4 +1,5 @@
-import { listWorkouts, listRuns, workoutVolume, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from './db'
+import { listWorkouts, listRuns, listExercises, workoutVolume, dailyVolume, syncRunsFromGarminCache, MUSCLE_GROUPS } from './db'
+import { annotateWorkouts } from './liftDay'
 import { getVitals, trendLabel, formatHrvStatus, round } from './vitals'
 import { buildAdvice, HARD_HR_FROM } from './trainingAdvice'
 import { RACE } from './config'
@@ -42,7 +43,11 @@ function spread(values) {
 }
 
 export async function buildReport() {
-  const [workouts, runs, recentDays] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(14)])
+  const [workoutsRaw, runs, recentDays, exercises] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(14), listExercises()])
+  // Read each logged lift (title, chosen muscle groups, the exercises done) so the cycle, leg
+  // timing and advice all agree on what was trained.
+  const categoryOf = new Map(exercises.map((e) => [e.id, e.category]))
+  const workouts = annotateWorkouts(workoutsRaw, categoryOf)
 
   const thisWeekStart = isoDaysAgo(6)
   const lastWeekStart = isoDaysAgo(13)

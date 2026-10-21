@@ -215,6 +215,12 @@ export default function Home({ activeWorkout, onOpenLog }) {
               </div>
             </div>
           ))}
+          {stats.upcoming.liftKnown && stats.upcoming.cycle.done.length + stats.upcoming.cycle.due.length > 0 && (
+            <div className="up-note" style={{ padding: '8px 0 10px' }}>
+              This cycle: {stats.upcoming.cycle.done.length ? `done ${stats.upcoming.cycle.done.join(', ')}` : 'nothing done yet'}
+              {stats.upcoming.cycle.due.length ? `. Still due: ${stats.upcoming.cycle.due.join(', ')}.` : '. Cycle complete.'}
+            </div>
+          )}
           {!stats.upcoming.liftKnown && (
             <div className="up-note" style={{ padding: '8px 0 10px' }}>Log your lifts to see which one is next.</div>
           )}
