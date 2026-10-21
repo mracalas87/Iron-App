@@ -36,12 +36,13 @@ export function tokensOfGroups(groups) {
 }
 
 // The day for a phase's long run: the first weekend day from `from` that is at least 3 days
-// after the last legs session (else the first such day, else `from`).
-export function longRunSlot(phase, from, lastLegs) {
+// after the last legs session, and at least 4 days after any run of 15 km or more already done
+// (else the first such day, else `from`).
+export function longRunSlot(phase, from, lastLegs, lastLong = null) {
   const start = from > phase.start ? from : phase.start
   const days = []
   for (let d = start; d <= phase.end; d = addDays(d, 1)) days.push(d)
-  const ok = (d) => !lastLegs || gap(lastLegs, d) >= 3
+  const ok = (d) => (!lastLegs || gap(lastLegs, d) >= 3) && (!lastLong || gap(lastLong, d) >= 4)
   const weekend = (d) => dow(d) === 0 || dow(d) === 6
   return days.find((d) => ok(d) && weekend(d)) || days.find(ok) || days[0] || start
 }
@@ -101,7 +102,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     seenPhases.add(cp.phase.id)
     const ph = cp.phase
     if (ph.run && ph.run.kind === 'long' && !longDone(ph)) {
-      const slot = longRunSlot(ph, d, lastLegs ? lastLegs.date : null)
+      const doneLong = runs.filter((r) => r.distanceKm >= 15 && r.date <= today).map((r) => r.date).sort().pop() || null
+      const slot = longRunSlot(ph, d, lastLegs ? lastLegs.date : null, doneLong)
       const cap = ph.run.label[0].toUpperCase() + ph.run.label.slice(1)
       longRuns.set(slot, `${cap} ${ph.run.min}-${ph.run.max} km, easy (heart rate under ${EASY_HR})`)
       forcedOff.set(slot, 'long run day')

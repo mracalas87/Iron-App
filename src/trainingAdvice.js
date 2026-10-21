@@ -52,7 +52,8 @@ function planInfo(today, runs, workouts, race) {
       info.runKind = 'long-done'
       info.line = `${cap} done (${r1(info.done.distanceKm)} km, ${dayName(info.done.date)}). Keep the rest easy.`
     } else {
-      info.slot = longRunSlot(phase, today, lastLegs)
+      const lastLong = runs.filter((r) => r.distanceKm >= 15 && r.date <= today).map((r) => r.date).sort().pop() || null
+      info.slot = longRunSlot(phase, today, lastLegs, lastLong)
       info.runKind = 'long-due'
       info.line = `${cap} ${min}-${max} km, easy, by ${dayName(phase.end)}. Best slot: ${info.slot === today ? 'today' : dayName(info.slot)}.`
     }
