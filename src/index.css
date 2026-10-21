@@ -495,3 +495,20 @@ select:focus-visible {
   text-align: right;
   white-space: nowrap;
 }
+
+.move-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--chalk);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.move-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

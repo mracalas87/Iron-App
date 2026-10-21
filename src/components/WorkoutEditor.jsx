@@ -85,6 +85,17 @@ export default function WorkoutEditor({ workout, setWorkout }) {
     setWorkout((w) => ({ ...w, exercises: w.exercises.filter((_, i) => i !== exIdx) }))
   }
 
+  // Swap an exercise with its neighbour (dir -1 = up, +1 = down). The order is saved with the workout.
+  function moveExercise(exIdx, dir) {
+    setWorkout((w) => {
+      const to = exIdx + dir
+      if (to < 0 || to >= w.exercises.length) return w
+      const exercises = [...w.exercises]
+      ;[exercises[exIdx], exercises[to]] = [exercises[to], exercises[exIdx]]
+      return { ...w, exercises }
+    })
+  }
+
   return (
     <div>
       <div className="card">
@@ -117,11 +128,35 @@ export default function WorkoutEditor({ workout, setWorkout }) {
         const best = bestSets[ex.exerciseId]
         return (
         <div className="card" key={exIdx}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ fontWeight: 600 }}>{ex.exerciseName}</span>
-            <button className="btn-ghost" style={{ color: 'var(--danger)' }} onClick={() => removeExercise(exIdx)}>
-              remove
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{ex.exerciseName}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 'none' }}>
+              {workout.exercises.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="move-btn"
+                    aria-label={`Move ${ex.exerciseName} up`}
+                    disabled={exIdx === 0}
+                    onClick={() => moveExercise(exIdx, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="move-btn"
+                    aria-label={`Move ${ex.exerciseName} down`}
+                    disabled={exIdx === workout.exercises.length - 1}
+                    onClick={() => moveExercise(exIdx, 1)}
+                  >
+                    ↓
+                  </button>
+                </>
+              )}
+              <button className="btn-ghost" style={{ color: 'var(--danger)', marginLeft: 6 }} onClick={() => removeExercise(exIdx)}>
+                remove
+              </button>
+            </div>
           </div>
           {best && (
             <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 10 }}>
