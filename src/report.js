@@ -43,7 +43,7 @@ function spread(values) {
 }
 
 export async function buildReport() {
-  const [workoutsRaw, runs, recentDays, exercises] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(14), listExercises()])
+  const [workoutsRaw, runs, recentDays, exercises] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(60), listExercises()])
   // Read each logged lift (title, chosen muscle groups, the exercises done) so the cycle, leg
   // timing and advice all agree on what was trained.
   const categoryOf = new Map(exercises.map((e) => [e.id, e.category]))
@@ -273,7 +273,8 @@ export async function buildReport() {
     workouts,
     weightDates,
     runs,
-    rides
+    rides,
+    loadTypes
   })
 
   const advice = buildAdvice({
@@ -287,6 +288,7 @@ export async function buildReport() {
     weightDates,
     weightsToday,
     loadTypes,
+    drift: (v.restingHR.delta != null && v.restingHR.delta >= 2) || (v.hrv.deltaPct != null && v.hrv.deltaPct <= -15),
     hardRun,
     historyStart,
     race: RACE

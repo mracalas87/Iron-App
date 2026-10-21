@@ -1,17 +1,13 @@
 // Works out which lift in the rolling cycle a logged workout was: shoulders (0), back (1),
-// legs (2), chest (3) or arms (4).
-//
-// Andy titles his workouts, so the title is read first. If the title says nothing useful the
-// muscle groups chosen when logging are used, and after that the exercises themselves
-// (their saved muscle group, or their name). Biceps and triceps added to another muscle
-// group are accessory work, so "Chest, Triceps" counts as chest; arms count when they are the
-// whole workout. Legs also record whether the day leaned quads or hamstrings.
+// legs (2), chest (3) or arms (4). The main muscle group is the day, and it is the first one
+// in the title (see classifyWorkout). Legs also record whether the day leaned quads or
+// hamstrings.
 
 const GROUP_TOKEN = { Shoulders: 0, Back: 1, Quads: 2, Hamstrings: 2, Chest: 3, Biceps: 4, Triceps: 4 }
 
 const PATTERNS = [
   [0, /shoulder|delts?\b|overhead press|\bohp\b|military press|lateral raise|face pull|arnold|rear delt|upright row/],
-  [1, /\bback\b|\blats?\b|\brows?\b|pull[- ]?ups?|chin[- ]?ups?|pulldown|\btraps?\b|shrug|\bpull\b day/],
+  [1, /\bback\b(?! squat)|\blats?\b|\brows?\b|pull[- ]?ups?|chin[- ]?ups?|pulldown|\btraps?\b|shrug/],
   [2, /\blegs?\b|quads?|hamstrings?|\bhams?\b|glutes?|calf|calves|squat|lunge|hip thrust|\brdl\b|romanian|leg press|leg curl|leg extension|hack squat|good morning/],
   [3, /chest|\bpecs?\b|bench|\bflyes?\b|\bfly\b|incline press|chest press|cable cross/],
   [4, /\barms?\b|biceps?|triceps?|\bcurls?\b|pushdown|skull ?crusher|\bdips?\b|hammer curl/]
@@ -20,61 +16,57 @@ const PATTERNS = [
 const HAMSTRING = /hamstring|\bhams?\b|\brdl\b|romanian|leg curl|good morning|glute ham|stiff[- ]leg/
 const QUAD = /quad|squat|leg press|leg extension|lunge|hack|step[- ]?up/
 
+// Lifts mentioned in some text, in the order they first appear.
 function tokensFromText(text) {
-  const t = (text || '').toLowerCase().replace(/leg curl|hamstring curl|wrist curl/g, ' ')
-  const hit = new Set()
+  const lower = (text || '').toLowerCase()
+  // blank out "leg curl" so it is not read as arms; it is still legs
+  const cleaned = lower.replace(/leg curl|hamstring curl|wrist curl/g, (m) => ' '.repeat(m.length))
+  const found = []
   for (const [token, re] of PATTERNS) {
-    if (re.test(t)) hit.add(token)
+    const m = re.exec(cleaned)
+    if (m) found.push([token, m.index])
   }
-  // "leg curl" is a hamstring exercise, not arms, but still counts as legs
-  if (/leg curl|hamstring curl/.test((text || '').toLowerCase())) hit.add(2)
-  return hit
-}
-
-function applyAccessoryRule(set) {
-  const list = [...set]
-  if (list.length > 1 && list.includes(4)) return list.filter((t) => t !== 4)
-  return list
+  const lc = lower.search(/leg curl|hamstring curl/)
+  if (lc >= 0 && !found.some((f) => f[0] === 2)) found.push([2, lc])
+  return found.sort((a, b) => a[1] - b[1]).map((f) => f[0])
 }
 
 // workout: { title, muscleGroups, exercises: [{ exerciseId, exerciseName, sets }] }
 // categoryOf: Map(exerciseId -> saved muscle group such as 'Chest', or 'Other')
+//
+// Each workout is one lift in the cycle: the main muscle group. Andy puts it first in the
+// title, so the first muscle group named there wins ("Chest, Triceps" is chest). Failing
+// that, the first muscle group chosen when logging, then whichever lift has most of the sets.
 export function classifyWorkout(workout, categoryOf = new Map()) {
   const title = workout.title || ''
   const names = (workout.exercises || []).map((e) => e.exerciseName || '').join(' ')
-  let tokens = applyAccessoryRule(tokensFromText(title))
+  let tokens = []
   let source = 'title'
 
+  const fromTitle = tokensFromText(title)
+  if (fromTitle.length) tokens = [fromTitle[0]]
+
   if (!tokens.length) {
-    const groups = workout.muscleGroups || []
-    const armsOnly = groups.length > 0 && groups.every((g) => g === 'Biceps' || g === 'Triceps')
-    const hits = groups
-      .filter((g) => armsOnly || (g !== 'Biceps' && g !== 'Triceps'))
-      .map((g) => GROUP_TOKEN[g])
-      .filter((t) => t != null)
-    tokens = [...new Set(hits)]
+    const first = (workout.muscleGroups || []).map((g) => GROUP_TOKEN[g]).find((t) => t != null)
+    if (first != null) tokens = [first]
     source = 'groups'
   }
 
   if (!tokens.length) {
-    // Share of sets by lift, from each exercise's saved group or its name.
     const sets = [0, 0, 0, 0, 0]
     for (const ex of workout.exercises || []) {
       const n = (ex.sets || []).length || 1
       const cat = categoryOf.get(ex.exerciseId)
       let t = cat != null && cat in GROUP_TOKEN ? GROUP_TOKEN[cat] : null
       if (t == null) {
-        const found = [...tokensFromText(ex.exerciseName)]
+        const found = tokensFromText(ex.exerciseName)
         t = found.length ? found[0] : null
       }
       if (t != null) sets[t] += n
     }
-    const total = sets.reduce((a, b) => a + b, 0)
-    if (total > 0) {
-      const share = sets.map((s) => s / total)
-      let picked = [0, 1, 2, 3, 4].filter((t) => share[t] >= 0.35)
-      if (picked.length > 1 && picked.includes(4) && share[4] < 0.5) picked = picked.filter((t) => t !== 4)
-      tokens = picked
+    const top = Math.max(...sets)
+    if (top > 0) {
+      tokens = [sets.indexOf(top)]
       source = 'exercises'
     }
   }

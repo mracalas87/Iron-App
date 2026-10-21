@@ -87,6 +87,7 @@ export function buildAdvice({
   weightDates = new Set(),
   weightsToday = null,
   loadTypes = new Map(), // date -> 'Heavy' | 'Volume' | 'Mixed' for logged lifting days (loadType.js)
+  drift = false, // resting HR or HRV off normal over the last 3 days
   hardRun = null, // a recorded run in the last two days that was hard: { date, avgHR }
   historyStart = null, // earliest date this phone has any run or activity data for
   race = null, // { name, date }
@@ -204,7 +205,8 @@ export function buildAdvice({
         Easy: `Moderate loads, stop a rep or two short of failure.${freshText}${fitText}`,
         Rest: 'Skip it, or 15-20 minutes of mobility.'
       }[zone]
-  const strength = [liftRule && `${liftRule}.`, liftNote, strengthBase].filter(Boolean).join(' ')
+  const driftNote = drift && !liftedToday && zone !== 'Rest' ? 'Recovery is drifting: keep today\'s lift short (plan rule).' : null
+  const strength = [liftRule && `${liftRule}.`, driftNote, liftNote, strengthBase].filter(Boolean).join(' ')
 
   // Which muscles were trained comes from the muscle groups chosen when each workout was logged.
   const legsOn = (date) => workouts.some((w) => w.date === date && (w.muscleGroups || []).some((g) => g === 'Quads' || g === 'Hamstrings'))

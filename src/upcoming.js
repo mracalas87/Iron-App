@@ -75,7 +75,7 @@ function rideText(d, lastRideKm) {
 
 // today: ISO date. nowHour: local hour, used to tell whether today's lift is still to come.
 // weightDates: Set of dates with a morning heart-rate block. rides: [{ date, km }].
-export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], days = 4 }) {
+export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), days = 4 }) {
   const lifted = (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
   const logged = workouts
     .map((w) => {
@@ -125,8 +125,13 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     }
   }
 
+  // When each lift was last done (or scheduled). A lift is not repeated within 5 days, so the same
+  // one cannot turn up twice in a week when other lifts are being held back.
+  const lastDate = new Map()
+
   const allowed = (token, d) => {
     if (token === OFF) return true
+    if (lastDate.has(token) && gap(lastDate.get(token), d) < 5) return false
     if (token === 2 && legsBlocked.has(d)) return false
     if (d >= SWIM_RIDE_FROM) {
       const w = dow(d)
@@ -138,6 +143,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   }
   const whyBlocked = (token, d) => {
     if (token === 2 && legsBlocked.has(d)) return legsBlocked.get(d)
+    if (lastDate.has(token) && gap(lastDate.get(token), d) < 5) return 'done recently'
     const w = dow(d)
     if (w === 1) return 'swim tomorrow'
     if (w === 2) return 'swim tonight'
@@ -183,6 +189,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
           if (done.has(t)) done.clear()
           done.add(t)
           lastTok = t
+          lastDate.set(t, d)
         }
       } else if (!pendingToday && done.size === 5) {
         done.clear() // the off day after a full cycle
@@ -205,12 +212,35 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     refill()
     const pendingToday = !lifted(today) && nowHour < 10
     if (pendingToday) {
-      const pick = queue.find((t) => allowed(t, today))
+      const pool = queue.indexOf(OFF) >= 0 ? queue.indexOf(OFF) + 1 : queue.length
+      const pick = queue.slice(0, pool).find((t) => allowed(t, today))
       if (pick != null) {
         todayToken = pick
+        if (pick !== OFF) lastDate.set(pick, today)
         consume(pick)
       }
     }
+  }
+
+  // The next time a lift comes round it flips between a heavy and a high-volume day, going by
+  // how the last one was labelled from its sets and reps.
+  const lastStyle = new Map()
+  for (const w of logged) {
+    for (const t of w.tokens) {
+      const type = loadTypes.get(w.date)
+      if (!lastStyle.has(t) && (type === 'Heavy' || type === 'Volume')) lastStyle.set(t, type)
+    }
+  }
+  const styleFor = (t) => (lastStyle.get(t) === 'Heavy' ? 'volume' : lastStyle.get(t) === 'Volume' ? 'heavy' : null)
+  const liftLabel = (t) => {
+    let name = CYCLE[t]
+    if (t === 2) {
+      const g = lastLegs ? lastLegs.groups : []
+      if (g.includes('Quads') && !g.includes('Hamstrings')) name = 'Legs (hamstring-dominant)'
+      else if (g.includes('Hamstrings') && !g.includes('Quads')) name = 'Legs (quad-dominant)'
+    }
+    const style = styleFor(t)
+    return style ? `${name} · ${style}` : name
   }
 
   const legsName = () => {
@@ -219,7 +249,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     if (g.includes('Hamstrings') && !g.includes('Quads')) return 'Legs (quad-dominant)'
     return 'Legs'
   }
-  const todayLift = todayToken == null || todayToken === OFF ? (todayToken === OFF ? 'Off day' : null) : todayToken === 2 ? legsName() : CYCLE[todayToken]
+  const todayLift = todayToken == null ? null : todayToken === OFF ? 'Off day' : liftLabel(todayToken)
 
   const rows = []
   for (let n = 1; n <= days; n++) {
@@ -233,7 +263,9 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       row.note = forcedOff.get(d)
       if (queue[0] === OFF) queue.shift()
     } else if (known) {
-      const idx = queue.findIndex((t) => allowed(t, d))
+      // pick from this cycle's lifts (up to its off day); the next cycle only starts after that
+      const pool = queue.indexOf(OFF) >= 0 ? queue.indexOf(OFF) + 1 : queue.length
+      const idx = queue.slice(0, pool).findIndex((t) => allowed(t, d))
       const token = idx >= 0 ? queue[idx] : OFF
       if (idx > 0) row.note = `${CYCLE[queue[0]]} moved (${whyBlocked(queue[0], d)})`
       if (idx >= 0) queue.splice(idx, 1)
@@ -242,12 +274,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
         off = true
         row.lift = 'Off day'
       } else {
-        row.lift = CYCLE[token]
-        if (token === 2) {
-          const g = lastLegs ? lastLegs.groups : []
-          if (g.includes('Quads') && !g.includes('Hamstrings')) row.lift = 'Legs (hamstring-dominant)'
-          else if (g.includes('Hamstrings') && !g.includes('Quads')) row.lift = 'Legs (quad-dominant)'
-        }
+        row.lift = liftLabel(token)
+        lastDate.set(token, d)
       }
     }
 
