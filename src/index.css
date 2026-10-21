@@ -1,15 +1,16 @@
 :root {
-  --bg: #14171a;
-  --surface: #1e2226;
-  --surface-raised: #262b30;
-  --border: #33393f;
-  --chalk: #e8e6e1;
-  --chalk-dim: #9aa0a6;
-  --iron: #4c7eff;
-  --iron-dim: #2c4a99;
-  --pr: #c9f24b;
-  --danger: #ff6b5e;
-  --warn: #f5b942;
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --surface-raised: #eef1f5;
+  --border: #dfe3e8;
+  --chalk: #1b1f24;
+  --chalk-dim: #6b7280;
+  --iron: #3d6bff;
+  --iron-dim: #dde6ff;
+  --pr: #5c9a00;
+  --danger: #d93a2f;
+  --warn: #c77d00;
 
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --sans: 'Inter', system-ui, sans-serif;
@@ -171,7 +172,7 @@ select:focus-visible {
 }
 
 .exercise-search-results button:hover {
-  background: #2c3238;
+  background: #e6e9ee;
 }
 
 .exercise-search-results .add-new {
@@ -251,7 +252,7 @@ select:focus-visible {
 
 .btn-primary {
   background: var(--iron);
-  color: #0a0d10;
+  color: #ffffff;
   width: 100%;
 }
 

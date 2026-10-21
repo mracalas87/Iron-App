@@ -8,7 +8,7 @@ import { getVitals, trendLabel, round } from '../vitals'
 import { loadLocalEntries, buildFeed } from '../activityFeed'
 import { syncRunsFromGarminCache } from '../db'
 
-const tooltipStyle = { background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }
+const tooltipStyle = { background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }
 
 const firstSentence = (s) => (s ? s.split(/(?<=\.)\s/)[0] : s)
 
@@ -71,10 +71,10 @@ function Trend({ title, data, dataKey, color, domain }) {
       <div className="dim-label">{title}</div>
       <ResponsiveContainer width="100%" height={110}>
         <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: '#9aa0a6', fontSize: 10 }} axisLine={{ stroke: '#33393f' }} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={28} domain={domain} />
-          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#e8e6e1' }} itemStyle={{ color }} />
+          <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} interval="preserveStartEnd" />
+          <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={28} domain={domain} />
+          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#1b1f24' }} itemStyle={{ color }} />
           <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={{ r: 2 }} connectNulls />
         </LineChart>
       </ResponsiveContainer>
@@ -241,9 +241,9 @@ export default function Home({ activeWorkout, onOpenLog }) {
           )}
 
           <div className="card">
-            <Trend title="HRV (ms)" data={chart} dataKey="hrv" color="#4c7eff" domain={['dataMin - 8', 'dataMax + 8']} />
-            <Trend title="Resting HR (bpm)" data={chart} dataKey="rhr" color="#c9f24b" domain={['dataMin - 3', 'dataMax + 3']} />
-            <Trend title="Sleep (h)" data={chart} dataKey="sleep" color="#5ad1c0" domain={[0, 'dataMax + 1']} />
+            <Trend title="HRV (ms)" data={chart} dataKey="hrv" color="#3d6bff" domain={['dataMin - 8', 'dataMax + 8']} />
+            <Trend title="Resting HR (bpm)" data={chart} dataKey="rhr" color="#78b000" domain={['dataMin - 3', 'dataMax + 3']} />
+            <Trend title="Sleep (h)" data={chart} dataKey="sleep" color="#1fb5a3" domain={[0, 'dataMax + 1']} />
           </div>
 
           <div className="card">

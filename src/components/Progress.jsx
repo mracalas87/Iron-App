@@ -19,7 +19,7 @@ function formatDateShort(iso) {
 function PRDot(props) {
   const { cx, cy, payload } = props
   if (!payload.isPR) return null
-  return <Dot cx={cx} cy={cy} r={4} fill="var(--pr, #c9f24b)" stroke="none" />
+  return <Dot cx={cx} cy={cy} r={4} fill="var(--pr, #78b000)" stroke="none" />
 }
 
 export default function Progress() {
@@ -118,18 +118,18 @@ export default function Progress() {
             </div>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={{ stroke: '#33393f' }} tickLine={false} />
-                <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
+                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
-                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
-                  labelStyle={{ color: '#e8e6e1' }}
-                  itemStyle={{ color: '#4c7eff' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
+                  labelStyle={{ color: '#1b1f24' }}
+                  itemStyle={{ color: '#3d6bff' }}
                 />
                 <Line
                   type="monotone"
                   dataKey="est1RM"
-                  stroke="#4c7eff"
+                  stroke="#3d6bff"
                   strokeWidth={2}
                   dot={<PRDot />}
                   activeDot={{ r: 5 }}
@@ -144,15 +144,15 @@ export default function Progress() {
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={{ stroke: '#33393f' }} tickLine={false} />
-                <YAxis tick={{ fill: '#9aa0a6', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
+                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
-                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
-                  labelStyle={{ color: '#e8e6e1' }}
-                  itemStyle={{ color: '#c9f24b' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
+                  labelStyle={{ color: '#1b1f24' }}
+                  itemStyle={{ color: '#78b000' }}
                 />
-                <Line type="monotone" dataKey="volume" stroke="#c9f24b" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="volume" stroke="#78b000" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

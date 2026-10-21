@@ -3,8 +3,8 @@ import { ResponsiveContainer, ComposedChart, Bar, Cell, Line, XAxis, YAxis, Tool
 import { dailyVolume, syncRunsFromGarminCache } from '../db'
 
 // Bar colours by kind of lifting day (see loadType.js). Blue is kept for the run line.
-const TYPE_COLOURS = { Heavy: '#ff8a4c', Volume: '#c9f24b', Mixed: '#5ad1c0' }
-const NO_TYPE_COLOUR = '#9aa0a6'
+const TYPE_COLOURS = { Heavy: '#f07a2d', Volume: '#78b000', Mixed: '#1fb5a3' }
+const NO_TYPE_COLOUR = '#6b7280'
 
 function formatDateShort(iso) {
   const d = new Date(iso + 'T00:00:00')
@@ -46,24 +46,24 @@ export default function LiftChart({ refreshKey }) {
               )}
               {hasRuns && (
                 <span>
-                  <span style={{ color: '#4c7eff' }}>━</span> Run (km)
+                  <span style={{ color: '#3d6bff' }}>━</span> Run (km)
                 </span>
               )}
             </div>
             <ResponsiveContainer width="100%" height={180}>
               <ComposedChart data={volumeData} margin={{ top: 8, right: hasRuns ? 0 : 8, left: 0, bottom: 8 }}>
-                <CartesianGrid stroke="#33393f" strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: '#9aa0a6', fontSize: 10 }}
-                  axisLine={{ stroke: '#33393f' }}
+                  tick={{ fill: '#6b7280', fontSize: 10 }}
+                  axisLine={{ stroke: '#dfe3e8' }}
                   tickLine={false}
                   interval="preserveStartEnd"
                   minTickGap={24}
                 />
                 <YAxis
                   yAxisId="kg"
-                  tick={{ fill: '#9aa0a6', fontSize: 11 }}
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={36}
@@ -73,7 +73,7 @@ export default function LiftChart({ refreshKey }) {
                   <YAxis
                     yAxisId="km"
                     orientation="right"
-                    tick={{ fill: '#4c7eff', fontSize: 11 }}
+                    tick={{ fill: '#3d6bff', fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                     width={30}
@@ -81,9 +81,9 @@ export default function LiftChart({ refreshKey }) {
                   />
                 )}
                 <Tooltip
-                  contentStyle={{ background: '#1e2226', border: '1px solid #33393f', borderRadius: 8 }}
-                  labelStyle={{ color: '#e8e6e1' }}
-                  cursor={{ fill: '#ffffff', opacity: 0.05 }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
+                  labelStyle={{ color: '#1b1f24' }}
+                  cursor={{ fill: '#000000', opacity: 0.05 }}
                   formatter={(value, name, item) => {
                     if (name !== 'volume') return [`${value} km`, 'Run']
                     const p = item && item.payload
@@ -91,7 +91,7 @@ export default function LiftChart({ refreshKey }) {
                     return [`${Number(value).toLocaleString()} kg${detail}`, 'Lifted']
                   }}
                 />
-                <Bar yAxisId="kg" dataKey="volume" fill="#c9f24b" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                <Bar yAxisId="kg" dataKey="volume" fill="#78b000" radius={[2, 2, 0, 0]} isAnimationActive={false}>
                   {volumeData.map((d) => (
                     <Cell key={d.date} fill={TYPE_COLOURS[d.loadType] || NO_TYPE_COLOUR} />
                   ))}
@@ -101,10 +101,10 @@ export default function LiftChart({ refreshKey }) {
                     yAxisId="km"
                     dataKey="runKm"
                     type="monotone"
-                    stroke="#4c7eff"
+                    stroke="#3d6bff"
                     strokeWidth={2}
                     connectNulls
-                    dot={{ r: 3, fill: '#4c7eff', stroke: '#14171a', strokeWidth: 1 }}
+                    dot={{ r: 3, fill: '#3d6bff', stroke: '#ffffff', strokeWidth: 1 }}
                     activeDot={{ r: 5 }}
                     isAnimationActive={false}
                   />
