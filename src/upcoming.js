@@ -97,6 +97,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       forcedOff.set(slot, 'long run day')
       for (let k = 1; k <= 2; k++) legsBlocked.set(addDays(slot, -k), 'long run coming')
       legsBlocked.set(slot, 'long run day')
+      for (let k = 1; k <= 2; k++) legsBlocked.set(addDays(slot, k), 'recovering from the long run')
     }
   }
   for (const race of RACES) {
@@ -105,6 +106,13 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     forcedOff.set(addDays(race.date, -1), 'day before the race')
     for (let k = 0; k <= 7; k++) legsBlocked.set(addDays(race.date, -k), 'taper: no heavy leg work')
     if (race.kind === 'run') for (let k = 1; k <= 3; k++) legsBlocked.set(addDays(race.date, k), 'recovering from the race')
+  }
+
+  // A long run already done in the last 3 days also keeps legs off for the 2 days after it.
+  for (const r of runs) {
+    if (r.distanceKm >= 15 && r.date <= today && gap(r.date, today) <= 3) {
+      for (let k = 1; k <= 2; k++) if (!legsBlocked.has(addDays(r.date, k))) legsBlocked.set(addDays(r.date, k), 'recovering from the long run')
+    }
   }
 
   const allowed = (token, d) => {
@@ -127,11 +135,11 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   }
 
   // ---- where the rolling cycle stands ----
+  // Lifts already done in the current cycle are ticked off whatever order they were done in, so a
+  // chest day taken early is not suggested again. Days with a heart-rate block but no log are
+  // assumed to be the next lift not yet done.
   const known = !!last
   let queue = []
-  if (known) {
-    for (let i = 1; i <= 6; i++) queue.push((last.token + i) % 6)
-  }
   let todayToken = null
   const refill = () => {
     while (queue.length < 8) queue.push(((queue[queue.length - 1] ?? 4) + 1) % 6)
@@ -142,22 +150,45 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     refill()
   }
   if (known) {
-    // days since the last logged lift
-    for (let d = addDays(last.date, 1); d <= today; d = addDays(d, 1)) {
-      const loggedOn = logged.find((w) => w.date === d)
+    const done = new Set()
+    let lastTok = null
+    const loggedTokens = (d) => [...new Set(logged.filter((w) => w.date === d).map((w) => w.token))]
+    for (let d = addDays(today, -8); d <= today; d = addDays(d, 1)) {
+      let tokens = loggedTokens(d)
       const pendingToday = d === today && !lifted(d) && nowHour < 10
-      if (loggedOn) consume(loggedOn.token)
-      else if (lifted(d)) {
-        if (queue[0] === OFF) queue.shift()
-        consume(queue.find((t) => t !== OFF))
-      } else if (pendingToday) {
-        const pick = queue.find((t) => allowed(t, d))
-        if (pick != null) {
-          todayToken = pick
-          consume(pick)
+      if (!tokens.length && weightDates.has(d)) {
+        if (done.size === 5) done.clear()
+        let guess = null
+        for (let k = 1; k <= 5 && guess == null; k++) {
+          const t = ((lastTok ?? -1) + k) % 5
+          if (!done.has(t)) guess = t
         }
-      } else if (queue[0] === OFF) queue.shift()
-      refill()
+        tokens = [guess ?? 0]
+      }
+      if (tokens.length) {
+        if (done.size === 5) done.clear()
+        for (const t of tokens) {
+          if (done.has(t)) done.clear()
+          done.add(t)
+          lastTok = t
+        }
+      } else if (!pendingToday && done.size === 5) {
+        done.clear() // the off day after a full cycle
+      }
+    }
+    const from = ((lastTok ?? -1) + 1) % 5
+    const order = [0, 1, 2, 3, 4].map((i) => (from + i) % 5)
+    const remaining = order.filter((t) => !done.has(t))
+    // what is left of this cycle (in his order), then the off day, then the usual order again
+    queue = done.size === 5 ? [OFF, 0, 1, 2, 3, 4] : [...remaining, OFF, 0, 1, 2, 3, 4]
+    refill()
+    const pendingToday = !lifted(today) && nowHour < 10
+    if (pendingToday) {
+      const pick = queue.find((t) => allowed(t, today))
+      if (pick != null) {
+        todayToken = pick
+        consume(pick)
+      }
     }
   }
 
