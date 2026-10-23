@@ -150,6 +150,7 @@ export const WEEKS = [
     km: 'about 20 km running',
     sessions: [
       'Two easy runs of 6 to 8 km, heart rate under 148. Finish one with 4 relaxed strides.',
+      'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes).',
       'If the long run slipped, Sat 31 Oct is the last day for it: 18 km at most.',
       'Lifting stays heavy; trim leg sets by about 40%.'
     ]
@@ -162,6 +163,7 @@ export const WEEKS = [
     sessions: [
       'Easy 5 km, then easy 5 km with 4 strides.',
       'Sat 7 Nov: 10 to 12 km easy, with the middle 3 km at race pace (6:15 to 6:30 per km).',
+      'Thu 5 Nov: light swim with your daughter. It is easy on the legs.',
       'Lifting: same weights, about 40% fewer sets, nothing new. Legs light or skipped.',
       'Sleep is the main job this week: 7.5 hours or more.'
     ]
@@ -185,7 +187,7 @@ export const WEEKS = [
     km: 'little running',
     sessions: [
       'Sun to Wed: no running. Walk, easy spin, mobility.',
-      'From Thu: 20 to 30 minutes of easy jogging if the legs feel normal, heart rate under 140.',
+      'Thu 19 Nov: light swim with your daughter, good for tired legs. Then 20 to 30 minutes of easy jogging if the legs feel normal, heart rate under 140.',
       'Lifting light, stop well short of failure. Legs from the following week.'
     ]
   },
@@ -208,7 +210,7 @@ export const PHASE_WEEKS = {
     'Tue 5 to 6pm: swim for technique, 30 to 40 minutes of drills and easy lengths (about 800 to 1,200 m). Book a few lessons or a video check in the first month.',
     'Sat: long easy ride, 25 to 60 km, adding 5 to 10 km a month. Keep heart rate under about 140 on the bike until you have measured it.',
     'Off day from lifting: easy run of 40 to 60 minutes, heart rate under 148. This keeps your run base at 15 to 25 km a week.',
-    'Strongly recommended: a second short swim (25 to 30 minutes) each week. Swimming skill comes from frequency more than distance.'
+    'Thu: the light swim with your daughter is your second swim each week. Frequency builds swimming skill more than distance, so keep it going.'
   ],
   build: [
     'Tue: swim, building to 2,500 m a session (drills, then steady sets). First sea swims in May, in the wetsuit.',
@@ -301,8 +303,19 @@ export const GROUND_RULES = [
   { title: 'Niggles', text: 'A niggle that lasts 3 days means an easy week.' },
   { title: 'Term time', text: '2 sessions a week (swim Tuesday 5 to 6pm, ride Saturday), on top of lifting.' },
   { title: 'School holidays', text: '4 to 6 sessions a week.' },
-  { title: 'July and August', text: 'Main block, 7 to 8 sessions a week.' }
+  { title: 'July and August', text: 'Main block, 7 to 8 sessions a week.' },
+  {
+    title: 'Thursday family swim',
+    text: 'A light swim with your daughter, 20 to 30 minutes. Play first, then a few relaxed lengths of technique. It is water practice, not training load.'
+  }
 ]
+
+// A light swim with his daughter every Thursday, from the first Thursday after the marathon block
+// started. It is easy, short and for fun, so it counts as practice in the water, not training load.
+export const FAMILY_SWIM = {
+  from: '2026-10-29',
+  text: 'Light swim with your daughter, 20 to 30 min, play first'
+}
 
 // The weekday lifting rules start once swim and ride sessions begin (after the 15 Nov recovery).
 export const SWIM_RIDE_FROM = '2026-11-15'

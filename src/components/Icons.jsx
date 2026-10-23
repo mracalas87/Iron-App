@@ -1,5 +1,5 @@
 // Small sport icons for the Home screen: lifting, running, swimming and cycling.
-const COLOURS = { Lift: '#f07a2d', Run: '#3d6bff', Race: '#3d6bff', Swim: '#1fb5a3', Ride: '#8a5cf5' }
+const COLOURS = { Lift: '#f07a2d', Run: '#3d6bff', Race: '#3d6bff', Swim: '#1fb5a3', Ride: '#8a5cf5', Rest: '#6f7f99' }
 
 const SHAPES = {
   Lift: (
@@ -11,6 +11,11 @@ const SHAPES = {
     <>
       <circle cx="16" cy="4.5" r="1.6" />
       <path d="M14 8.5 11 14l4 1.5-.5 4.5M11 14l-3.5 3-2.5-.5M14 8.5l3.5 2 2.5-1M14 8.5l-3.5 1-2 2.5" />
+    </>
+  ),
+  Rest: (
+    <>
+      <path d="M3 16h4l-4 5h4M9.5 9.5h5l-5 6.5h5M16 3h5.5l-5.5 7.5h5.5" />
     </>
   ),
   Swim: (
@@ -29,7 +34,7 @@ const SHAPES = {
   )
 }
 
-// kind: 'Lift' | 'Run' | 'Race' | 'Swim' | 'Ride'
+// kind: 'Lift' | 'Run' | 'Race' | 'Swim' | 'Ride' | 'Rest' (the ZZZ for an off day)
 export default function SportIcon({ kind, size = 18 }) {
   const shape = SHAPES[kind === 'Race' ? 'Run' : kind]
   if (!shape) return <span>{kind}</span>

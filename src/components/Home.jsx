@@ -11,6 +11,9 @@ import { syncRunsFromGarminCache } from '../db'
 
 const tooltipStyle = { background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }
 
+// An off day or no-lifting day gets the ZZZ, any other lift the dumbbell.
+const liftKind = (text) => (/^(Off day|No lifting)/.test(text || '') ? 'Rest' : 'Lift')
+
 const firstSentence = (s) => (s ? s.split(/(?<=\.)\s/)[0] : s)
 
 function timeAgo(iso) {
@@ -203,7 +206,7 @@ export default function Home({ activeWorkout, onOpenLog }) {
                   )}
                   {advice.strength && (
                     <div className="advice-line">
-                      <SportIcon kind="Lift" /> {advice.liftBrief || firstSentence(advice.strength)}
+                      <SportIcon kind={liftKind(advice.liftBrief || advice.strength)} /> {advice.liftBrief || firstSentence(advice.strength)}
                     </div>
                   )}
                   {advice.run && (
@@ -233,7 +236,7 @@ export default function Home({ activeWorkout, onOpenLog }) {
               <div className="up-body">
                 {row.lift && (
                   <div>
-                    <SportIcon kind="Lift" /> {row.lift}
+                    <SportIcon kind={liftKind(row.lift)} /> {row.lift}
                   </div>
                 )}
                 {row.cardio.map((c) => (

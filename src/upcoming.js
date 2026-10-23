@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -270,6 +270,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       } else if (ph.run && ph.run.kind !== 'cap' && off && !forcedOff.has(d)) {
         row.cardio.push({ kind: 'Run', text: `Easy run, heart rate under ${EASY_HR}` })
       }
+      if (d >= FAMILY_SWIM.from && dow(d) === 4) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
       if (d >= SWIM_RIDE_FROM) {
         const w = dow(d)
         if (w === 2) row.cardio.push({ kind: 'Swim', text: `${swimText(d)}, 5-6pm` })
