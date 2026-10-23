@@ -76,7 +76,7 @@ function rideText(d, lastRideKm) {
 
 // today: ISO date. nowHour: local hour, used to tell whether today's lift is still to come.
 // weightDates: Set of dates with a morning heart-rate block. rides: [{ date, km }].
-export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), strain = 'steady', days = 4 }) {
+export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), strain = 'steady', days = 7 }) {
   const lifted = (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
   const logged = workouts
     .map((w) => {
