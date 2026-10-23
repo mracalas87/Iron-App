@@ -103,6 +103,7 @@ export function buildAdvice({
     return {
       zone: null,
       position: null,
+      level: null,
       headline: 'Tap Refresh to load your Garmin data and get advice.',
       plan: plan ? plan.line : null,
       strength: null,
@@ -159,6 +160,8 @@ export function buildAdvice({
 
   const zone = readiness <= 2 ? 'Go' : readiness <= 4 ? 'Easy' : 'Rest'
   const position = POSITIONS[Math.min(readiness, POSITIONS.length - 1)]
+  // six steps on the bar: Go is 4 to 6, Easy 2 to 3, Rest 1
+  const barLevel = 6 - Math.min(readiness, 5)
 
   const yesterdayRuns = runs.filter((r) => r.date === yesterday)
   const yesterdayKm = yesterdayRuns.reduce((s, r) => s + r.distanceKm, 0)
@@ -188,7 +191,7 @@ export function buildAdvice({
   // an inferred heart-rate block or a workout logged in the Log tab, and either way an
   // easy run later can still be advised.
   if (runs.some((r) => r.date === today)) {
-    return { zone, position, headline: 'Already trained today. Recover well tonight.', plan: plan ? plan.line : null, strength: null, run: null, tip, reasons }
+    return { zone, position, level: barLevel, headline: 'Already trained today. Recover well tonight.', plan: plan ? plan.line : null, strength: null, run: null, tip, reasons }
   }
   const loggedToday = workouts.find((w) => w.date === today) || null
   const liftedToday = weightsToday || loggedToday
@@ -268,5 +271,5 @@ export function buildAdvice({
   else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
   else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
 
-  return { zone, position, headline, plan: plan ? plan.line : null, strength, liftBrief, run, tip, reasons }
+  return { zone, position, level: barLevel, headline, plan: plan ? plan.line : null, strength, liftBrief, run, tip, reasons }
 }

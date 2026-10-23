@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import LiftChart from './LiftChart'
+import SportIcon from './Icons'
 import { useGarmin } from '../useGarmin'
-import { buildReport, ZONES, statusColor } from '../report'
+import { buildReport, statusColor } from '../report'
 import { ADVICE_ZONES } from '../trainingAdvice'
 import { getVitals, trendLabel, round } from '../vitals'
 import { loadLocalEntries, buildFeed } from '../activityFeed'
@@ -26,28 +27,48 @@ function shortDate(iso) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-function Gauge({ zones, status, position }) {
+// Six steps from worst (1) to best (6). Steps up to the current one are lit and the current one
+// is outlined, so the bar shows exactly where you are. `groups` names the bands left to right.
+function StepBar({ level, colours, groups }) {
   return (
-    <div className="gauge slim">
-      <div className="gauge-track">
-        {zones.map((z) => (
-          <div
-            key={z.key}
-            className={`gauge-seg${status === z.key ? ' active' : ''}`}
-            style={{ background: z.color, opacity: position == null ? 0.15 : undefined }}
-          />
-        ))}
+    <div className="gauge slim steps">
+      <div className="steps-track">
+        {colours.map((c, i) => {
+          const n = i + 1
+          const cls = level == null ? '' : n === level ? ' current on' : n < level ? ' on' : ''
+          return <div key={n} className={`step${cls}`} style={{ background: c }} />
+        })}
       </div>
-      {position != null && <div className="gauge-marker" style={{ left: `${position}%` }} />}
       <div className="gauge-labels">
-        {zones.map((z) => (
-          <span key={z.key} style={status === z.key ? { color: z.color, fontWeight: 700 } : undefined}>
-            {z.key}
+        {groups.map((g) => (
+          <span key={g.key} style={{ flex: g.count, color: level != null && g.has(level) ? g.color : undefined, fontWeight: level != null && g.has(level) ? 700 : undefined }}>
+            {g.key}
           </span>
         ))}
       </div>
     </div>
   )
+}
+
+const RED = 'var(--danger)'
+const AMBER = 'var(--warn)'
+const GREEN = 'var(--pr)'
+// Recovery: Strained 1-3, Fair 4-5, Good 6. Training: Rest 1, Easy 2-3, Go 4-6.
+const RECOVERY_BAR = {
+  colours: [RED, RED, RED, AMBER, AMBER, GREEN],
+  groups: [
+    { key: 'Strained', count: 3, color: RED, has: (l) => l <= 3 },
+    { key: 'Fair', count: 2, color: AMBER, has: (l) => l === 4 || l === 5 },
+    { key: 'Good', count: 1, color: GREEN, has: (l) => l === 6 }
+  ]
+}
+const TRAINING_BAR = {
+  colours: [RED, AMBER, AMBER, GREEN, GREEN, GREEN],
+  groups: [
+    { key: 'Rest', count: 1, color: RED, has: (l) => l === 1 },
+    { key: 'Easy', count: 2, color: AMBER, has: (l) => l === 2 || l === 3 },
+    { key: 'Go', count: 3, color: GREEN, has: (l) => l >= 4 }
+  ]
 }
 
 function MiniTile({ label, value, unit, trend }) {
@@ -162,14 +183,14 @@ export default function Home({ activeWorkout, onOpenLog }) {
                   <div>
                     <div className="duo-label">Recovery</div>
                     <div className="duo-value" style={{ color: statusColor(stats.status) }}>{stats.status}</div>
-                    <Gauge zones={ZONES} status={stats.status} position={stats.position} />
+                    <StepBar level={stats.level} {...RECOVERY_BAR} />
                   </div>
                   <div>
                     <div className="duo-label">Training</div>
                     <div className="duo-value" style={{ color: ADVICE_ZONES.find((z) => z.key === advice.zone)?.color }}>
                       {advice.zone || '—'}
                     </div>
-                    <Gauge zones={ADVICE_ZONES} status={advice.zone} position={advice.position} />
+                    <StepBar level={advice.level} {...TRAINING_BAR} />
                   </div>
                 </div>
 
@@ -182,12 +203,12 @@ export default function Home({ activeWorkout, onOpenLog }) {
                   )}
                   {advice.strength && (
                     <div className="advice-line">
-                      <span>Lift</span> {advice.liftBrief || firstSentence(advice.strength)}
+                      <SportIcon kind="Lift" /> {advice.liftBrief || firstSentence(advice.strength)}
                     </div>
                   )}
                   {advice.run && (
                     <div className="advice-line">
-                      <span>Run</span> {firstSentence(advice.run)}
+                      <SportIcon kind="Run" /> {firstSentence(advice.run)}
                     </div>
                   )}
                   {stats.trend && stats.trend.level !== 'steady' && (
@@ -212,12 +233,12 @@ export default function Home({ activeWorkout, onOpenLog }) {
               <div className="up-body">
                 {row.lift && (
                   <div>
-                    <span>Lift</span> {row.lift}
+                    <SportIcon kind="Lift" /> {row.lift}
                   </div>
                 )}
                 {row.cardio.map((c) => (
                   <div key={c.kind + c.text}>
-                    <span>{c.kind}</span> {c.text}
+                    <SportIcon kind={c.kind} /> {c.text}
                   </div>
                 ))}
                 {row.note && <div className="up-note">{row.note}</div>}

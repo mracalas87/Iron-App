@@ -597,6 +597,36 @@ select:focus-visible {
   margin-top: 6px;
 }
 
+.steps-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+}
+
+.steps .step {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  opacity: 0.2;
+}
+
+.steps .step.on {
+  opacity: 1;
+}
+
+.steps .step.current {
+  height: 16px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--chalk);
+}
+
+.sport-icon {
+  vertical-align: -4px;
+  margin-right: 4px;
+  flex: none;
+}
+
 .advice {
   margin-top: 14px;
   padding-top: 12px;

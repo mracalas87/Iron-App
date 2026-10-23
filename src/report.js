@@ -113,6 +113,8 @@ export async function buildReport() {
   const hasHealth = v.hasData
   const status = !hasHealth ? '—' : points === 0 ? 'Good' : points <= 2 ? 'Fair' : 'Strained'
   const position = hasHealth ? MARKER_POSITIONS[Math.min(points, MARKER_POSITIONS.length - 1)] : null
+  // six steps on the bar: no warning points is 6, five or more is 1
+  const level = hasHealth ? 6 - Math.min(points, 5) : null
 
   // ---- Detailed vitals rows ----
   const rhrRange = spread(v.restingHR.values)
@@ -305,6 +307,7 @@ export async function buildReport() {
   return {
     status,
     position,
+    level,
     reasons,
     trend,
     advice,
