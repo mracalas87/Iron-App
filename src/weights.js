@@ -2,9 +2,9 @@
 //
 // Andy lifts most mornings and does not record it, but it shows as a block of
 // raised heart rate: 95+ bpm for 20+ minutes between 04:30 and 10:00 that is not
-// part of a recorded activity. Runs are always recorded, so their time (plus 15
-// minutes of recovery afterwards) is excluded first, which stops a run being
-// counted as weights. A day can have both.
+// part of a recorded activity. Runs are always recorded, so their time (plus a
+// recovery allowance that grows with the run) is excluded first, which stops a run
+// being counted as weights. A day can have both.
 //
 // Input samples are [epochMs, bpm] pairs, as returned by /api/garmin in
 // days[].hrHigh. Times are read in the phone's local timezone.
@@ -21,11 +21,16 @@ const minuteOfDay = (ms) => {
   return d.getHours() * 60 + d.getMinutes()
 }
 
-// startTimeLocal looks like "2026-10-04 07:22:56"
+// startTimeLocal looks like "2026-10-04 07:22:56". Heart rate stays high for a while after
+// an effort, and longer after a long one (a 2 hour run keeps it above 95 for well over an
+// hour), so the recovery time after an activity grows with its length: 15 minutes at least,
+// three quarters of its duration, 2 hours at most.
 function busyWindow(activity) {
   const t = activity.startTimeLocal || ''
   const start = Number(t.slice(11, 13)) * 60 + Number(t.slice(14, 16))
-  return [start - 5, start + Math.ceil((activity.duration || 0) / 60) + 15]
+  const minutes = Math.ceil((activity.duration || 0) / 60)
+  const recovery = Math.min(120, Math.max(15, Math.round(minutes * 0.75)))
+  return [start - 5, start + minutes + recovery]
 }
 
 export function detectWeights(samples, activitiesThatDay = []) {
