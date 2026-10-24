@@ -149,9 +149,11 @@ export const WEEKS = [
     label: 'Hold',
     km: 'about 20 km running',
     sessions: [
-      'Two easy runs of 6 to 8 km, heart rate under 148. Finish one with 4 relaxed strides.',
+      'The last long run is done (21.3 km on 24 Oct). Nothing longer than 10 km from here to race day.',
+      'Sun 25 and Mon 26: no running or only a 5 km very easy jog (heart rate under 140). The long run was a big load.',
+      'Wed 28: 6 to 8 km easy, heart rate under 148, with 4 relaxed strides at the end.',
+      'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit near 140 to 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
       'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes).',
-      'If the long run slipped, Sat 31 Oct is the last day for it: 18 km at most.',
       'Lifting stays heavy; trim leg sets by about 40%.'
     ]
   },
@@ -159,9 +161,9 @@ export const WEEKS = [
     start: '2026-11-02',
     end: '2026-11-08',
     label: 'Taper',
-    km: 'about 16 km running',
+    km: 'about 20 km running',
     sessions: [
-      'Easy 5 km, then easy 5 km with 4 strides.',
+      'Tue 3: easy 5 km. Thu 5: easy 4 to 5 km with 4 strides.',
       'Sat 7 Nov: 10 to 12 km easy, with the middle 3 km at race pace (6:15 to 6:30 per km).',
       'Thu 5 Nov: light swim with your daughter. It is easy on the legs.',
       'Lifting: same weights, about 40% fewer sets, nothing new. Legs light or skipped.',
