@@ -195,7 +195,11 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     const fresh = (t) => lastDate.has(t) && gap(lastDate.get(t), today) < 5
     cycleDone = byOldest().filter(fresh).map((t) => CYCLE[t])
     cycleDue = byOldest().filter((t) => !fresh(t)).map((t) => CYCLE[t])
-    const pendingToday = !lifted(today) && nowHour < 10
+    // A run recorded today with no lift found means today was the run day: no lift is still to come,
+    // so nothing is used up and the next lift in the cycle stays next.
+    const ranToday = runs.some((r) => r.date === today)
+    const pendingToday = !lifted(today) && nowHour < 10 && !ranToday
+    if (ranToday && !lifted(today)) todayToken = OFF
     if (pendingToday) {
       const pick = restNeeded(today) || strain === 'alert' ? undefined : byOldest().find((t) => allowed(t, today))
       todayToken = pick ?? OFF
