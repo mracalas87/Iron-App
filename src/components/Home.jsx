@@ -76,9 +76,11 @@ function StepBar({ level, colours, groups }) {
 const RED = 'var(--danger)'
 const AMBER = 'var(--warn)'
 const GREEN = 'var(--pr)'
+// Six bars that shift a step at a time from red on the left to green on the right.
+const GRADIENT = ['#d93a2f', '#ea6a2b', '#f2a31b', '#c7bc1c', '#84b92a', '#3f9d2e']
 // Recovery: Strained 1-3, Fair 4-5, Good 6. Training: Rest 1, Easy 2-3, Go 4-6.
 const RECOVERY_BAR = {
-  colours: [RED, RED, RED, AMBER, AMBER, GREEN],
+  colours: GRADIENT,
   groups: [
     { key: 'Strained', count: 3, color: RED, has: (l) => l <= 3 },
     { key: 'Fair', count: 2, color: AMBER, has: (l) => l === 4 || l === 5 },
@@ -86,7 +88,7 @@ const RECOVERY_BAR = {
   ]
 }
 const TRAINING_BAR = {
-  colours: [RED, AMBER, AMBER, GREEN, GREEN, GREEN],
+  colours: GRADIENT,
   groups: [
     { key: 'Rest', count: 1, color: RED, has: (l) => l === 1 },
     { key: 'Easy', count: 2, color: AMBER, has: (l) => l === 2 || l === 3 },
