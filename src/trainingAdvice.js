@@ -263,7 +263,7 @@ export function buildAdvice({
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
   else if (level === 'concern' && plan?.runKind !== 'race' && !(plan?.runKind === 'long-due' && plan.slot === today)) run = `Recovery trend is down: easy and short, heart rate under ${EASY_HR_CAP}, or skip it.`
-  else if (longRunYesterday) run = zone === 'Go' ? 'Long run yesterday, so keep it easy or lift instead.' : 'Long run yesterday, so skip it or a short easy jog.'
+  else if (longRunYesterday) run = zone === 'Go' ? `Long run yesterday: rest, or 30 minutes at most, very easy, heart rate under 140. Stop if the legs feel heavy.` : 'Long run yesterday, so skip it or take a walk.'
   else if (hardRunYesterday) run = `Hard run yesterday, so keep today easy, heart rate under ${EASY_HR_CAP}.`
   else if (legsToday) run = `${legsLabel(today)} done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
   else if (legsYesterday) run = `${legsLabel(yesterday)} were yesterday, so keep it easy and flat, heart rate under ${EASY_HR_CAP}, and leave hard efforts for another day.`
