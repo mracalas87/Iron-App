@@ -153,7 +153,7 @@ export const WEEKS = [
       'Sun 25 and Mon 26: no running or only a 5 km very easy jog (heart rate under 140). The long run was a big load.',
       'Wed 28: 6 to 8 km easy, heart rate under 148, with 4 relaxed strides at the end.',
       'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit near 140 to 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
-      'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes).',
+      'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes, about 400 to 600 m, heart rate under 130).',
       'Lifting stays heavy; trim leg sets by about 40%.'
     ]
   },
@@ -199,8 +199,8 @@ export const WEEKS = [
     label: 'Baseline tests',
     km: '12 to 16 km running',
     sessions: [
-      'Tue 24 Nov, 5 to 6pm: 400 m swim test. Time it, note how it felt.',
-      'Sat 28 Nov: 30 km easy ride. Note average speed and heart rate.',
+      'Tue 24 Nov, 5 to 6pm: 400 m swim test at a steady effort, heart rate under 150. Time it, note how it felt.',
+      'Sat 28 Nov: 30 km ride, steady, heart rate under 145 (zone 2). Note average speed and heart rate.',
       'One or two easy runs of 6 to 8 km.'
     ]
   }
@@ -215,13 +215,49 @@ export const RUN_SESSIONS = {
   '2026-10-30': 'Race rhythm 8 to 10 km: middle 4 to 5 km at 6:15 to 6:30 per km, heart rate 140 to 146 (zone 2). Gel at 45 min',
   '2026-11-03': 'Easy 5 km, heart rate under 148 (zone 2)',
   '2026-11-05': 'Easy 4 to 5 km, heart rate under 148 (zone 2), 4 strides',
-  '2026-11-07': 'Taper run 10 to 12 km, easy, middle 3 km at 6:15 to 6:30 per km, heart rate under 150 (zone 2-3)',
   '2026-11-10': 'Easy 4 km, heart rate under 148 (zone 2), 4 strides',
   '2026-11-12': 'Shake-out 3 km, very easy, heart rate under 140 (zone 1-2)',
   '2026-11-19': 'Easy jog 20 to 30 min, heart rate under 140 (zone 1-2)',
   '2026-11-22': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   '2026-11-26': 'Easy 6 to 8 km, heart rate under 148 (zone 2)'
 }
+
+// Distance in km at the low end of a planned run ("Easy 6 to 8 km" is 6, "Optional 5 km" is 5).
+const sessionKm = (text) => {
+  const m = (text || '').match(/(\d+(?:\.\d+)?)(?: to \d+(?:\.\d+)?)? km/)
+  return m ? Number(m[1]) : null
+}
+
+// Planned runs already done early. If Andy swaps days and runs a day or two before a planned run,
+// that run counts for it (at least three quarters of its distance), so it is not asked for again.
+// Returns the set of planned dates that are done. runs: [{ date, distanceKm }].
+export function doneEarly(runs, today = localToday()) {
+  const planned = Object.keys(RUN_SESSIONS).filter((d) => d >= today).sort()
+  const done = new Set()
+  const recent = (runs || [])
+    .filter((r) => r.date <= today && daysBetween(r.date, today) <= 2)
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+  for (const r of recent) {
+    // a run on its own planned day is just that run
+    const own = sessionKm(RUN_SESSIONS[r.date])
+    if (own != null && r.distanceKm >= 0.75 * own) continue
+    const match = planned.find((d) => {
+      const gapDays = daysBetween(r.date, d)
+      const km = sessionKm(RUN_SESSIONS[d])
+      return !done.has(d) && gapDays >= 1 && gapDays <= 2 && km != null && r.distanceKm >= 0.75 * km
+    })
+    if (match) done.add(match)
+  }
+  return done
+}
+
+// The taper long run follows the long-run slot (normally Saturday 7 Nov), so it is not tied to one date.
+export const TAPER_RUN = 'Taper run 10 to 12 km, easy, middle 3 km at 6:15 to 6:30 per km, heart rate under 150 (zone 2-3)'
+
+// Between these dates every run is spelled out in RUN_SESSIONS (or the long-run slot), so a day with
+// no run there means no run, and no extra easy run is added on off days.
+export const DATED_RUNS_FROM = '2026-10-25'
+export const DATED_RUNS_UNTIL = '2026-11-30'
 
 // An easy run on an off day, by phase, when no dated run is planned.
 export function easyRunText(phaseId) {
@@ -240,20 +276,20 @@ export function easyRunText(phaseId) {
 // A typical week for each longer phase, used once the dated weeks run out.
 export const PHASE_WEEKS = {
   base: [
-    'Tue 5 to 6pm: swim for technique, 30 to 40 minutes of drills and easy lengths (about 800 to 1,200 m). Book a few lessons or a video check in the first month.',
+    'Tue 5 to 6pm: swim for technique, 30 to 40 minutes of drills and easy lengths (about 800 to 1,200 m, heart rate under 135). Book a few lessons or a video check in the first month.',
     'Sat: long easy ride, 25 to 60 km, adding 5 to 10 km a month. Keep heart rate under about 140 on the bike until you have measured it.',
     'Off day from lifting: easy run of 40 to 60 minutes, heart rate under 148. This keeps your run base at 15 to 25 km a week.',
     'Thu: the light swim with your daughter is your second swim each week. Frequency builds swimming skill more than distance, so keep it going.'
   ],
   build: [
-    'Tue: swim, building to 2,500 m a session (drills, then steady sets). First sea swims in May, in the wetsuit.',
+    'Tue: swim, building to 2,500 m a session (drills, then steady sets, heart rate under 140). First sea swims in May, in the wetsuit.',
     'Sat: long ride of 60 to 85 km, hilly, 10 km longer than the last at most. From May, one ride a month ends with a 15 minute easy run.',
     'Off day: easy run of 45 to 75 minutes. A long run of 14 to 18 km every second week keeps the half marathon legs.',
     'Keep 80% of it easy. One short hard effort a week is plenty.'
   ],
   summer: [
     'Each week: 2 swims, 2 rides (one long), 2 runs and 1 brick (ride then run), plus 30 to 40 minutes of light lifting.',
-    'Peak weeks: long rides of 90, 95, 100 and 90 km. After one a week, run 5 to 8 km easy straight off the bike.',
+    'Peak weeks: long rides of 90, 95, 100 and 90 km at heart rate under 145 (zone 2). After one a week, run 5 to 8 km easy straight off the bike.',
     'Easier week: cut everything by about a third.',
     'Practise race fuelling on every long ride: 60 to 90 g of carbohydrate an hour.'
   ],
@@ -347,7 +383,7 @@ export const GROUND_RULES = [
 // started. It is easy, short and for fun, so it counts as practice in the water, not training load.
 export const FAMILY_SWIM = {
   from: '2026-10-29',
-  text: 'Light swim with your daughter, 20 to 30 min, play first'
+  text: 'Light swim with your daughter, 20 to 30 min (about 400 to 600 m), play first, heart rate under 130'
 }
 
 // The weekday lifting rules start once swim and ride sessions begin (after the 15 Nov recovery).

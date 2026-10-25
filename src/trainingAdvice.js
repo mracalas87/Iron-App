@@ -1,4 +1,4 @@
-import { currentPhase, liftRuleFor, RUN_SESSIONS, easyRunText } from './plan'
+import { currentPhase, liftRuleFor, RUN_SESSIONS, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly } from './plan'
 import { longRunSlot } from './upcoming'
 import { trendNote } from './trends'
 
@@ -46,7 +46,7 @@ function planInfo(today, runs, workouts, race) {
     const cap = label[0].toUpperCase() + label.slice(1)
     info.done =
       runs
-        .filter((r) => r.date >= phase.start && r.date <= today && r.distanceKm >= min)
+        .filter((r) => r.date >= phase.start && r.date <= today && r.distanceKm >= min * 0.9)
         .sort((a, b) => (a.date < b.date ? 1 : -1))[0] || null
     if (info.done) {
       info.runKind = 'long-done'
@@ -250,7 +250,7 @@ export function buildAdvice({
   if (plan) {
     if (plan.runKind === 'long-due') {
       const { min, max } = plan.run
-      if (plan.slot === today && zone === 'Go') planRun = RUN_SESSIONS[today] ? `${RUN_SESSIONS[today]}.` : `Long run today: ${min}-${max} km, easy, heart rate under ${EASY_HR_CAP} (zone 2).`
+      if (plan.slot === today && zone === 'Go') planRun = plan.phase.id === 'marathon-taper' ? `${TAPER_RUN}.` : `Long run today: ${min}-${max} km, easy, heart rate under ${EASY_HR_CAP} (zone 2).`
       else if (plan.slot === today)
         planRun = `Long run is due: go only if you feel good, keep it near ${min} km, heart rate under ${EASY_HR_CAP} (zone 2), otherwise move it a day.`
       else planRun = `Easy 4-5 km at most, heart rate under ${EASY_HR_CAP} (zone 2), so your legs are fresh for the long run on ${dayName(plan.slot)}.`
@@ -260,7 +260,13 @@ export function buildAdvice({
     else planRun = `${easyRunText(plan.phase.id)}. 80% of training stays easy.`
     // a run planned for this exact date wins over the general line, except race day and a long run due today
     const dated = RUN_SESSIONS[today]
-    if (dated && plan.runKind !== 'race' && !(plan.runKind === 'long-due' && plan.slot === today)) planRun = `${dated}.`
+    const doneAlready = doneEarly(runs, today).has(today)
+    const slotToday = plan.runKind === 'long-due' && plan.slot === today
+    if (dated && doneAlready && plan.runKind !== 'race') planRun = 'Today\'s run was done early. Rest, or an easy walk.'
+    else if (dated && plan.runKind !== 'race' && !slotToday) planRun = `${dated}.`
+    else if (!dated && today >= DATED_RUNS_FROM && today <= DATED_RUNS_UNTIL && plan.runKind !== 'race' && !slotToday) {
+      planRun = 'No run planned today. Rest, or an easy walk.'
+    }
   }
 
   let run

@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, RUN_SESSIONS, easyRunText } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, RUN_SESSIONS, easyRunText, TAPER_RUN, DATED_RUNS_UNTIL, doneEarly } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -53,25 +53,36 @@ const rangeMax = (text) => {
   return nums ? Math.max(...nums.map(Number)) : null
 }
 
+// Swim and ride suggestions always give a distance and a heart rate. Wrist heart rate in the pool
+// reads low and unreliable, so swim figures are an easy-effort guide; bike zones are about 5 to 10 bpm
+// under running ones until measured on the road.
 function swimText(d) {
-  if (d >= '2026-11-24' && d <= '2026-11-30') return '400 m swim baseline test'
-  if (d < '2026-11-24') return 'Recovery: easy swim or rest'
-  const t = monthTarget(d)
-  if (t && t.swim) return `Swim: ${t.swim}`
-  return 'Swim session'
+  if (d < '2026-11-24') return 'Easy swim 400 to 600 m, relaxed, heart rate under 135 (zone 1-2)'
+  if (d <= '2026-11-30') return '400 m baseline swim, steady effort, time it, heart rate under 150 (zone 2-3)'
+  if (d < '2027-02-01') return 'Technique 800 to 1,200 m: drills and easy lengths, heart rate under 135 (zone 1-2)'
+  if (d < '2027-03-01') return 'Technique 1,000 to 1,500 m, building to 1,500 m continuous, heart rate under 140 (zone 2)'
+  if (d < '2027-07-01') return 'Swim 1,800 to 2,500 m: drills then steady sets, heart rate under 140 (zone 2)'
+  if (d < '2027-09-01') return 'Swim 2,000 to 2,500 m steady, heart rate under 140 (zone 2)'
+  if (d < '2027-10-09') return 'Swim 1,500 to 2,000 m in race-effort blocks, heart rate under 145 (zone 2)'
+  return 'Swim 1,200 to 1,500 m easy, 4 x 100 m at race effort, heart rate under 135 (zone 1-2)'
 }
 
 function rideText(d, lastRideKm) {
-  if (d >= '2026-11-28' && d <= '2026-11-30') return '30 km ride baseline test'
-  if (d < '2026-11-28') return 'Recovery: easy spin or rest'
+  if (d < '2026-11-28') return 'Easy spin 20 to 30 km, heart rate under 130 (zone 1), or rest'
+  if (d <= '2026-11-30') return '30 km baseline ride, steady, heart rate under 145 (zone 2). Note average speed and heart rate'
+  if (d >= '2027-07-01' && d < '2027-09-01') {
+    return 'Long ride 90 to 100 km, steady, heart rate under 145 (zone 2). Eat 60 to 90 g of carbohydrate an hour'
+  }
+  if (d >= '2027-09-01' && d < '2027-10-09') return 'Ride 60 to 70 km in race-effort blocks, heart rate under 145 (zone 2)'
+  if (d >= '2027-10-09') return 'Easy ride 30 to 40 km with a few race-pace efforts, heart rate under 140 (zone 1-2)'
   const t = monthTarget(d)
   const max = rangeMax(t && t.ride)
   if (lastRideKm && max && /\bto\b/.test(t.ride)) {
-    const cap = Math.min(lastRideKm + 10, max)
-    return `Ride up to ${cap} km (last long ride ${Math.round(lastRideKm)} km, plus 10 at most)`
+    const cap = Math.round(Math.min(lastRideKm + 10, max))
+    return `Ride up to ${cap} km (last long ride ${Math.round(lastRideKm)} km, plus 10 at most), heart rate under 140 (zone 1-2)`
   }
-  if (t && t.ride) return `Ride: ${t.ride}`
-  return 'Ride session'
+  if (t && t.ride) return `Ride ${t.ride}, heart rate under 140 (zone 1-2)`
+  return 'Ride 40 to 60 km, heart rate under 140 (zone 1-2)'
 }
 
 // today: ISO date. nowHour: local hour, used to tell whether today's lift is still to come.
@@ -90,7 +101,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   const lastRideKm = rides.length ? rides.slice().sort((a, b) => (a.date < b.date ? 1 : -1))[0].km : null
 
   // ---- fixed points: the long run, the race, and how legs clash with them ----
-  const longDone = (phase) => runs.some((r) => r.date >= phase.start && r.date <= today && r.distanceKm >= phase.run.min)
+  const longDone = (phase) => runs.some((r) => r.date >= phase.start && r.date <= today && r.distanceKm >= phase.run.min * 0.9)
   const longRuns = new Map() // date -> text
   const legsBlocked = new Map() // date -> reason
   const forcedOff = new Map() // date -> reason (no lift that day)
@@ -105,7 +116,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       const doneLong = runs.filter((r) => r.distanceKm >= 15 && r.date <= today).map((r) => r.date).sort().pop() || null
       const slot = longRunSlot(ph, d, lastLegs ? lastLegs.date : null, doneLong)
       const cap = ph.run.label[0].toUpperCase() + ph.run.label.slice(1)
-      longRuns.set(slot, `${cap} ${ph.run.min}-${ph.run.max} km, easy, heart rate under ${EASY_HR} (zone 2)`)
+      longRuns.set(slot, ph.id === 'marathon-taper' ? TAPER_RUN : `${cap} ${ph.run.min}-${ph.run.max} km, easy, heart rate under ${EASY_HR} (zone 2)`)
       forcedOff.set(slot, 'long run day')
       for (let k = 1; k <= 2; k++) legsBlocked.set(addDays(slot, -k), 'long run coming')
       legsBlocked.set(slot, 'long run day')
@@ -116,6 +127,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     if (race.date < today || race.date > addDays(end, 3)) continue
     forcedOff.set(race.date, 'race day')
     forcedOff.set(addDays(race.date, -1), 'day before the race')
+    if (race.kind === 'run') forcedOff.set(addDays(race.date, -2), 'two days before the race')
     for (let k = 0; k <= 7; k++) legsBlocked.set(addDays(race.date, -k), 'taper: no heavy leg work')
     if (race.kind === 'run') for (let k = 1; k <= 5; k++) legsBlocked.set(addDays(race.date, k), 'recovering from the race')
   }
@@ -234,6 +246,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
 
   const todayLift = todayToken == null ? null : todayToken === OFF ? 'Off day' : liftLabel(todayToken)
 
+  const ranEarly = doneEarly(runs, today)
   const rows = []
   for (let n = 1; n <= days; n++) {
     const d = addDays(today, n)
@@ -265,7 +278,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     const cp = currentPhase(d)
     const race = RACES.find((r) => r.date === d)
     if (race) {
-      row.cardio.push({ kind: race.kind === 'run' ? 'Run' : 'Race', text: `${race.name}. ${race.pacing.split('. ')[0]}${race.kind === 'run' ? '. Heart rate under 155' : ''}` })
+      row.cardio.push({ kind: race.kind === 'run' ? 'Run' : 'Race', text: `${race.name}. ${race.pacing.split('. ')[0]}${race.kind === 'run' ? '. Heart rate under 155' : '. Swim 1.9 km, bike 90 km (heart rate under 145), run 21.1 km (first 3 km under 150)'}` })
     } else if (cp.state === 'active') {
       const ph = cp.phase
       // the run: the long run slot, then the dated run in the plan, then an easy run on an off day
@@ -273,8 +286,9 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       const w = dow(d)
       const swimOrRide = d >= SWIM_RIDE_FROM && (w === 2 || w === 6)
       if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] || longRuns.get(d) })
-      else if (RUN_SESSIONS[d] && !forcedOff.has(d)) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] })
-      else if (off && !forcedOff.has(d) && !swimOrRide) row.cardio.push({ kind: 'Run', text: easyRunText(ph.id) })
+      else if (RUN_SESSIONS[d] && ranEarly.has(d)) row.note = row.note ? `${row.note}. Run done early` : 'Run done early, none today'
+      else if (RUN_SESSIONS[d] && !(forcedOff.get(d) || '').startsWith('recovery trend')) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] })
+      else if (off && !forcedOff.has(d) && !swimOrRide && d > DATED_RUNS_UNTIL) row.cardio.push({ kind: 'Run', text: easyRunText(ph.id) })
       if (d >= FAMILY_SWIM.from && dow(d) === 4) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
       if (d >= SWIM_RIDE_FROM) {
         const w = dow(d)
