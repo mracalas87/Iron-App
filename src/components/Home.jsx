@@ -227,9 +227,11 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
     <div>
       {!garmin.accessKey && !hasData && <KeyCard onSave={garmin.saveKey} />}
 
-      <button className="btn btn-primary" style={{ marginBottom: 12 }} onClick={onOpenLog}>
-        {activeWorkout ? 'Resume workout' : 'Log workout'}
-      </button>
+      {activeWorkout && (
+        <button className="btn btn-primary" style={{ marginBottom: 12 }} onClick={onOpenLog}>
+          Resume workout
+        </button>
+      )}
 
       <Panel id="today" icon="today" title="Today" summary={todaySummary} preview={todayPreview} open={open} onToggle={setOpen} onHome={goHome}>
         <div className="status-head">

@@ -138,3 +138,83 @@ export function PanelIcon({ name, size = 20 }) {
     </span>
   )
 }
+
+// Small muscle group logos for the Log page: a mini body with the working muscle filled in.
+// Shoulders, chest and abs are the front view; back and hamstrings are the rear view (hamstrings
+// include the glutes); biceps and triceps are single arm pictograms.
+const BODY = (
+  <g stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.3" fill="none">
+    <circle cx="12" cy="3.6" r="2" />
+    <rect x="8" y="7" width="8" height="10" rx="1.8" />
+    <rect x="3.6" y="7.4" width="3" height="8.4" rx="1.5" />
+    <rect x="17.4" y="7.4" width="3" height="8.4" rx="1.5" />
+    <rect x="8" y="17.6" width="3.4" height="5.6" rx="1.5" />
+    <rect x="12.6" y="17.6" width="3.4" height="5.6" rx="1.5" />
+  </g>
+)
+
+const MUSCLE_SHAPES = {
+  Shoulders: (
+    <>
+      {BODY}
+      <circle cx="6" cy="8.9" r="2.4" fill="currentColor" />
+      <circle cx="18" cy="8.9" r="2.4" fill="currentColor" />
+    </>
+  ),
+  Chest: (
+    <>
+      {BODY}
+      <rect x="8" y="7.3" width="8" height="4.6" rx="1.8" fill="currentColor" />
+    </>
+  ),
+  Abs: (
+    <>
+      {BODY}
+      <rect x="9.3" y="12.3" width="5.4" height="4.7" rx="1.3" fill="currentColor" />
+    </>
+  ),
+  Back: (
+    <>
+      {BODY}
+      <path d="M8 7.3h8l-1.4 6.2-2.6 3-2.6-3z" fill="currentColor" />
+    </>
+  ),
+  Quads: (
+    <>
+      {BODY}
+      <rect x="8" y="17.6" width="3.4" height="5.6" rx="1.5" fill="currentColor" />
+      <rect x="12.6" y="17.6" width="3.4" height="5.6" rx="1.5" fill="currentColor" />
+    </>
+  ),
+  Hamstrings: (
+    <>
+      {BODY}
+      <path d="M7.6 17.4c1.2-2 3-2 4.4 0 1.4-2 3.2-2 4.4 0z" fill="currentColor" />
+      <rect x="8" y="18.2" width="3.4" height="5" rx="1.5" fill="currentColor" />
+      <rect x="12.6" y="18.2" width="3.4" height="5" rx="1.5" fill="currentColor" />
+    </>
+  ),
+  Biceps: (
+    <>
+      <path d="M4 19c0-5.5 3-9.5 8.5-9.5l3 1 2.5-5.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="9.6" cy="13" r="3" fill="currentColor" />
+    </>
+  ),
+  Triceps: (
+    <>
+      <rect x="8.5" y="2.5" width="7" height="14" rx="3.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeOpacity="0.5" />
+      <rect x="8.5" y="8.5" width="7" height="8" rx="3.5" fill="currentColor" />
+      <path d="M12 18.5v3m-2-2l2 2 2-2" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  )
+}
+
+export function MuscleIcon({ name, size = 24 }) {
+  const shape = MUSCLE_SHAPES[name]
+  if (!shape) return <span>{name.slice(0, 2).toUpperCase()}</span>
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      {shape}
+    </svg>
+  )
+}

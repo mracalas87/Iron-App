@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
-import RunLogger from './RunLogger'
-import { saveWorkout, MUSCLE_GROUPS } from '../db'
+import { MuscleIcon } from './Icons'
+import MuscleHeatmap from './MuscleHeatmap'
+import { saveWorkout, listWorkouts, MUSCLE_GROUPS } from '../db'
 
 function todayISO() {
   const d = new Date()
@@ -9,10 +10,43 @@ function todayISO() {
   return d.toISOString().slice(0, 10)
 }
 
+// A colour for each muscle group tile.
+const GROUP_STYLE = {
+  Shoulders: { colour: '#f07a2d' },
+  Chest: { colour: '#d93a2f' },
+  Back: { colour: '#3d6bff' },
+  Quads: { colour: '#1f9d55' },
+  Hamstrings: { colour: '#0f8f7f' },
+  Biceps: { colour: '#8a5cf5' },
+  Triceps: { colour: '#c2417d' },
+  Abs: { colour: '#5a6a85' }
+}
+
+const daysSince = (iso) => Math.round((new Date(todayISO() + 'T12:00:00Z') - new Date(iso + 'T12:00:00Z')) / 86400000)
+const lastTrained = (iso) => {
+  if (!iso) return 'Not logged yet'
+  const n = daysSince(iso)
+  return n <= 0 ? 'Trained today' : n === 1 ? 'Last trained yesterday' : `Last trained ${n} days ago`
+}
+
 export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved }) {
   const [draftMuscleGroups, setDraftMuscleGroups] = useState([])
   const [saved, setSaved] = useState(false)
-  const [logMode, setLogMode] = useState('strength') // 'strength' | 'run'
+  const [lastDone, setLastDone] = useState({}) // group -> most recent date it was chosen
+
+  // When each muscle group was last trained, from the logged workouts.
+  useEffect(() => {
+    let live = true
+    listWorkouts().then((all) => {
+      if (!live) return
+      const map = {}
+      for (const w of all) for (const g of w.muscleGroups || []) if (!map[g] || w.date > map[g]) map[g] = w.date
+      setLastDone(map)
+    })
+    return () => {
+      live = false
+    }
+  }, [saved, activeWorkout])
 
   function toggleDraftGroup(group) {
     setDraftMuscleGroups((groups) =>
@@ -43,53 +77,51 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
   }
 
   if (!activeWorkout) {
+    const picked = draftMuscleGroups
+    const startLabel =
+      picked.length === 0 ? 'Start workout' : `Start ${picked.length > 2 ? `${picked[0]} +${picked.length - 1}` : picked.join(' + ')}`
+
     return (
-      <div>
-        <div className="chip-row" style={{ marginBottom: 12 }}>
-          <button
-            className={`chip${logMode === 'strength' ? ' active' : ''}`}
-            onClick={() => setLogMode('strength')}
-          >
-            Strength
-          </button>
-          <button className={`chip${logMode === 'run' ? ' active' : ''}`} onClick={() => setLogMode('run')}>
-            Run
-          </button>
-        </div>
-
-        {logMode === 'run' && <RunLogger />}
-
-        {logMode === 'strength' && (
-          <>
-        <div className="card">
-          <div className="field">
-            <label>Muscle groups</label>
-            <div className="chip-row">
-              {MUSCLE_GROUPS.map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  className={`chip${draftMuscleGroups.includes(g) ? ' active' : ''}`}
-                  onClick={() => toggleDraftGroup(g)}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
+      <div className="log-page">
+        <div className="log-head">
+          <div className="log-title">What are you training?</div>
+          <div className="log-hint">
+            Tap the main muscle first, then any extras.
           </div>
-          <button className="btn btn-primary" onClick={startWorkout} style={{ marginTop: 14 }}>
-            Record workout
-          </button>
         </div>
-        {saved && (
-          <p style={{ color: 'var(--pr)', fontSize: 13, textAlign: 'center' }}>
-            Workout saved.
-          </p>
-        )}
 
-          </>
-        )}
+        <div className="mg-list">
+          {MUSCLE_GROUPS.map((g) => {
+            const order = picked.indexOf(g)
+            const on = order >= 0
+            const style = GROUP_STYLE[g] || { colour: '#5a6a85' }
+            return (
+              <button
+                key={g}
+                type="button"
+                className={`mg-btn${on ? ' on' : ''}`}
+                style={{ '--mg': style.colour }}
+                onClick={() => toggleDraftGroup(g)}
+                aria-pressed={on}
+              >
+                <span className="mg-ico"><MuscleIcon name={g} size={26} /></span>
+                <span className="mg-text">
+                  <span className="mg-name">{g}</span>
+                  <span className="mg-sub">{lastTrained(lastDone[g])}</span>
+                </span>
+                <span className="mg-badge">{on ? (order === 0 ? 'Main' : order + 1) : ''}</span>
+              </button>
+            )
+          })}
+        </div>
 
+        <MuscleHeatmap refreshKey={saved} />
+
+        {saved && <p className="log-saved">Workout saved.</p>}
+
+        <button className="btn btn-primary log-start" onClick={startWorkout}>
+          {startLabel}
+        </button>
       </div>
     )
   }
