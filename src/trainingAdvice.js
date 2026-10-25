@@ -1,4 +1,4 @@
-import { currentPhase, liftRuleFor } from './plan'
+import { currentPhase, liftRuleFor, RUN_SESSIONS, easyRunText } from './plan'
 import { longRunSlot } from './upcoming'
 import { trendNote } from './trends'
 
@@ -250,26 +250,29 @@ export function buildAdvice({
   if (plan) {
     if (plan.runKind === 'long-due') {
       const { min, max } = plan.run
-      if (plan.slot === today && zone === 'Go') planRun = `Long run today: ${min}-${max} km, easy, heart rate under ${EASY_HR_CAP}.`
+      if (plan.slot === today && zone === 'Go') planRun = RUN_SESSIONS[today] ? `${RUN_SESSIONS[today]}.` : `Long run today: ${min}-${max} km, easy, heart rate under ${EASY_HR_CAP} (zone 2).`
       else if (plan.slot === today)
-        planRun = `Long run is due: go only if you feel good, keep it near ${min} km under ${EASY_HR_CAP} bpm, otherwise move it a day.`
-      else planRun = `Short easy run at most, so your legs are fresh for the long run on ${dayName(plan.slot)}.`
-    } else if (plan.runKind === 'long-done') planRun = `Easy and short, heart rate under ${EASY_HR_CAP}.`
-    else if (plan.runKind === 'cap') planRun = `Easy, no more than ${plan.run.max} km.`
+        planRun = `Long run is due: go only if you feel good, keep it near ${min} km, heart rate under ${EASY_HR_CAP} (zone 2), otherwise move it a day.`
+      else planRun = `Easy 4-5 km at most, heart rate under ${EASY_HR_CAP} (zone 2), so your legs are fresh for the long run on ${dayName(plan.slot)}.`
+    } else if (plan.runKind === 'long-done') planRun = `Easy 5-6 km, heart rate under ${EASY_HR_CAP} (zone 2).`
+    else if (plan.runKind === 'cap') planRun = `Easy, up to ${plan.run.max} km, heart rate under ${EASY_HR_CAP} (zone 2).`
     else if (plan.runKind === 'race') planRun = plan.line
-    else planRun = `Easy only, heart rate under ${EASY_HR_CAP}. 80% of training stays easy.`
+    else planRun = `${easyRunText(plan.phase.id)}. 80% of training stays easy.`
+    // a run planned for this exact date wins over the general line, except race day and a long run due today
+    const dated = RUN_SESSIONS[today]
+    if (dated && plan.runKind !== 'race' && !(plan.runKind === 'long-due' && plan.slot === today)) planRun = `${dated}.`
   }
 
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
-  else if (level === 'concern' && plan?.runKind !== 'race' && !(plan?.runKind === 'long-due' && plan.slot === today)) run = `Recovery trend is down: easy and short, heart rate under ${EASY_HR_CAP}, or skip it.`
-  else if (longRunYesterday) run = zone === 'Go' ? `Long run yesterday: rest, or 30 minutes at most, very easy, heart rate under 140. Stop if the legs feel heavy.` : 'Long run yesterday, so skip it or take a walk.'
-  else if (hardRunYesterday) run = `Hard run yesterday, so keep today easy, heart rate under ${EASY_HR_CAP}.`
-  else if (legsToday) run = `${legsLabel(today)} done today, so keep any run short and very easy, heart rate under ${EASY_HR_CAP}, or skip it.`
-  else if (legsYesterday) run = `${legsLabel(yesterday)} were yesterday, so keep it easy and flat, heart rate under ${EASY_HR_CAP}, and leave hard efforts for another day.`
+  else if (level === 'concern' && plan?.runKind !== 'race' && !(plan?.runKind === 'long-due' && plan.slot === today)) run = `Recovery trend is down: easy 4-5 km, heart rate under 140 (zone 1-2), or skip it.`
+  else if (longRunYesterday) run = zone === 'Go' ? `Long run yesterday: rest, or 30 minutes (about 4-5 km) at most, very easy, heart rate under 140 (zone 1-2). Stop if the legs feel heavy.` : 'Long run yesterday, so skip it or take a walk.'
+  else if (hardRunYesterday) run = `Hard run yesterday, so keep today easy: 5-6 km, heart rate under ${EASY_HR_CAP} (zone 2).`
+  else if (legsToday) run = `${legsLabel(today)} done today, so keep any run to 3-4 km, very easy, heart rate under 140 (zone 1-2), or skip it.`
+  else if (legsYesterday) run = `${legsLabel(yesterday)} were yesterday, so keep it to 5-6 km, easy and flat, heart rate under ${EASY_HR_CAP} (zone 2), and leave hard efforts for another day.`
   else if (planRun) run = planRun
-  else if (zone === 'Go') run = liftedToday ? `Easy to steady is fine. Finish 2-3 hours before bed.` : 'A normal session is fine.'
-  else run = `Easy conversational pace, shorter than usual, heart rate under ${EASY_HR_CAP}.`
+  else if (zone === 'Go') run = liftedToday ? `Easy 6-8 km, heart rate under ${EASY_HR_CAP} (zone 2). Finish 2-3 hours before bed.` : `Easy 6-8 km, heart rate under ${EASY_HR_CAP} (zone 2), or steady up to 159 (zone 3).`
+  else run = `Easy 4-5 km at conversational pace, heart rate under ${EASY_HR_CAP} (zone 2).`
 
   return { zone, position, level: barLevel, headline, plan: plan ? plan.line : null, strength, liftBrief, run, tip, reasons }
 }

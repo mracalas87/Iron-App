@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, RUN_SESSIONS, easyRunText } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -105,7 +105,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       const doneLong = runs.filter((r) => r.distanceKm >= 15 && r.date <= today).map((r) => r.date).sort().pop() || null
       const slot = longRunSlot(ph, d, lastLegs ? lastLegs.date : null, doneLong)
       const cap = ph.run.label[0].toUpperCase() + ph.run.label.slice(1)
-      longRuns.set(slot, `${cap} ${ph.run.min}-${ph.run.max} km, easy (heart rate under ${EASY_HR})`)
+      longRuns.set(slot, `${cap} ${ph.run.min}-${ph.run.max} km, easy, heart rate under ${EASY_HR} (zone 2)`)
       forcedOff.set(slot, 'long run day')
       for (let k = 1; k <= 2; k++) legsBlocked.set(addDays(slot, -k), 'long run coming')
       legsBlocked.set(slot, 'long run day')
@@ -265,21 +265,21 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     const cp = currentPhase(d)
     const race = RACES.find((r) => r.date === d)
     if (race) {
-      row.cardio.push({ kind: race.kind === 'run' ? 'Run' : 'Race', text: `${race.name}. ${race.pacing.split('. ')[0]}` })
+      row.cardio.push({ kind: race.kind === 'run' ? 'Run' : 'Race', text: `${race.name}. ${race.pacing.split('. ')[0]}${race.kind === 'run' ? '. Heart rate under 155' : ''}` })
     } else if (cp.state === 'active') {
       const ph = cp.phase
-      if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: longRuns.get(d) })
-      else if (ph.run && ph.run.kind === 'cap' && off && !forcedOff.has(d)) {
-        row.cardio.push({ kind: 'Run', text: `Easy run, up to ${ph.run.max} km` })
-      } else if (ph.run && ph.run.kind !== 'cap' && off && !forcedOff.has(d)) {
-        row.cardio.push({ kind: 'Run', text: `Easy run, heart rate under ${EASY_HR}` })
-      }
+      // the run: the long run slot, then the dated run in the plan, then an easy run on an off day
+      // (never on the swim or ride day, or a rest day the recovery trend asked for)
+      const w = dow(d)
+      const swimOrRide = d >= SWIM_RIDE_FROM && (w === 2 || w === 6)
+      if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] || longRuns.get(d) })
+      else if (RUN_SESSIONS[d] && !forcedOff.has(d)) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] })
+      else if (off && !forcedOff.has(d) && !swimOrRide) row.cardio.push({ kind: 'Run', text: easyRunText(ph.id) })
       if (d >= FAMILY_SWIM.from && dow(d) === 4) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
       if (d >= SWIM_RIDE_FROM) {
         const w = dow(d)
         if (w === 2) row.cardio.push({ kind: 'Swim', text: `${swimText(d)}, 5-6pm` })
         else if (w === 6) row.cardio.push({ kind: 'Ride', text: rideText(d, lastRideKm) })
-        else if (off && !longRuns.has(d)) row.cardio.push({ kind: 'Run', text: `Easy run, heart rate under ${EASY_HR}` })
       }
     }
     rows.push(row)

@@ -206,6 +206,37 @@ export const WEEKS = [
   }
 ]
 
+// The run planned for a date: distance and heart rate zone. Zones are Andy's own: zone 1 100 to 132,
+// zone 2 133 to 148, zone 3 149 to 159, zone 4 160 to 170, zone 5 171 and up.
+export const RUN_SESSIONS = {
+  '2026-10-25': 'Rest, or 20 to 30 min very easy, heart rate under 140 (zone 1-2)',
+  '2026-10-26': 'Optional 5 km very easy, heart rate under 140 (zone 1-2)',
+  '2026-10-28': 'Easy 6 to 8 km, heart rate under 148 (zone 2), 4 strides at the end',
+  '2026-10-30': 'Race rhythm 8 to 10 km: middle 4 to 5 km at 6:15 to 6:30 per km, heart rate 140 to 146 (zone 2). Gel at 45 min',
+  '2026-11-03': 'Easy 5 km, heart rate under 148 (zone 2)',
+  '2026-11-05': 'Easy 4 to 5 km, heart rate under 148 (zone 2), 4 strides',
+  '2026-11-07': 'Taper run 10 to 12 km, easy, middle 3 km at 6:15 to 6:30 per km, heart rate under 150 (zone 2-3)',
+  '2026-11-10': 'Easy 4 km, heart rate under 148 (zone 2), 4 strides',
+  '2026-11-12': 'Shake-out 3 km, very easy, heart rate under 140 (zone 1-2)',
+  '2026-11-19': 'Easy jog 20 to 30 min, heart rate under 140 (zone 1-2)',
+  '2026-11-22': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
+  '2026-11-26': 'Easy 6 to 8 km, heart rate under 148 (zone 2)'
+}
+
+// An easy run on an off day, by phase, when no dated run is planned.
+export function easyRunText(phaseId) {
+  const hr = 'heart rate under 148 (zone 2)'
+  return (
+    {
+      base: `Easy 6 to 9 km (40 to 60 min), ${hr}`,
+      build: `Easy 7 to 11 km (45 to 75 min), ${hr}`,
+      summer: `Easy 6 to 8 km, ${hr}`,
+      final: `Easy 5 to 6 km, ${hr}`,
+      taper: `Easy 4 to 5 km, ${hr}`
+    }[phaseId] || `Easy 5 to 6 km, ${hr}`
+  )
+}
+
 // A typical week for each longer phase, used once the dated weeks run out.
 export const PHASE_WEEKS = {
   base: [
