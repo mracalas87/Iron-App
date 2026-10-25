@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import LiftChart from './LiftChart'
 import SportIcon from './Icons'
+import Panel from './Panel'
 import { useGarmin } from '../useGarmin'
 import { buildReport, statusColor } from '../report'
 import { ADVICE_ZONES } from '../trainingAdvice'
@@ -121,11 +122,23 @@ function KeyCard({ onSave }) {
   )
 }
 
-export default function Home({ activeWorkout, onOpenLog }) {
+export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   const garmin = useGarmin()
+  const [open, setOpen] = useState(null) // which panel is open: 'today' | 'coming' | ... | null
   const [stats, setStats] = useState(null)
   const [local, setLocal] = useState([])
   const idle = !activeWorkout // recompute after a workout is saved
+
+  // Close the open panel and return to the top of the panel list.
+  const goHome = () => {
+    setOpen(null)
+    document.querySelector('.app-content')?.scrollTo({ top: 0 })
+    window.scrollTo({ top: 0 })
+  }
+  // Tapping the Home tab while already on Home does the same.
+  useEffect(() => {
+    if (resetTick) goHome()
+  }, [resetTick])
 
   // Recompute whenever Garmin data changes or a workout has just been saved.
   useEffect(() => {
@@ -161,75 +174,93 @@ export default function Home({ activeWorkout, onOpenLog }) {
     : ''
   const sleepTrend = trendLabel(v.sleepHours.delta != null ? v.sleepHours.delta * 60 : null, 'min', true)
 
+  const word = (s) => (s && s !== '—' ? s : null)
+  const nextUp = stats ? stats.upcoming.rows.find((r) => r.lift || r.cardio.length > 0) : null
+  const comingSummary = nextUp ? `${nextUp.label}: ${nextUp.lift || nextUp.cardio[0].kind}` : 'Nothing planned'
+  const statsSummary = `HRV ${round(v.hrv.latest) ?? '—'} · RHR ${round(v.restingHR.latest) ?? '—'} · Sleep ${v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) + 'h' : '—'}`
+  const monthSummary = stats ? `${stats.sessionsThisWeek} lifts · ${stats.runKmThisWeek} km run this week` : 'Lifting and running'
+  const recentSummary = feed.length ? `${feed[0].title} · ${shortDate(feed[0].date)}` : 'Nothing yet'
+
+  const todaySummary =
+    stats && hasData ? (
+      <>
+        Recovery <b style={{ color: statusColor(stats.status) }}>{word(stats.status)}</b> · Training{' '}
+        <b style={{ color: ADVICE_ZONES.find((z) => z.key === advice.zone)?.color }}>{advice.zone || '—'}</b>
+      </>
+    ) : (
+      'Tap to load your Garmin data'
+    )
+
   return (
     <div>
-      {!garmin.accessKey && !hasData ? (
-        <KeyCard onSave={garmin.saveKey} />
-      ) : (
-        <div className="card">
-          <div className="status-head">
-            <div className="dim-label" style={{ margin: 0 }}>
-              Today{garmin.data?.fetchedAt ? ` · synced ${timeAgo(garmin.data.fetchedAt)}` : ''}
-            </div>
-            <button className="refresh-btn" onClick={garmin.refresh} disabled={garmin.loading || !garmin.accessKey}>
-              {garmin.loading ? 'Refreshing…' : '↻ Refresh'}
-            </button>
+      {!garmin.accessKey && !hasData && <KeyCard onSave={garmin.saveKey} />}
+
+      <button className="btn btn-primary" style={{ marginBottom: 12 }} onClick={onOpenLog}>
+        {activeWorkout ? 'Resume workout' : 'Log workout'}
+      </button>
+
+      <Panel id="today" icon="today" title="Today" summary={todaySummary} open={open} onToggle={setOpen} onHome={goHome}>
+        <div className="status-head">
+          <div className="dim-label" style={{ margin: 0 }}>
+            {garmin.data?.fetchedAt ? `Synced ${timeAgo(garmin.data.fetchedAt)}` : 'Not synced yet'}
           </div>
-          {garmin.error && <div className="err-line">{garmin.error}</div>}
-
-          {!hasData ? (
-            <div className="dim-text" style={{ padding: '10px 0 2px' }}>Tap Refresh to load your Garmin data.</div>
-          ) : (
-            stats && (
-              <>
-                <div className="duo">
-                  <div>
-                    <div className="duo-label">Recovery</div>
-                    <div className="duo-value" style={{ color: statusColor(stats.status) }}>{stats.status}</div>
-                    <StepBar level={stats.level} {...RECOVERY_BAR} />
-                  </div>
-                  <div>
-                    <div className="duo-label">Training</div>
-                    <div className="duo-value" style={{ color: ADVICE_ZONES.find((z) => z.key === advice.zone)?.color }}>
-                      {advice.zone || '—'}
-                    </div>
-                    <StepBar level={advice.level} {...TRAINING_BAR} />
-                  </div>
-                </div>
-
-                <div className="advice">
-                  <div className="advice-headline">{advice.headline}</div>
-                  {advice.plan && (
-                    <div className="advice-line">
-                      <span>Plan</span> {advice.plan}
-                    </div>
-                  )}
-                  {advice.strength && (
-                    <div className="advice-line">
-                      <SportIcon kind={liftKind(advice.liftBrief || advice.strength)} /> {advice.liftBrief || firstSentence(advice.strength)}
-                    </div>
-                  )}
-                  {advice.run && (
-                    <div className="advice-line">
-                      <SportIcon kind="Run" /> {firstSentence(advice.run)}
-                    </div>
-                  )}
-                  {stats.trend && stats.trend.level !== 'steady' && (
-                    <div className={`trend-line ${stats.trend.level}`}>
-                      <span>Trend</span> {stats.trend.summary}
-                    </div>
-                  )}
-                  {reasonsLine && <div className="advice-why">{reasonsLine}</div>}
-                </div>
-              </>
-            )
-          )}
+          <button className="refresh-btn" onClick={garmin.refresh} disabled={garmin.loading || !garmin.accessKey}>
+            {garmin.loading ? 'Refreshing…' : '↻ Refresh'}
+          </button>
         </div>
-      )}
+        {garmin.error && <div className="err-line">{garmin.error}</div>}
+
+        {!hasData ? (
+          <div className="dim-text" style={{ padding: '10px 0 2px' }}>Tap Refresh to load your Garmin data.</div>
+        ) : (
+          stats && (
+            <>
+              <div className="duo">
+                <div>
+                  <div className="duo-label">Recovery</div>
+                  <div className="duo-value" style={{ color: statusColor(stats.status) }}>{stats.status}</div>
+                  <StepBar level={stats.level} {...RECOVERY_BAR} />
+                </div>
+                <div>
+                  <div className="duo-label">Training</div>
+                  <div className="duo-value" style={{ color: ADVICE_ZONES.find((z) => z.key === advice.zone)?.color }}>
+                    {advice.zone || '—'}
+                  </div>
+                  <StepBar level={advice.level} {...TRAINING_BAR} />
+                </div>
+              </div>
+
+              <div className="advice">
+                <div className="advice-headline">{advice.headline}</div>
+                {advice.plan && (
+                  <div className="advice-line">
+                    <span>Plan</span> {advice.plan}
+                  </div>
+                )}
+                {advice.strength && (
+                  <div className="advice-line">
+                    <SportIcon kind={liftKind(advice.liftBrief || advice.strength)} /> {advice.liftBrief || firstSentence(advice.strength)}
+                  </div>
+                )}
+                {advice.run && (
+                  <div className="advice-line">
+                    <SportIcon kind="Run" /> {firstSentence(advice.run)}
+                  </div>
+                )}
+                {stats.trend && stats.trend.level !== 'steady' && (
+                  <div className={`trend-line ${stats.trend.level}`}>
+                    <span>Trend</span> {stats.trend.summary}
+                  </div>
+                )}
+                {reasonsLine && <div className="advice-why">{reasonsLine}</div>}
+              </div>
+            </>
+          )
+        )}
+      </Panel>
 
       {stats && stats.upcoming.rows.length > 0 && (
-        <div className="card" style={{ padding: '4px 14px' }}>
-          <div className="dim-label" style={{ margin: '10px 0 2px' }}>Coming up</div>
+        <Panel id="coming" icon="coming" title="Coming up" summary={comingSummary} open={open} onToggle={setOpen} onHome={goHome}>
           {stats.upcoming.rows.filter((row) => row.lift || row.cardio.length > 0).map((row) => (
             <div className="up-row" key={row.date}>
               <div className="up-day">{row.label}</div>
@@ -257,26 +288,25 @@ export default function Home({ activeWorkout, onOpenLog }) {
           {!stats.upcoming.liftKnown && (
             <div className="up-note" style={{ padding: '8px 0 10px' }}>Log your lifts to see which one is next.</div>
           )}
-        </div>
+        </Panel>
       )}
 
       {hasData && (
-        <div className="mini-row">
-          <MiniTile label="HRV" value={round(v.hrv.latest)} unit="ms" trend={trendLabel(v.hrv.delta, 'ms', true)} />
-          <MiniTile label="Resting HR" value={round(v.restingHR.latest)} unit="bpm" trend={trendLabel(v.restingHR.delta, 'bpm', false)} />
-          <MiniTile label="Sleep" value={v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) : null} unit="h" trend={sleepTrend} />
-        </div>
+        <Panel id="stats" icon="stats" title="Stats" summary={statsSummary} open={open} onToggle={setOpen} onHome={goHome}>
+          <div className="mini-row" style={{ marginBottom: 0 }}>
+            <MiniTile label="HRV" value={round(v.hrv.latest)} unit="ms" trend={trendLabel(v.hrv.delta, 'ms', true)} />
+            <MiniTile label="Resting HR" value={round(v.restingHR.latest)} unit="bpm" trend={trendLabel(v.restingHR.delta, 'bpm', false)} />
+            <MiniTile label="Sleep" value={v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) : null} unit="h" trend={sleepTrend} />
+          </div>
+        </Panel>
       )}
 
-      <button className="btn btn-primary" style={{ marginBottom: 12 }} onClick={onOpenLog}>
-        {activeWorkout ? 'Resume workout' : 'Log workout'}
-      </button>
-
-      <LiftChart refreshKey={idle} />
+      <Panel id="month" icon="month" title="Last 30 days" summary={monthSummary} open={open} onToggle={setOpen} onHome={goHome}>
+        <LiftChart refreshKey={idle} bare />
+      </Panel>
 
       {feed.length > 0 && (
-        <div className="card" style={{ padding: '4px 14px' }}>
-          <div className="dim-label" style={{ margin: '10px 0 2px' }}>Recent</div>
+        <Panel id="recent" icon="recent" title="Recent" summary={recentSummary} open={open} onToggle={setOpen} onHome={goHome}>
           {feed.map((item) => (
             <div className="feed-row" key={item.key}>
               <div style={{ minWidth: 0 }}>
@@ -286,15 +316,13 @@ export default function Home({ activeWorkout, onOpenLog }) {
               <span className="feed-date">{shortDate(item.date)}</span>
             </div>
           ))}
-        </div>
+        </Panel>
       )}
 
       {stats && hasData && (
-        <details className="more">
-          <summary>Details</summary>
-
+        <Panel id="details" icon="details" title="Detailed look" summary="Vitals, trends and the full advice" open={open} onToggle={setOpen} onHome={goHome}>
           {stats.vitalRows.length > 0 && (
-            <div className="card">
+            <div>
               <div className="dim-label">Vitals</div>
               {stats.vitalRows.map((row) => (
                 <div className="vital-row" key={row.name}>
@@ -311,13 +339,13 @@ export default function Home({ activeWorkout, onOpenLog }) {
             </div>
           )}
 
-          <div className="card">
+          <div style={{ marginTop: 14 }}>
             <Trend title="HRV (ms)" data={chart} dataKey="hrv" color="#3d6bff" domain={['dataMin - 8', 'dataMax + 8']} />
             <Trend title="Resting HR (bpm)" data={chart} dataKey="rhr" color="#78b000" domain={['dataMin - 3', 'dataMax + 3']} />
             <Trend title="Sleep (h)" data={chart} dataKey="sleep" color="#1fb5a3" domain={[0, 'dataMax + 1']} />
           </div>
 
-          <div className="card">
+          <div style={{ marginTop: 14 }}>
             <div className="dim-label">Advice in full</div>
             {advice.plan && <div className="detail-line"><span>Plan</span> {advice.plan}</div>}
             {advice.strength && <div className="detail-line"><span>Lift</span> {advice.strength}</div>}
@@ -333,10 +361,10 @@ export default function Home({ activeWorkout, onOpenLog }) {
             </div>
           </div>
 
-          <button className="btn-ghost" style={{ color: 'var(--danger)', display: 'block', margin: '4px auto 0' }} onClick={garmin.forgetKey}>
+          <button className="btn-ghost" style={{ color: 'var(--danger)', display: 'block', margin: '12px auto 0' }} onClick={garmin.forgetKey}>
             Forget access key
           </button>
-        </details>
+        </Panel>
       )}
     </div>
   )

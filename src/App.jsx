@@ -13,6 +13,7 @@ export default function App() {
   const [tab, setTab] = useState('home')
   const [liftView, setLiftView] = useState('log') // 'log' | 'history' | 'progress'
   const [activeWorkout, setActiveWorkout] = useState(null)
+  const [homeTick, setHomeTick] = useState(0) // bumped when the Home tab is tapped, to close open panels
 
   function openLog() {
     setLiftView('log')
@@ -34,7 +35,7 @@ export default function App() {
       </header>
 
       <main className="app-content">
-        {tab === 'home' && <Home activeWorkout={activeWorkout} onOpenLog={openLog} />}
+        {tab === 'home' && <Home activeWorkout={activeWorkout} onOpenLog={openLog} resetTick={homeTick} />}
         {tab === 'lift' && (
           <Lift
             view={liftView}
@@ -49,7 +50,11 @@ export default function App() {
 
       <nav className="tab-bar">
         {TABS.map((t) => (
-          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
+          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => {
+              setTab(t.id)
+              if (t.id === 'home') setHomeTick((n) => n + 1)
+            }}
+          >
             {t.label}
           </button>
         ))}

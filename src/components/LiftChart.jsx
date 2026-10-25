@@ -12,7 +12,7 @@ function formatDateShort(iso) {
 }
 
 // Last 30 days: kg lifted per day (coloured by heavy, volume or mixed) and run distance.
-export default function LiftChart({ refreshKey }) {
+export default function LiftChart({ refreshKey, bare = false }) {
   const [volumeData, setVolumeData] = useState([])
 
   useEffect(() => {
@@ -27,10 +27,12 @@ export default function LiftChart({ refreshKey }) {
   return (
     <>
         {(hasLifts || hasRuns) && (
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Last 30 days
-            </div>
+          <div className={bare ? undefined : 'card'} style={{ overflow: 'hidden' }}>
+            {!bare && (
+              <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Last 30 days
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--chalk-dim)', marginBottom: 6 }}>
               {['Heavy', 'Volume', 'Mixed']
                 .filter((t) => volumeData.some((d) => d.volume > 0 && d.loadType === t))

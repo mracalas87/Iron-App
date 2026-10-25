@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import Panel from './Panel'
 import {
   RACES,
   MONTH_TARGETS,
@@ -12,22 +14,6 @@ import {
   currentPhase,
   monthTarget
 } from '../plan'
-
-function Label({ children }) {
-  return (
-    <div
-      style={{
-        fontSize: 12,
-        color: 'var(--chalk-dim)',
-        marginBottom: 8,
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em'
-      }}
-    >
-      {children}
-    </div>
-  )
-}
 
 function formatDate(iso) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -60,6 +46,14 @@ function RuleList({ rules }) {
   ))
 }
 
+function Bullets({ lines }) {
+  return lines.map((t, i) => (
+    <div key={i} style={{ fontSize: 14, lineHeight: 1.5, padding: '6px 0', borderBottom: i < lines.length - 1 ? '1px solid var(--border)' : 'none' }}>
+      {t}
+    </div>
+  ))
+}
+
 function MonthRow({ m, current }) {
   return (
     <div
@@ -88,44 +82,51 @@ function MonthRow({ m, current }) {
   )
 }
 
-function Bullets({ lines }) {
-  return lines.map((t, i) => (
-    <div key={i} style={{ fontSize: 14, lineHeight: 1.5, padding: '6px 0', borderBottom: i < lines.length - 1 ? '1px solid var(--border)' : 'none' }}>
-      {t}
-    </div>
-  ))
-}
-
 export default function Plan() {
   const today = localToday()
+  const phase = currentPhase(today)
   const week = weekPlan(today)
   const race = nextRace(today)
-  const phase = currentPhase(today)
   const thisMonth = monthTarget(today)
   const thisMonthKey = today.slice(0, 7)
   const upcomingMonths = MONTH_TARGETS.filter((m) => m.month >= thisMonthKey)
-  const preview = upcomingMonths.slice(0, 2)
-  const rest = upcomingMonths.slice(2)
+  const [open, setOpen] = useState(null) // which panel is open, or null for the list
+
+  const goHome = () => {
+    setOpen(null)
+    document.querySelector('.app-content')?.scrollTo({ top: 0 })
+    window.scrollTo({ top: 0 })
+  }
+
+  const nowSummary =
+    phase.state === 'active'
+      ? `${phase.phase.name} · week ${phase.week} of ${phase.totalWeeks}`
+      : phase.state === 'before'
+        ? `Starts ${formatDate(phase.next.start)}`
+        : 'Plan complete'
+  const targetSummary = thisMonth
+    ? [thisMonth.swim && `Swim: ${thisMonth.swim}`, thisMonth.ride && `Ride: ${thisMonth.ride}`].filter(Boolean)[0] || 'Month by month to the race'
+    : 'Month by month to the race'
+  const back = { open, onToggle: setOpen, onHome: goHome, homeLabel: 'Back to panels' }
 
   return (
     <div>
       <div className="metric-grid">
-        {RACES.map((race) => {
-          const c = countdown(daysUntil(race.date, today))
+        {RACES.map((r) => {
+          const c = countdown(daysUntil(r.date, today))
           return (
-            <div className="metric-box" key={race.id}>
-              <div className="label">{race.name}</div>
+            <div className="metric-box" key={r.id}>
+              <div className="label">{r.name}</div>
               <div className="value">{c.big}</div>
               <div style={{ fontSize: 11, color: 'var(--chalk-dim)', marginTop: 4 }}>
-                {formatDate(race.date)} · {c.small}
+                {formatDate(r.date)} · {c.small}
               </div>
             </div>
           )
         })}
       </div>
 
-      <div className="card">
-        <Label>Now</Label>
+      <Panel id="now" icon="now" title="Now" summary={nowSummary} {...back}>
         {phase.state === 'active' && (
           <>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--mono)' }}>{phase.phase.name}</div>
@@ -145,28 +146,21 @@ export default function Plan() {
           <div style={{ fontSize: 14 }}>The plan starts on {formatDate(phase.next.start)}: {phase.next.name}.</div>
         )}
         {phase.state === 'after' && <div style={{ fontSize: 14 }}>The plan is complete. Well done.</div>}
-      </div>
+      </Panel>
 
       {week && (
-        <div className="card">
-          <Label>This week</Label>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{week.label}</div>
-          {week.km && <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginTop: 2 }}>{week.km}</div>}
-          <div style={{ marginTop: 6 }}>
-            <Bullets lines={week.sessions} />
-          </div>
-        </div>
+        <Panel id="week" icon="week" title="This week" summary={week.km ? `${week.label} · ${week.km}` : week.label} {...back}>
+          <Bullets lines={week.sessions} />
+        </Panel>
       )}
 
       {RACE_PLANS[race.id] && (
-        <div className="card">
-          <Label>Race plan: {race.name}</Label>
+        <Panel id="raceplan" icon="race" title="Race plan" summary={race.name} {...back}>
           <Bullets lines={RACE_PLANS[race.id]} />
-        </div>
+        </Panel>
       )}
 
-      <div className="card">
-        <Label>Running pace and heart rate</Label>
+      <Panel id="pace" icon="pace" title="Pace and heart rate" summary="Easy under 148 · Marathon 6:15 to 6:30" {...back}>
         {RUN_GUIDE.map((z, i) => (
           <div key={z.name} style={{ padding: '8px 0', borderBottom: i < RUN_GUIDE.length - 1 ? '1px solid var(--border)' : 'none' }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>
@@ -176,51 +170,34 @@ export default function Plan() {
           </div>
         ))}
         <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginTop: 8 }}>Estimates from your Garmin runs, not a lab test.</div>
-      </div>
+      </Panel>
 
-      <div className="card">
-        <Label>Races</Label>
-        {RACES.map((race, i) => (
-          <div
-            key={race.id}
-            style={{ padding: '8px 0', borderBottom: i < RACES.length - 1 ? '1px solid var(--border)' : 'none' }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{race.name}</div>
-            <div style={{ fontSize: 13, marginTop: 2 }}>{race.goal}</div>
-            <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginTop: 2, lineHeight: 1.45 }}>{race.pacing}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card">
-        <Label>Swim and ride targets</Label>
-        {thisMonth && thisMonth.month === thisMonthKey ? null : (
+      <Panel id="targets" icon="swimride" title="Swim and ride targets" summary={targetSummary} {...back}>
+        {!(thisMonth && thisMonth.month === thisMonthKey) && (
           <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginBottom: 6 }}>No target set for this month.</div>
         )}
-        {preview.map((m) => (
+        {upcomingMonths.map((m) => (
           <MonthRow key={m.month} m={m} current={m.month === thisMonthKey} />
         ))}
-        {rest.length > 0 && (
-          <details style={{ marginTop: 8 }}>
-            <summary style={{ fontSize: 13, color: 'var(--chalk-dim)', cursor: 'pointer', padding: '4px 0' }}>
-              All months to the race
-            </summary>
-            {rest.map((m) => (
-              <MonthRow key={m.month} m={m} current={false} />
-            ))}
-          </details>
-        )}
-      </div>
+      </Panel>
 
-      <div className="card">
-        <Label>Lifting rules</Label>
+      <Panel id="races" icon="race" title="Races" summary={RACES.map((r) => r.name).join(' · ')} {...back}>
+        {RACES.map((r, i) => (
+          <div key={r.id} style={{ padding: '8px 0', borderBottom: i < RACES.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div>
+            <div style={{ fontSize: 13, marginTop: 2 }}>{r.goal}</div>
+            <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginTop: 2, lineHeight: 1.45 }}>{r.pacing}</div>
+          </div>
+        ))}
+      </Panel>
+
+      <Panel id="lifting" icon="lifting" title="Lifting rules" summary={`${LIFTING_RULES.length} rules`} {...back}>
         <RuleList rules={LIFTING_RULES} />
-      </div>
+      </Panel>
 
-      <div className="card">
-        <Label>Ground rules</Label>
+      <Panel id="ground" icon="rules" title="Ground rules" summary={`${GROUND_RULES.length} rules`} {...back}>
         <RuleList rules={GROUND_RULES} />
-      </div>
+      </Panel>
     </div>
   )
 }
