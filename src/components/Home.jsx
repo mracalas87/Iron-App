@@ -31,6 +31,25 @@ function shortDate(iso) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
+const fmtSwim = (km) => (km < 1 ? `${Math.round(km * 1000)} m` : `${round(km, 1)} km`)
+
+// What was done in the last 30 days, one icon and figure for each kind that has any.
+function Last30Chips({ last30, size = 15 }) {
+  if (!last30) return 'Lifting and running'
+  const items = [
+    last30.lifts > 0 && ['Lift', `${last30.lifts} ${last30.lifts === 1 ? 'lift' : 'lifts'}`],
+    last30.runKm > 0 && ['Run', `${last30.runKm} km`],
+    last30.swimKm > 0 && ['Swim', fmtSwim(last30.swimKm)],
+    last30.rideKm > 0 && ['Ride', `${last30.rideKm} km`]
+  ].filter(Boolean)
+  if (!items.length) return 'Nothing logged in the last 30 days'
+  return items.map(([kind, text]) => (
+    <span key={kind} className="stat-chip">
+      <SportIcon kind={kind} size={size} /> {text}
+    </span>
+  ))
+}
+
 // Six steps from worst (1) to best (6). Steps up to the current one are lit and the current one
 // is outlined, so the bar shows exactly where you are. `groups` names the bands left to right.
 function StepBar({ level, colours, groups }) {
@@ -178,18 +197,31 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   const nextUp = stats ? stats.upcoming.rows.find((r) => r.lift || r.cardio.length > 0) : null
   const comingSummary = nextUp ? `${nextUp.label}: ${nextUp.lift || nextUp.cardio[0].kind}` : 'Nothing planned'
   const statsSummary = `HRV ${round(v.hrv.latest) ?? '—'} · RHR ${round(v.restingHR.latest) ?? '—'} · Sleep ${v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) + 'h' : '—'}`
-  const monthSummary = stats ? `${stats.sessionsThisWeek} lifts · ${stats.runKmThisWeek} km run this week` : 'Lifting and running'
+  const monthSummary = (
+    <span className="chips-inline">
+      <Last30Chips last30={stats?.last30} />
+    </span>
+  )
   const recentSummary = feed.length ? `${feed[0].title} · ${shortDate(feed[0].date)}` : 'Nothing yet'
 
-  const todaySummary =
+  const todaySummary = stats && hasData ? advice.headline : 'Tap to load your Garmin data'
+  const todayPreview =
     stats && hasData ? (
-      <>
-        Recovery <b style={{ color: statusColor(stats.status) }}>{word(stats.status)}</b> · Training{' '}
-        <b style={{ color: ADVICE_ZONES.find((z) => z.key === advice.zone)?.color }}>{advice.zone || '—'}</b>
-      </>
-    ) : (
-      'Tap to load your Garmin data'
-    )
+      <div className="duo preview-bars">
+        <div>
+          <div className="duo-label">
+            Recovery · <b style={{ color: statusColor(stats.status) }}>{word(stats.status)}</b>
+          </div>
+          <StepBar level={stats.level} {...RECOVERY_BAR} />
+        </div>
+        <div>
+          <div className="duo-label">
+            Training · <b style={{ color: ADVICE_ZONES.find((z) => z.key === advice.zone)?.color }}>{advice.zone || '—'}</b>
+          </div>
+          <StepBar level={advice.level} {...TRAINING_BAR} />
+        </div>
+      </div>
+    ) : null
 
   return (
     <div>
@@ -199,7 +231,7 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
         {activeWorkout ? 'Resume workout' : 'Log workout'}
       </button>
 
-      <Panel id="today" icon="today" title="Today" summary={todaySummary} open={open} onToggle={setOpen} onHome={goHome}>
+      <Panel id="today" icon="today" title="Today" summary={todaySummary} preview={todayPreview} open={open} onToggle={setOpen} onHome={goHome}>
         <div className="status-head">
           <div className="dim-label" style={{ margin: 0 }}>
             {garmin.data?.fetchedAt ? `Synced ${timeAgo(garmin.data.fetchedAt)}` : 'Not synced yet'}
@@ -302,6 +334,9 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
       )}
 
       <Panel id="month" icon="month" title="Last 30 days" summary={monthSummary} open={open} onToggle={setOpen} onHome={goHome}>
+        <div className="chips-row">
+          <Last30Chips last30={stats?.last30} size={18} />
+        </div>
         <LiftChart refreshKey={idle} bare />
       </Panel>
 

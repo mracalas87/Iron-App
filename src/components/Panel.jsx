@@ -3,10 +3,10 @@ import { PanelIcon } from './Icons'
 // A drop-down panel: a button with an icon, the title and a one-line summary, and the content
 // underneath when it is open. Only one panel is open at a time (the parent holds `open`); the
 // button at the bottom of an open panel closes it and returns to the list.
-export default function Panel({ id, icon, title, summary, open, onToggle, onHome, homeLabel = 'Home', children }) {
+export default function Panel({ id, icon, title, summary, preview, open, onToggle, onHome, homeLabel = 'Home', children }) {
   const isOpen = open === id
   return (
-    <div className={`panel${isOpen ? ' open' : ''}`}>
+    <div className={`panel${isOpen ? ' open' : ''}${preview && !isOpen ? ' has-preview' : ''}`}>
       <button className="panel-head" onClick={() => onToggle(isOpen ? null : id)} aria-expanded={isOpen}>
         {icon && <PanelIcon name={icon} />}
         <span className="panel-text">
@@ -15,6 +15,11 @@ export default function Panel({ id, icon, title, summary, open, onToggle, onHome
         </span>
         <span className="panel-chev" aria-hidden="true">▾</span>
       </button>
+      {preview && !isOpen && (
+        <div className="panel-preview" onClick={() => onToggle(id)}>
+          {preview}
+        </div>
+      )}
       {isOpen && (
         <div className="panel-body">
           {children}

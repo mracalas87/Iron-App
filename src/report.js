@@ -7,6 +7,7 @@ import { getWeightSessions } from './weights'
 import { buildUpcoming } from './upcoming'
 import { analyzeTrends } from './trends'
 import { mergeHealthDays } from './healthHistory'
+import { mergeActivities } from './activityHistory'
 
 const HEALTH_CACHE_KEY = 'iron-health-cache'
 
@@ -275,6 +276,18 @@ export async function buildReport() {
   const rides = garminActs
     .filter((a) => /cycl|biking/.test(a.activityType?.typeKey || '') && a.distance)
     .map((a) => ({ date: actDate(a), km: a.distance / 1000 }))
+  // Last 30 days: lifts logged in the app, run distance from the run log (Garmin runs and any logged by
+  // hand), and swim and ride distance from Garmin. Anything with none in the last 30 days is left out.
+  const since30 = isoDaysAgo(29)
+  const swimRide = mergeActivities(health).filter((a) => a.date >= since30)
+  const kmOf = (list) => list.reduce((s, x) => s + x.km, 0)
+  const last30 = {
+    lifts: workouts.filter((w) => w.date >= since30).length,
+    runKm: round(runs.filter((r) => r.date >= since30).reduce((s, r) => s + r.distanceKm, 0), 1),
+    swimKm: round(kmOf(swimRide.filter((a) => a.kind === 'swim')), 2),
+    rideKm: round(kmOf(swimRide.filter((a) => a.kind === 'ride')), 1)
+  }
+
   const upcoming = buildUpcoming({
     today: todayDate,
     nowHour: new Date().getHours(),
@@ -310,6 +323,7 @@ export async function buildReport() {
     level,
     reasons,
     trend,
+    last30,
     advice,
     upcoming,
     basis,
