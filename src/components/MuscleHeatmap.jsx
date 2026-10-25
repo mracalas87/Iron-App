@@ -95,9 +95,13 @@ export default function MuscleHeatmap({ refreshKey }) {
 
   return (
     <div className="heat-card">
-      <svg className="heat-fig" viewBox="0 0 56 25" role="img" aria-label="Muscles trained in the last 7 days">
+      <svg className="heat-fig" viewBox="0 0 56 29" role="img" aria-label="Muscles trained in the last 7 days">
         <Figure ox={0} view="front" heat={heat} />
         <Figure ox={30} view="back" heat={heat} />
+        <g fontSize="2.8" fontWeight="700" fill="#5b6575" textAnchor="middle">
+          <text x="12" y="27.6">FRONT</text>
+          <text x="42" y="27.6">BACK</text>
+        </g>
       </svg>
       <div className="heat-text">
         <div className="heat-title">Last 7 days</div>
