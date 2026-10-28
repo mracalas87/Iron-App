@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CHART } from '../theme'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import LiftChart from './LiftChart'
 import SportIcon from './Icons'
@@ -10,7 +11,7 @@ import { getVitals, trendLabel, round } from '../vitals'
 import { loadLocalEntries, buildFeed } from '../activityFeed'
 import { syncRunsFromGarminCache } from '../db'
 
-const tooltipStyle = { background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }
+const tooltipStyle = { background: CHART.tipBg, border: `1px solid ${CHART.grid}`, borderRadius: 8 }
 
 // An off day or no-lifting day gets the ZZZ, any other lift the dumbbell.
 const liftKind = (text) => (/^(Off day|No lifting)/.test(text || '') ? 'Rest' : 'Lift')
@@ -117,10 +118,10 @@ function Trend({ title, data, dataKey, color, domain }) {
       <div className="dim-label">{title}</div>
       <ResponsiveContainer width="100%" height={110}>
         <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: '#3a4250', fontSize: 10 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={false} tickLine={false} width={28} domain={domain} />
-          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#0f1318' }} itemStyle={{ color }} />
+          <CartesianGrid stroke={CHART.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="label" tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={{ stroke: CHART.grid }} tickLine={false} interval="preserveStartEnd" />
+          <YAxis tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={false} tickLine={false} width={28} domain={domain} />
+          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: CHART.text }} itemStyle={{ color }} />
           <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={{ r: 2 }} connectNulls />
         </LineChart>
       </ResponsiveContainer>
@@ -379,9 +380,9 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
           )}
 
           <div style={{ marginTop: 14 }}>
-            <Trend title="HRV (ms)" data={chart} dataKey="hrv" color="#3d6bff" domain={['dataMin - 8', 'dataMax + 8']} />
-            <Trend title="Resting HR (bpm)" data={chart} dataKey="rhr" color="#78b000" domain={['dataMin - 3', 'dataMax + 3']} />
-            <Trend title="Sleep (h)" data={chart} dataKey="sleep" color="#1fb5a3" domain={[0, 'dataMax + 1']} />
+            <Trend title="HRV (ms)" data={chart} dataKey="hrv" color={CHART.run} domain={['dataMin - 8', 'dataMax + 8']} />
+            <Trend title="Resting HR (bpm)" data={chart} dataKey="rhr" color={CHART.volume} domain={['dataMin - 3', 'dataMax + 3']} />
+            <Trend title="Sleep (h)" data={chart} dataKey="sleep" color={CHART.teal} domain={[0, 'dataMax + 1']} />
           </div>
 
           <div style={{ marginTop: 14 }}>

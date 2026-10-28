@@ -11,7 +11,7 @@ export default function Panel({ id, icon, title, summary, preview, open, onToggl
         {icon && <PanelIcon name={icon} />}
         <span className="panel-text">
           <span className="panel-title">{title}</span>
-          <span className="panel-sum">{summary}</span>
+          {!isOpen && <span className="panel-sum">{summary}</span>}
         </span>
         <span className="panel-chev" aria-hidden="true">▾</span>
       </button>

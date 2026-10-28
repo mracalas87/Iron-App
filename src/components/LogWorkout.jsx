@@ -12,14 +12,14 @@ function todayISO() {
 
 // A colour for each muscle group tile.
 const GROUP_STYLE = {
-  Shoulders: { colour: '#f07a2d' },
-  Chest: { colour: '#d93a2f' },
-  Back: { colour: '#3d6bff' },
-  Quads: { colour: '#1f9d55' },
-  Hamstrings: { colour: '#0f8f7f' },
-  Biceps: { colour: '#8a5cf5' },
-  Triceps: { colour: '#c2417d' },
-  Abs: { colour: '#5a6a85' }
+  Shoulders: { colour: '#ff8a3d' },
+  Chest: { colour: '#ff6b61' },
+  Back: { colour: '#6b8cff' },
+  Quads: { colour: '#3fd07a' },
+  Hamstrings: { colour: '#34d3be' },
+  Biceps: { colour: '#a98bff' },
+  Triceps: { colour: '#e8639e' },
+  Abs: { colour: '#9bb0c9' }
 }
 
 const daysSince = (iso) => Math.round((new Date(todayISO() + 'T12:00:00Z') - new Date(iso + 'T12:00:00Z')) / 86400000)
@@ -94,7 +94,7 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
           {MUSCLE_GROUPS.map((g) => {
             const order = picked.indexOf(g)
             const on = order >= 0
-            const style = GROUP_STYLE[g] || { colour: '#5a6a85' }
+            const style = GROUP_STYLE[g] || { colour: '#9bb0c9' }
             return (
               <button
                 key={g}

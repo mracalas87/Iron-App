@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CHART } from '../theme'
 import {
   ResponsiveContainer,
   LineChart,
@@ -117,19 +118,19 @@ export default function Progress() {
               Estimated 1RM
             </div>
             <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
-                <YAxis tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={CHART.grid} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
+                <YAxis tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => (v >= 1000 ? Math.round(v / 100) / 10 + 'k' : v)} />
                 <Tooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
-                  labelStyle={{ color: '#0f1318' }}
-                  itemStyle={{ color: '#3d6bff' }}
+                  contentStyle={{ background: CHART.tipBg, border: `1px solid ${CHART.grid}`, borderRadius: 8 }}
+                  labelStyle={{ color: CHART.text }}
+                  itemStyle={{ color: CHART.run }}
                 />
                 <Line
                   type="monotone"
                   dataKey="est1RM"
-                  stroke="#3d6bff"
+                  stroke={CHART.run}
                   strokeWidth={2}
                   dot={<PRDot />}
                   activeDot={{ r: 5 }}
@@ -143,16 +144,16 @@ export default function Progress() {
               Session volume (kg lifted)
             </div>
             <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke="#dfe3e8" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={{ stroke: '#dfe3e8' }} tickLine={false} />
-                <YAxis tick={{ fill: '#3a4250', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={CHART.grid} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
+                <YAxis tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => (v >= 1000 ? Math.round(v / 100) / 10 + 'k' : v)} />
                 <Tooltip
-                  contentStyle={{ background: '#ffffff', border: '1px solid #dfe3e8', borderRadius: 8 }}
-                  labelStyle={{ color: '#0f1318' }}
-                  itemStyle={{ color: '#78b000' }}
+                  contentStyle={{ background: CHART.tipBg, border: `1px solid ${CHART.grid}`, borderRadius: 8 }}
+                  labelStyle={{ color: CHART.text }}
+                  itemStyle={{ color: CHART.volume }}
                 />
-                <Line type="monotone" dataKey="volume" stroke="#78b000" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="volume" stroke={CHART.volume} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

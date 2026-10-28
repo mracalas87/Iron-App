@@ -152,8 +152,8 @@ export const WEEKS = [
       'The last long run is done (21.3 km on 24 Oct). Nothing longer than 10 km from here to race day.',
       'Sun 25 and Mon 26: no running or only a 5 km very easy jog (heart rate under 140). The long run was a big load.',
       'Wed 28: 6 to 8 km easy, heart rate under 148, with 4 relaxed strides at the end.',
-      'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit between 135 and 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
       'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes, about 400 to 600 m, heart rate under 130).',
+      'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit between 135 and 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
       'Lifting stays heavy; trim leg sets by about 40%.'
     ]
   },

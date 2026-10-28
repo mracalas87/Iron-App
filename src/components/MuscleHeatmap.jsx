@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { CHART } from '../theme'
 import { listWorkouts, listExercises, MUSCLE_GROUPS } from '../db'
 
 // Heat map of the muscles trained in the last 7 days: a front and a back figure, each muscle
 // coloured by how many sets it has had, with a note of what has not been trained yet.
 
-const HEAT = ['#e3e8ef', '#ffd9a8', '#ffb04d', '#f2762e', '#d93a2f']
+const HEAT = [CHART.heatNone, '#ffd9a8', '#ffb04d', '#f2762e', '#d93a2f']
 const level = (n) => (n <= 0 ? 0 : n < 5 ? 1 : n < 10 ? 2 : n < 16 ? 3 : 4)
 
 function isoDaysAgo(n) {
@@ -37,14 +38,14 @@ function setsByGroup(workouts, categoryOf) {
   return sets
 }
 
-const OUTLINE = { fill: 'none', stroke: '#c3cad6', strokeWidth: 0.9 }
+const OUTLINE = { fill: 'none', stroke: CHART.heatLine, strokeWidth: 0.9 }
 
 function Figure({ ox, view, heat }) {
   const f = (g) => HEAT[heat[g] || 0]
   const legs = (colour) => (
     <>
-      <rect x={ox + 8} y="17.6" width="3.4" height="5.8" rx="1.5" fill={colour} stroke="#c3cad6" strokeWidth="0.6" />
-      <rect x={ox + 12.6} y="17.6" width="3.4" height="5.8" rx="1.5" fill={colour} stroke="#c3cad6" strokeWidth="0.6" />
+      <rect x={ox + 8} y="17.6" width="3.4" height="5.8" rx="1.5" fill={colour} stroke={CHART.heatLine} strokeWidth="0.6" />
+      <rect x={ox + 12.6} y="17.6" width="3.4" height="5.8" rx="1.5" fill={colour} stroke={CHART.heatLine} strokeWidth="0.6" />
     </>
   )
   return (
@@ -55,21 +56,21 @@ function Figure({ ox, view, heat }) {
         <>
           <rect x={ox + 8} y="7.3" width="8" height="4.6" rx="1.8" fill={f('Chest')} />
           <rect x={ox + 9.3} y="12.3" width="5.4" height="4.7" rx="1.3" fill={f('Abs')} />
-          <rect x={ox + 3.6} y="10.8" width="3" height="5" rx="1.5" fill={f('Biceps')} stroke="#c3cad6" strokeWidth="0.6" />
-          <rect x={ox + 17.4} y="10.8" width="3" height="5" rx="1.5" fill={f('Biceps')} stroke="#c3cad6" strokeWidth="0.6" />
+          <rect x={ox + 3.6} y="10.8" width="3" height="5" rx="1.5" fill={f('Biceps')} stroke={CHART.heatLine} strokeWidth="0.6" />
+          <rect x={ox + 17.4} y="10.8" width="3" height="5" rx="1.5" fill={f('Biceps')} stroke={CHART.heatLine} strokeWidth="0.6" />
           {legs(f('Quads'))}
         </>
       ) : (
         <>
           <path d={`M${ox + 8} 7.3h8l-1.4 6.2-2.6 3-2.6-3z`} fill={f('Back')} />
-          <rect x={ox + 3.6} y="10.8" width="3" height="5" rx="1.5" fill={f('Triceps')} stroke="#c3cad6" strokeWidth="0.6" />
-          <rect x={ox + 17.4} y="10.8" width="3" height="5" rx="1.5" fill={f('Triceps')} stroke="#c3cad6" strokeWidth="0.6" />
+          <rect x={ox + 3.6} y="10.8" width="3" height="5" rx="1.5" fill={f('Triceps')} stroke={CHART.heatLine} strokeWidth="0.6" />
+          <rect x={ox + 17.4} y="10.8" width="3" height="5" rx="1.5" fill={f('Triceps')} stroke={CHART.heatLine} strokeWidth="0.6" />
           <path d={`M${ox + 7.6} 17.4c1.2-2 3-2 4.4 0 1.4-2 3.2-2 4.4 0z`} fill={f('Hamstrings')} />
           {legs(f('Hamstrings'))}
         </>
       )}
-      <circle cx={ox + 6} cy="8.9" r="2.4" fill={f('Shoulders')} stroke="#c3cad6" strokeWidth="0.6" />
-      <circle cx={ox + 18} cy="8.9" r="2.4" fill={f('Shoulders')} stroke="#c3cad6" strokeWidth="0.6" />
+      <circle cx={ox + 6} cy="8.9" r="2.4" fill={f('Shoulders')} stroke={CHART.heatLine} strokeWidth="0.6" />
+      <circle cx={ox + 18} cy="8.9" r="2.4" fill={f('Shoulders')} stroke={CHART.heatLine} strokeWidth="0.6" />
     </g>
   )
 }
@@ -98,7 +99,7 @@ export default function MuscleHeatmap({ refreshKey }) {
       <svg className="heat-fig" viewBox="0 0 56 29" role="img" aria-label="Muscles trained in the last 7 days">
         <Figure ox={0} view="front" heat={heat} />
         <Figure ox={30} view="back" heat={heat} />
-        <g fontSize="2.8" fontWeight="700" fill="#5b6575" textAnchor="middle">
+        <g fontSize="2.8" fontWeight="700" fill={CHART.axis} textAnchor="middle">
           <text x="12" y="27.6">FRONT</text>
           <text x="42" y="27.6">BACK</text>
         </g>

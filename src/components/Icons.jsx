@@ -1,5 +1,5 @@
 // Small sport icons for the Home screen: lifting, running, swimming and cycling.
-const COLOURS = { Lift: '#f07a2d', Run: '#3d6bff', Race: '#3d6bff', Swim: '#1fb5a3', Ride: '#8a5cf5', Rest: '#6f7f99' }
+const COLOURS = { Lift: '#ff8a3d', Run: '#6b8cff', Race: '#6b8cff', Swim: '#34d3be', Ride: '#a98bff', Rest: '#9bb0c9' }
 
 const SHAPES = {
   Lift: (
@@ -60,9 +60,9 @@ export default function SportIcon({ kind, size = 18 }) {
 
 // Icons for the drop-down panels on Home and Plan: a line icon on a tinted rounded tile.
 const PANEL_ICONS = {
-  today: { color: '#1f9d55', shape: <path d="M3 12h4l2.5-6 4 12 2.5-6H21" /> },
+  today: { color: '#3fd07a', shape: <path d="M3 12h4l2.5-6 4 12 2.5-6H21" /> },
   coming: {
-    color: '#3d6bff',
+    color: '#6b8cff',
     shape: (
       <>
         <rect x="3" y="5" width="18" height="16" rx="3" />
@@ -70,9 +70,9 @@ const PANEL_ICONS = {
       </>
     )
   },
-  stats: { color: '#8a5cf5', shape: <path d="M5 20V11M12 20V4M19 20v-6" /> },
+  stats: { color: '#a98bff', shape: <path d="M5 20V11M12 20V4M19 20v-6" /> },
   month: {
-    color: '#1fb5a3',
+    color: '#34d3be',
     shape: (
       <>
         <path d="M3 17l5-6 4 3 8-9" />
@@ -81,7 +81,7 @@ const PANEL_ICONS = {
     )
   },
   recent: {
-    color: '#f07a2d',
+    color: '#ff8a3d',
     shape: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -89,9 +89,9 @@ const PANEL_ICONS = {
       </>
     )
   },
-  details: { color: '#5a6a85', shape: <path d="M4 6h16M4 12h16M4 18h10" /> },
+  details: { color: '#9bb0c9', shape: <path d="M4 6h16M4 12h16M4 18h10" /> },
   now: {
-    color: '#3d6bff',
+    color: '#6b8cff',
     shape: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -101,7 +101,7 @@ const PANEL_ICONS = {
     )
   },
   week: {
-    color: '#1f9d55',
+    color: '#3fd07a',
     shape: (
       <>
         <rect x="3" y="5" width="18" height="16" rx="3" />
@@ -109,9 +109,9 @@ const PANEL_ICONS = {
       </>
     )
   },
-  race: { color: '#d93a2f', shape: <path d="M5 21V4M5 4h11l-2 4 2 4H5" /> },
+  race: { color: '#ff6b61', shape: <path d="M5 21V4M5 4h11l-2 4 2 4H5" /> },
   pace: {
-    color: '#8a5cf5',
+    color: '#a98bff',
     shape: (
       <>
         <path d="M4 16a8 8 0 1116 0" />
@@ -120,11 +120,11 @@ const PANEL_ICONS = {
     )
   },
   swimride: {
-    color: '#1fb5a3',
+    color: '#34d3be',
     shape: <path d="M2 10c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1M2 16c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1" />
   },
-  lifting: { color: '#f07a2d', shape: <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" /> },
-  rules: { color: '#5a6a85', shape: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" /> }
+  lifting: { color: '#ff8a3d', shape: <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" /> },
+  rules: { color: '#9bb0c9', shape: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" /> }
 }
 
 export function PanelIcon({ name, size = 20 }) {
