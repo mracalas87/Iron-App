@@ -132,6 +132,11 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     if (race.kind === 'run') for (let k = 1; k <= 5; k++) legsBlocked.set(addDays(race.date, k), 'recovering from the race')
   }
 
+  // A race-rhythm run is a key session, so that day is a rest day from lifting (like the long-run day).
+  for (const [d, text] of Object.entries(RUN_SESSIONS)) {
+    if (d >= today && d <= end && text.startsWith('Race rhythm') && !forcedOff.has(d)) forcedOff.set(d, 'key run day')
+  }
+
   // A long run already done in the last 3 days also keeps legs off for the 2 days after it.
   for (const r of runs) {
     if (r.distanceKm >= 15 && r.date <= today && gap(r.date, today) <= 3) {
@@ -210,8 +215,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     // A run recorded today with no lift found means today was the run day: no lift is still to come,
     // so nothing is used up and the next lift in the cycle stays next.
     const ranToday = runs.some((r) => r.date === today)
-    const pendingToday = !lifted(today) && nowHour < 10 && !ranToday
-    if (ranToday && !lifted(today)) todayToken = OFF
+    const pendingToday = !lifted(today) && nowHour < 10 && !ranToday && !forcedOff.has(today)
+    if ((ranToday || forcedOff.has(today)) && !lifted(today)) todayToken = OFF
     if (pendingToday) {
       const pick = restNeeded(today) || strain === 'alert' ? undefined : byOldest().find((t) => allowed(t, today))
       todayToken = pick ?? OFF
