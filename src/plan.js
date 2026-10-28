@@ -152,7 +152,7 @@ export const WEEKS = [
       'The last long run is done (21.3 km on 24 Oct). Nothing longer than 10 km from here to race day.',
       'Sun 25 and Mon 26: no running or only a 5 km very easy jog (heart rate under 140). The long run was a big load.',
       'Wed 28: 6 to 8 km easy, heart rate under 148, with 4 relaxed strides at the end.',
-      'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit near 140 to 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
+      'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit between 135 and 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
       'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes, about 400 to 600 m, heart rate under 130).',
       'Lifting stays heavy; trim leg sets by about 40%.'
     ]
@@ -212,7 +212,7 @@ export const RUN_SESSIONS = {
   '2026-10-25': 'Rest, or 20 to 30 min very easy, heart rate under 140 (zone 1-2)',
   '2026-10-26': 'Optional 5 km very easy, heart rate under 140 (zone 1-2)',
   '2026-10-28': 'Easy 6 to 8 km, heart rate under 148 (zone 2), 4 strides at the end',
-  '2026-10-30': 'Race rhythm 8 to 10 km: middle 4 to 5 km at 6:15 to 6:30 per km, heart rate 140 to 146 (zone 2). Gel at 45 min',
+  '2026-10-30': 'Race rhythm 8 to 10 km: middle 4 to 5 km at 6:15 to 6:30 per km, heart rate 135 to 146 (zone 2). Gel at 45 min',
   '2026-11-03': 'Easy 5 km, heart rate under 148 (zone 2)',
   '2026-11-05': 'Easy 4 to 5 km, heart rate under 148 (zone 2), 4 strides',
   '2026-11-10': 'Easy 4 km, heart rate under 148 (zone 2), 4 strides',
@@ -250,6 +250,16 @@ export function doneEarly(runs, today = localToday()) {
   }
   return done
 }
+
+// Dated tests and checkpoints that are not runs; the Plan line on Today points to the next one.
+export const MILESTONES = [
+  { date: '2026-11-24', text: '400 m swim baseline test' },
+  { date: '2026-11-28', text: '30 km baseline ride' },
+  { date: '2027-02-27', text: 'base checkpoint: 1,500 m swim and 60 km ride' },
+  { date: '2027-06-26', text: 'build checkpoint: 1,900 m swim and 85 km ride' },
+  { date: '2027-09-18', text: 'dress rehearsal' },
+  { date: '2027-10-02', text: 'last long session' }
+]
 
 // The taper long run follows the long-run slot (normally Saturday 7 Nov), so it is not tied to one date.
 export const TAPER_RUN = 'Taper run 10 to 12 km, easy, middle 3 km at 6:15 to 6:30 per km, heart rate under 150 (zone 2-3)'

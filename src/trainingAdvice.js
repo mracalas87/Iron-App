@@ -1,4 +1,4 @@
-import { currentPhase, liftRuleFor, RUN_SESSIONS, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly } from './plan'
+import { currentPhase, liftRuleFor, RUN_SESSIONS, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
 import { longRunSlot } from './upcoming'
 import { trendNote } from './trends'
 
@@ -21,6 +21,46 @@ const isoGap = (a, b) => Math.round((new Date(b + 'T12:00:00Z') - new Date(a + '
 const dayName = (iso) =>
   new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
 const firstSentence = (s) => (s || '').split(/(?<=\.)\s/)[0].replace(/\.$/, '')
+
+const cutAt = (text, marker) => {
+  const i = text.indexOf(marker)
+  return i < 0 ? text : text.slice(0, i)
+}
+
+// The Plan line on Today: how far off the closest goal is, the next run in the plan, and the next
+// phase. It moves on by itself as runs are recorded (a run done early counts) and dates pass.
+function nextStepLine(today, runs, race, info, cp) {
+  if (!race) return null
+  const days = isoGap(today, race.date)
+  if (days < 0) return null
+  const head = days === 0 ? `${race.name} is today.` : `${race.name} in ${days} day${days === 1 ? '' : 's'}.`
+
+  const ranToday = runs.some((r) => r.date === today)
+  const early = doneEarly(runs, today)
+  const sessions = Object.entries(RUN_SESSIONS).filter(([d]) => d >= today && d <= race.date && !early.has(d) && !(d === today && ranToday))
+  // the long run in the long-run phases follows the long-run slot, not a fixed date
+  if (info.runKind === 'long-due' && info.slot) {
+    const { min, max, label } = info.run
+    const text = info.phase.id === 'marathon-taper' ? TAPER_RUN : `${label[0].toUpperCase() + label.slice(1)} ${min} to ${max} km, easy`
+    sessions.push([info.slot, text])
+  }
+  sessions.sort((a, b) => (a[0] < b[0] ? -1 : 1))
+
+  const parts = [head]
+  const test = MILESTONES.find((m) => m.date >= today && m.date <= race.date && isoGap(today, m.date) <= 30)
+  if (sessions.length > 0) {
+    const [d, text] = sessions[0]
+    const short = cutAt(cutAt(text, ', heart rate'), '. ')
+    parts.push(`Next run: ${d === today ? 'today' : dayName(d)}, ${short}.`)
+  } else if (!test) {
+    parts.push(`${info.phase.name}: ${firstSentence(info.phase.instruction)}.`)
+  }
+  if (test) parts.push(`Also ahead: ${dayName(test.date)}, ${test.text}.`)
+  const next = cp.next
+  if (next && isoGap(today, next.start) <= 10 && next.start <= race.date) parts.push(`${next.name} starts ${dayName(next.start)}.`)
+  else if (next && next.start > race.date && sessions.length === 0) parts.push(`Next: ${next.name}, from ${dayName(next.start)}.`)
+  return parts.join(' ')
+}
 
 // What the training plan says for today, before health and lifting adjust it. The long run
 // is placed on a weekend day (or the first day) that is at least 3 days after the last legs session.
@@ -64,6 +104,7 @@ function planInfo(today, runs, workouts, race) {
     info.runKind = 'easy'
     info.line = `${phase.name}: ${firstSentence(phase.instruction)}.`
   }
+  info.line = nextStepLine(today, runs, race, info, cp) || info.line
   return info
 }
 
