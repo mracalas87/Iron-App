@@ -169,23 +169,33 @@ export default async function handler(req, res) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 25000)
   try {
-    const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: review ? 2000 : 1500,
-        system,
-        ...(review ? { tools: [REVIEW_TOOL], tool_choice: { type: 'tool', name: 'submit_review' } } : {}),
-        messages: review ? [{ role: 'user', content: question }] : [...history, { role: 'user', content: question }]
+    const payload = {
+      model: MODEL,
+      max_tokens: review ? 4000 : 3000,
+      system,
+      ...(review ? { tools: [REVIEW_TOOL] } : {}),
+      messages: review ? [{ role: 'user', content: question }] : [...history, { role: 'user', content: question }]
+    }
+    const post = (body) =>
+      fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(body)
       })
-    })
-    const data = await upstream.json().catch(() => ({}))
+    // Thinking is switched off. A short coaching answer does not need it, it uses up the answer's length
+    // limit (so replies were cut off), and it stops a forced tool choice. If the model does not accept that
+    // setting, ask again without it and leave a roomy limit.
+    let upstream = await post({ ...payload, thinking: { type: 'disabled' } })
+    let data = await upstream.json().catch(() => ({}))
+    if (!upstream.ok && upstream.status === 400 && /thinking/i.test(JSON.stringify(data))) {
+      upstream = await post(payload)
+      data = await upstream.json().catch(() => ({}))
+    }
     if (!upstream.ok) {
       const msg = data && data.error && data.error.message ? data.error.message : `status ${upstream.status}`
       res.status(502).json({ error: `The coach could not answer: ${msg}` })
