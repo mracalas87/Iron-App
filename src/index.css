@@ -1143,6 +1143,11 @@ select:focus-visible {
   color: var(--chalk-dim);
 }
 
+.refresh-group {
+  display: flex;
+  gap: 8px;
+}
+
 .stat-chip {
   display: inline-flex;
   align-items: center;

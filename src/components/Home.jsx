@@ -360,11 +360,6 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
         </div>
       )}
       {!reviewing && reviewError && <div className="advice-why">Coach review unavailable: {reviewError}</div>}
-      {!reviewing && garmin.accessKey && (
-        <button className="mini-act quiet" onClick={() => runReview(garmin.data?.fetchedAt || 'manual')}>
-          {fresh ? 'Review again' : 'Ask the coach to review today'}
-        </button>
-      )}
     </>
   )
   const todayPreview =
@@ -400,9 +395,18 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
           <div className="dim-label" style={{ margin: 0 }}>
             {garmin.data?.fetchedAt ? `Synced ${timeAgo(garmin.data.fetchedAt)}` : 'Not synced yet'}
           </div>
-          <button className="refresh-btn" onClick={garmin.refresh} disabled={garmin.loading || !garmin.accessKey}>
-            {garmin.loading ? 'Refreshing…' : '↻ Refresh'}
-          </button>
+          <div className="refresh-group">
+            <button className="refresh-btn" onClick={garmin.refresh} disabled={garmin.loading || !garmin.accessKey}>
+              {garmin.loading ? 'Refreshing…' : '↻ Garmin'}
+            </button>
+            <button
+              className="refresh-btn"
+              onClick={() => runReview(garmin.data?.fetchedAt || 'manual')}
+              disabled={reviewing || !stats || !garmin.accessKey}
+            >
+              {reviewing ? 'Reviewing…' : '↻ Coach'}
+            </button>
+          </div>
         </div>
         {garmin.error && <div className="err-line">{garmin.error}</div>}
 
