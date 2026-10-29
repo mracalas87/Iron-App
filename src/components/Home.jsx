@@ -244,6 +244,8 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   useEffect(() => {
     const key = garmin.data?.fetchedAt
     if (!stats || !garmin.accessKey || !key) return
+    // the summary is rebuilt a moment after new Garmin data arrives; wait for the one made from this sync
+    if (stats.lastSynced !== key) return
     if (review && review.for === key) return
     if (triedFor.current === key) return
     triedFor.current = key
