@@ -79,7 +79,12 @@ export default async function handler(req, res) {
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
-  const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim()
+  // The saved value can carry extra text from a paste (spaces, line breaks, even a whole command), which
+  // makes the request fail before it is sent. Take just the key out of it.
+  const saved = process.env.ANTHROPIC_API_KEY || ''
+  const squashed = saved.replace(/\s+/g, '')
+  const found = squashed.match(/sk-ant-[A-Za-z0-9_-]+/)
+  const apiKey = found ? found[0] : squashed
   if (!apiKey) {
     res.status(500).json({ error: 'The coach is not set up yet: ANTHROPIC_API_KEY is missing in the Vercel settings.' })
     return
