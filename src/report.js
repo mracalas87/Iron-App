@@ -3,6 +3,11 @@ import { annotateWorkouts } from './liftDay'
 import { getVitals, trendLabel, formatHrvStatus, round } from './vitals'
 import { buildAdvice, HARD_HR_FROM } from './trainingAdvice'
 import { RACE } from './config'
+import { setMoves, setRules } from './plan'
+import { readRules, readGoals } from './settings'
+import { buildCoachContext } from './coachContext'
+import { readMoves, readCoachExtras } from './overrides'
+import { coachChangeLines } from './coachReview'
 import { getWeightSessions } from './weights'
 import { buildUpcoming } from './upcoming'
 import { analyzeTrends } from './trends'
@@ -46,6 +51,9 @@ function spread(values) {
 }
 
 export async function buildReport() {
+  setMoves(readMoves()) // runs moved to another day by hand
+  const rules = readRules()
+  setRules(rules) // the rules he has changed in the Plan tab
   const [workoutsRaw, runs, recentDays, exercises] = await Promise.all([listWorkouts(), listRuns(), dailyVolume(60), listExercises()])
   // Read each logged lift (title, chosen muscle groups, the exercises done) so the cycle, leg
   // timing and advice all agree on what was trained.
@@ -296,7 +304,8 @@ export async function buildReport() {
     runs,
     rides,
     loadTypes,
-    strain: trend.level
+    strain: trend.level,
+    coach: readCoachExtras()
   })
 
   const advice = buildAdvice({
@@ -317,6 +326,27 @@ export async function buildReport() {
     race: RACE
   })
 
+  // What the in-app coach reads with each question.
+  const coachContext = buildCoachContext({
+    today: todayDate,
+    status,
+    level,
+    trend,
+    advice,
+    upcoming,
+    last30,
+    vitals: v,
+    workouts,
+    loadTypes,
+    volumeOf: workoutVolume,
+    garminActs,
+    customRules: rules.custom,
+    rules,
+    coachChanges: coachChangeLines(),
+    goals: readGoals(),
+    categoryOf
+  })
+
   return {
     status,
     position,
@@ -324,6 +354,7 @@ export async function buildReport() {
     reasons,
     trend,
     last30,
+    coachContext,
     advice,
     upcoming,
     basis,

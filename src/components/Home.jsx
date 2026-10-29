@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CHART } from '../theme'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import LiftChart from './LiftChart'
 import SportIcon from './Icons'
 import Panel from './Panel'
+import Coach from './Coach'
+import { readReview, saveReview, requestReview, cleanReview, applyActions, undoApplied, acceptOffer, undoSession } from '../coachReview'
 import { useGarmin } from '../useGarmin'
 import { buildReport, statusColor } from '../report'
 import { ADVICE_ZONES } from '../trainingAdvice'
 import { getVitals, trendLabel, round } from '../vitals'
 import { loadLocalEntries, buildFeed } from '../activityFeed'
 import { syncRunsFromGarminCache } from '../db'
+import { moveRun, undoMove } from '../overrides'
 
 const tooltipStyle = { background: CHART.tipBg, border: `1px solid ${CHART.grid}`, borderRadius: 8 }
 
@@ -147,9 +150,25 @@ function KeyCard({ onSave }) {
 export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   const garmin = useGarmin()
   const [open, setOpen] = useState(null) // which panel is open: 'today' | 'coming' | ... | null
+  const [moveTick, setMoveTick] = useState(0) // bumped when a run is moved, to rebuild the plan
   const [stats, setStats] = useState(null)
   const [local, setLocal] = useState([])
   const idle = !activeWorkout // recompute after a workout is saved
+
+  // "Do today": move a planned run to today. The day it came from becomes a full rest day.
+  const localToday = () => {
+    const d = new Date()
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+    return d.toISOString().slice(0, 10)
+  }
+  const doToday = (from) => {
+    moveRun(from, localToday())
+    setMoveTick((n) => n + 1)
+  }
+  const undo = (from) => {
+    undoMove(from)
+    setMoveTick((n) => n + 1)
+  }
 
   // Close the open panel and return to the top of the panel list.
   const goHome = () => {
@@ -176,7 +195,83 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
     return () => {
       live = false
     }
-  }, [garmin.data, idle])
+  }, [garmin.data, idle, moveTick])
+
+  // The coach's review of today, made after each Garmin refresh and kept for the day. It lightens the
+  // day, moves a run or adds a rest day when needed (each with an Undo), and offers extra sessions.
+  const [review, setReview] = useState(readReview)
+  const [reviewing, setReviewing] = useState(false)
+  const [reviewError, setReviewError] = useState('')
+  const triedFor = useRef(null)
+
+  const runReview = async (forKey) => {
+    if (!stats || !garmin.accessKey || reviewing) return
+    const today = localToday()
+    setReviewing(true)
+    setReviewError('')
+    try {
+      const raw = await requestReview({ context: stats.coachContext, accessKey: garmin.accessKey, today })
+      const clean = cleanReview(raw, today)
+      const applied = applyActions(clean.actions)
+      const prev = review && review.date === today ? review : null
+      const declined = (prev ? prev.offers || [] : []).filter((o) => o.state === 'declined')
+      const offers = clean.offers
+        .filter((o) => !declined.some((d) => d.date === o.date && d.kind === o.kind))
+        .map((o) => ({ ...o, state: 'open' }))
+      const saved = {
+        for: forKey,
+        date: today,
+        at: Date.now(),
+        headline: clean.headline,
+        lift: clean.lift,
+        run: clean.run,
+        why: clean.why,
+        applied: [...(prev ? prev.applied || [] : []), ...applied],
+        offers: [...declined, ...offers],
+        sessions: prev ? prev.sessions || [] : []
+      }
+      saveReview(saved)
+      setReview(saved)
+      if (applied.length) setMoveTick((n) => n + 1)
+    } catch (e) {
+      setReviewError(e.message || 'The coach review did not work.')
+    } finally {
+      setReviewing(false)
+    }
+  }
+
+  // After each refresh (a new sync time) the coach reviews once; a failed try is not repeated in a loop.
+  useEffect(() => {
+    const key = garmin.data?.fetchedAt
+    if (!stats || !garmin.accessKey || !key) return
+    if (review && review.for === key) return
+    if (triedFor.current === key) return
+    triedFor.current = key
+    runReview(key)
+  }, [stats, garmin.accessKey, garmin.data?.fetchedAt])
+
+  const persistReview = (next) => {
+    saveReview(next)
+    setReview(next)
+    setMoveTick((n) => n + 1)
+  }
+  const undoChange = (i) => {
+    undoApplied(review.applied[i])
+    persistReview({ ...review, applied: review.applied.filter((_, k) => k !== i) })
+  }
+  const decideOffer = (i, accept) => {
+    const o = review.offers[i]
+    if (accept) {
+      const s = acceptOffer(o)
+      persistReview({ ...review, offers: review.offers.map((x, k) => (k === i ? { ...x, state: 'accepted' } : x)), sessions: [...(review.sessions || []), s] })
+    } else {
+      persistReview({ ...review, offers: review.offers.map((x, k) => (k === i ? { ...x, state: 'declined' } : x)) })
+    }
+  }
+  const undoAccepted = (j) => {
+    undoSession(review.sessions[j])
+    persistReview({ ...review, sessions: review.sessions.filter((_, k) => k !== j) })
+  }
 
   const v = getVitals(garmin.data)
   const hasData = v.hasData
@@ -207,7 +302,71 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   )
   const recentSummary = feed.length ? `${feed[0].title} · ${shortDate(feed[0].date)}` : 'Nothing yet'
 
-  const todaySummary = stats && hasData ? advice.headline : 'Tap to load your Garmin data'
+  const fresh = !!(review && review.date === localToday() && review.headline)
+  const todaySummary = stats && hasData ? (fresh ? review.headline : advice.headline) : 'Tap to load your Garmin data'
+  const coachBadge = reviewing ? (
+    <div className="coach-badge">Coach is reviewing your data…</div>
+  ) : fresh ? (
+    <div className="coach-badge">Coach review · {new Date(review.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+  ) : null
+  const openOffers = fresh ? (review.offers || []).map((o, i) => ({ o, i })).filter(({ o }) => o.state === 'open') : []
+  const coachExtras = (
+    <>
+      {fresh && (review.applied || []).length > 0 && (
+        <div className="coach-changes">
+          <div className="dim-label">Coach changed</div>
+          {review.applied.map((a, i) => (
+            <div className="coach-change" key={a.type + a.key}>
+              <span>{a.label}</span>
+              <button className="mini-act" onClick={() => undoChange(i)}>
+                Undo
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {openOffers.length > 0 && (
+        <div className="coach-changes">
+          <div className="dim-label">Coach offers</div>
+          {openOffers.map(({ o, i }) => (
+            <div className="coach-change" key={o.date + o.kind}>
+              <span>
+                <SportIcon kind={o.kind} /> {shortDate(o.date)}: {o.text}
+                {o.reason ? ` (${o.reason})` : ''}
+              </span>
+              <span className="coach-btns">
+                <button className="mini-act" onClick={() => decideOffer(i, true)}>
+                  Accept
+                </button>
+                <button className="mini-act quiet" onClick={() => decideOffer(i, false)}>
+                  No thanks
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {fresh && (review.sessions || []).length > 0 && (
+        <div className="coach-changes">
+          <div className="dim-label">Added from the coach</div>
+          {review.sessions.map((s, j) => (
+            <div className="coach-change" key={s.key}>
+              <span>{s.label}</span>
+              <button className="mini-act" onClick={() => undoAccepted(j)}>
+                Undo
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {!reviewing && reviewError && <div className="advice-why">Coach review unavailable: {reviewError}</div>}
+      {!reviewing && garmin.accessKey && (
+        <button className="mini-act quiet" onClick={() => runReview(garmin.data?.fetchedAt || 'manual')}>
+          {fresh ? 'Review again' : 'Ask the coach to review today'}
+        </button>
+      )}
+    </>
+  )
   const todayPreview =
     stats && hasData ? (
       <div className="duo preview-bars">
@@ -268,7 +427,8 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
               </div>
 
               <div className="advice">
-                <div className="advice-headline">{advice.headline}</div>
+                {coachBadge}
+                <div className="advice-headline">{fresh ? review.headline : advice.headline}</div>
                 {advice.plan && (
                   <div className="advice-line">
                     <span>Plan</span> {advice.plan}
@@ -276,12 +436,13 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
                 )}
                 {advice.strength && (
                   <div className="advice-line">
-                    <SportIcon kind={liftKind(advice.liftBrief || advice.strength)} /> {advice.liftBrief || firstSentence(advice.strength)}
+                    <SportIcon kind={liftKind(fresh && review.lift ? review.lift : advice.liftBrief || advice.strength)} />{' '}
+                    {fresh && review.lift ? review.lift : advice.liftBrief || firstSentence(advice.strength)}
                   </div>
                 )}
                 {advice.run && (
                   <div className="advice-line">
-                    <SportIcon kind="Run" /> {firstSentence(advice.run)}
+                    <SportIcon kind="Run" /> {fresh && review.run ? review.run : firstSentence(advice.run)}
                   </div>
                 )}
                 {stats.trend && stats.trend.level !== 'steady' && (
@@ -289,12 +450,19 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
                     <span>Trend</span> {stats.trend.summary}
                   </div>
                 )}
-                {reasonsLine && <div className="advice-why">{reasonsLine}</div>}
+                {fresh && review.why ? <div className="advice-why">{review.why}</div> : reasonsLine && <div className="advice-why">{reasonsLine}</div>}
+                {coachExtras}
               </div>
             </>
           )
         )}
       </Panel>
+
+      {stats && (
+        <Panel id="coach" icon="coach" title="Ask coach" summary="Questions about your training and plan" open={open} onToggle={setOpen} onHome={goHome}>
+          <Coach context={stats.coachContext} accessKey={garmin.accessKey} />
+        </Panel>
+      )}
 
       {stats && stats.upcoming.rows.length > 0 && (
         <Panel id="coming" icon="coming" title="Coming up" summary={comingSummary} open={open} onToggle={setOpen} onHome={goHome}>
@@ -310,9 +478,20 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
                 {row.cardio.map((c) => (
                   <div key={c.kind + c.text}>
                     <SportIcon kind={c.kind} /> {c.text}
+                    {c.movable && (
+                      <button className="mini-act" onClick={() => doToday(c.date)}>
+                        Do today
+                      </button>
+                    )}
+                    {c.movedFrom && <span className="up-note"> (moved from {shortDate(c.movedFrom)})</span>}
                   </div>
                 ))}
                 {row.note && <div className="up-note">{row.note}</div>}
+                {row.undoMove && (
+                  <button className="mini-act" onClick={() => undo(row.undoMove)}>
+                    Undo move
+                  </button>
+                )}
               </div>
             </div>
           ))}

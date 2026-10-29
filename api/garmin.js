@@ -10,7 +10,7 @@ const ACTIVITY_LIMIT = 60
 // even though this server runs in UTC. Falls back to the server date.
 function baseDate(req) {
   const t = req.query && req.query.today
-  if (typeof t === 'string' && /^d{4}-d{2}-d{2}$/.test(t)) {
+  if (typeof t === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t)) {
     const d = new Date(t + 'T12:00:00Z')
     if (Math.abs(d.getTime() - Date.now()) < 3 * 86400000) return d
   }

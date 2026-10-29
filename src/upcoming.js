@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, RUN_SESSIONS, easyRunText, TAPER_RUN, DATED_RUNS_UNTIL, doneEarly } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, easyRunText, TAPER_RUN, DATED_RUNS_UNTIL, doneEarly } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -87,7 +87,7 @@ function rideText(d, lastRideKm) {
 
 // today: ISO date. nowHour: local hour, used to tell whether today's lift is still to come.
 // weightDates: Set of dates with a morning heart-rate block. rides: [{ date, km }].
-export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), strain = 'steady', days = 7 }) {
+export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), strain = 'steady', coach = { notes: {}, rest: {}, sessions: {} }, days = 7 }) {
   const lifted = (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
   const logged = workouts
     .map((w) => {
@@ -113,14 +113,14 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     seenPhases.add(cp.phase.id)
     const ph = cp.phase
     if (ph.run && ph.run.kind === 'long' && !longDone(ph)) {
-      const doneLong = runs.filter((r) => r.distanceKm >= 15 && r.date <= today).map((r) => r.date).sort().pop() || null
+      const doneLong = runs.filter((r) => r.distanceKm >= getRules().longRunKm && r.date <= today).map((r) => r.date).sort().pop() || null
       const slot = longRunSlot(ph, d, lastLegs ? lastLegs.date : null, doneLong)
       const cap = ph.run.label[0].toUpperCase() + ph.run.label.slice(1)
       longRuns.set(slot, ph.id === 'marathon-taper' ? TAPER_RUN : `${cap} ${ph.run.min}-${ph.run.max} km, easy, heart rate under ${EASY_HR} (zone 2)`)
       forcedOff.set(slot, 'long run day')
-      for (let k = 1; k <= 2; k++) legsBlocked.set(addDays(slot, -k), 'long run coming')
+      for (let k = 1; k <= getRules().legsBuffer; k++) legsBlocked.set(addDays(slot, -k), 'long run coming')
       legsBlocked.set(slot, 'long run day')
-      for (let k = 1; k <= 2; k++) legsBlocked.set(addDays(slot, k), 'recovering from the long run')
+      for (let k = 1; k <= getRules().legsBuffer; k++) legsBlocked.set(addDays(slot, k), 'recovering from the long run')
     }
   }
   for (const race of RACES) {
@@ -133,14 +133,26 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   }
 
   // A race-rhythm run is a key session, so that day is a rest day from lifting (like the long-run day).
-  for (const [d, text] of Object.entries(RUN_SESSIONS)) {
-    if (d >= today && d <= end && text.startsWith('Race rhythm') && !forcedOff.has(d)) forcedOff.set(d, 'key run day')
+  // A session Andy has moved to another day is his own call: lifting that day stays as planned.
+  const sessions = getSessions()
+  const moves = getMoves()
+  const movedTo = new Set(Object.values(moves))
+  for (const [d, text] of Object.entries(sessions)) {
+    if (d >= today && d <= end && getRules().keyRunNoLift && text.startsWith('Race rhythm') && !forcedOff.has(d) && !movedTo.has(d)) forcedOff.set(d, 'key run day')
+  }
+  // Days the coach made full rest days (shown on Today with an Undo).
+  for (const [d, reason] of Object.entries(coach.rest || {})) {
+    if (d > today && d <= end) forcedOff.set(d, `rest day (coach): ${reason}`)
+  }
+  // The day a run was moved away from is a full rest day: no lifting and no run.
+  for (const [from, to] of Object.entries(moves)) {
+    if (from >= today && from <= end) forcedOff.set(from, `full rest day, run moved to ${label(to)}`)
   }
 
   // A long run already done in the last 3 days also keeps legs off for the 2 days after it.
   for (const r of runs) {
-    if (r.distanceKm >= 15 && r.date <= today && gap(r.date, today) <= 3) {
-      for (let k = 1; k <= 2; k++) if (!legsBlocked.has(addDays(r.date, k))) legsBlocked.set(addDays(r.date, k), 'recovering from the long run')
+    if (r.distanceKm >= getRules().longRunKm && r.date <= today && gap(r.date, today) <= 3) {
+      for (let k = 1; k <= getRules().legsBuffer; k++) if (!legsBlocked.has(addDays(r.date, k))) legsBlocked.set(addDays(r.date, k), 'recovering from the long run')
     }
   }
 
@@ -158,7 +170,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
 
   const allowed = (token, d) => {
     if (token === OFF) return true
-    if (lastDate.has(token) && gap(lastDate.get(token), d) < 5) return false
+    if (lastDate.has(token) && gap(lastDate.get(token), d) < getRules().spacingDays) return false
     if (token === 2 && legsBlocked.has(d)) return false
     if (d >= SWIM_RIDE_FROM) {
       const w = dow(d)
@@ -170,7 +182,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   }
   const whyBlocked = (token, d) => {
     if (token === 2 && legsBlocked.has(d)) return legsBlocked.get(d)
-    if (lastDate.has(token) && gap(lastDate.get(token), d) < 5) return 'done recently'
+    if (lastDate.has(token) && gap(lastDate.get(token), d) < getRules().spacingDays) return 'done recently'
     const w = dow(d)
     if (w === 1) return 'swim tomorrow'
     if (w === 2) return 'swim tonight'
@@ -190,12 +202,14 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   const liftDays = new Set()
   const rank = (t) => (t - ((lastTok ?? -1) + 1) + 5) % 5
   const byOldest = () =>
-    [0, 1, 2, 3, 4].sort((x, y) => {
+    [0, 1, 2, 3, 4]
+      .filter((t) => getRules().activeLifts.includes(t))
+      .sort((x, y) => {
       const a = lastDate.get(x) || '0000'
       const b = lastDate.get(y) || '0000'
       return a < b ? -1 : a > b ? 1 : rank(x) - rank(y)
     })
-  const restNeeded = (d) => [1, 2, 3, 4, 5].every((k) => liftDays.has(addDays(d, -k)))
+  const restNeeded = (d) => Array.from({ length: getRules().restAfter }, (_, i) => i + 1).every((k) => liftDays.has(addDays(d, -k)))
   if (known) {
     const loggedTokens = (d) => [...new Set(logged.filter((w) => w.date === d).flatMap((w) => w.tokens))]
     for (let d = addDays(today, -30); d <= today; d = addDays(d, 1)) {
@@ -209,7 +223,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
         }
       }
     }
-    const fresh = (t) => lastDate.has(t) && gap(lastDate.get(t), today) < 5
+    const fresh = (t) => lastDate.has(t) && gap(lastDate.get(t), today) < getRules().spacingDays
     cycleDone = byOldest().filter(fresh).map((t) => CYCLE[t])
     cycleDue = byOldest().filter((t) => !fresh(t)).map((t) => CYCLE[t])
     // A run recorded today with no lift found means today was the run day: no lift is still to come,
@@ -290,9 +304,12 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       // (never on the swim or ride day, or a rest day the recovery trend asked for)
       const w = dow(d)
       const swimOrRide = d >= SWIM_RIDE_FROM && (w === 2 || w === 6)
-      if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] || longRuns.get(d) })
-      else if (RUN_SESSIONS[d] && ranEarly.has(d)) row.note = row.note ? `${row.note}. Run done early` : 'Run done early, none today'
-      else if (RUN_SESSIONS[d] && !(forcedOff.get(d) || '').startsWith('recovery trend')) row.cardio.push({ kind: 'Run', text: RUN_SESSIONS[d] })
+      const movedFrom = Object.keys(moves).find((f) => moves[f] === d)
+      if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: sessions[d] || longRuns.get(d) })
+      else if (sessions[d] && ranEarly.has(d)) row.note = row.note ? `${row.note}. Run done early` : 'Run done early, none today'
+      else if (sessions[d] && !(forcedOff.get(d) || '').startsWith('recovery trend') && !(forcedOff.get(d) || '').startsWith('rest day (coach)')) {
+        row.cardio.push({ kind: 'Run', text: sessions[d], movable: !movedFrom, movedFrom, date: d })
+      }
       else if (off && !forcedOff.has(d) && !swimOrRide && d > DATED_RUNS_UNTIL) row.cardio.push({ kind: 'Run', text: easyRunText(ph.id) })
       if (d >= FAMILY_SWIM.from && dow(d) === 4) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
       if (d >= SWIM_RIDE_FROM) {
@@ -301,6 +318,11 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
         else if (w === 6) row.cardio.push({ kind: 'Ride', text: rideText(d, lastRideKm) })
       }
     }
+    // extra sessions Andy accepted from the coach, and the coach's notes for the day
+    for (const s of Object.values(coach.sessions || {})) if (s.date === d) row.cardio.push({ kind: s.kind, text: s.text, coach: true })
+    if (coach.notes && coach.notes[d]) row.note = row.note ? `${row.note}. Coach: ${coach.notes[d]}` : `Coach: ${coach.notes[d]}`
+    const movedAway = Object.keys(moves).find((f) => f === d)
+    if (movedAway) row.undoMove = movedAway
     rows.push(row)
   }
 

@@ -123,6 +123,24 @@ const PANEL_ICONS = {
     color: '#34d3be',
     shape: <path d="M2 10c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1M2 16c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1" />
   },
+  goal: {
+    color: '#ff8a3d',
+    shape: (
+      <>
+        <path d="M6 4h12v4a6 6 0 01-12 0z" />
+        <path d="M6 6H3v1a3 3 0 003 3M18 6h3v1a3 3 0 01-3 3M12 14v4M8 20h8" />
+      </>
+    )
+  },
+  coach: {
+    color: '#34d3be',
+    shape: (
+      <>
+        <path d="M21 12a8 8 0 01-11.4 7.2L4 20l1-4.6A8 8 0 1121 12z" />
+        <path d="M9 12h.01M12 12h.01M15 12h.01" />
+      </>
+    )
+  },
   lifting: { color: '#ff8a3d', shape: <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" /> },
   rules: { color: '#9bb0c9', shape: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" /> }
 }

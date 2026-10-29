@@ -222,6 +222,44 @@ export const RUN_SESSIONS = {
   '2026-11-26': 'Easy 6 to 8 km, heart rate under 148 (zone 2)'
 }
 
+// The rules Andy can change in the Plan tab (settings.js keeps his choices; report.js applies them).
+// spacingDays: the same lift is not suggested again within this many days. restAfter: an off day after this
+// many lifting days in a row. legsBuffer: days legs stay clear before and after a long run. longRunKm: how
+// long a run counts as a long run. keyRunNoLift: no lifting on a race-rhythm run day. activeLifts: which lifts are
+// in the rotation (0 shoulders, 1 back, 2 legs, 3 chest, 4 arms), so a 4-day cycle drops one. custom: his own rules,
+// in words, for the coach.
+export const DEFAULT_RULES = { spacingDays: 5, restAfter: 5, legsBuffer: 2, longRunKm: 15, keyRunNoLift: true, activeLifts: [0, 1, 2, 3, 4], custom: '' }
+let activeRules = { ...DEFAULT_RULES }
+export function setRules(rules) {
+  activeRules = { ...DEFAULT_RULES, ...(rules || {}) }
+}
+export function getRules() {
+  return activeRules
+}
+
+// Planned runs Andy has moved to another day (the "Do today" button in Coming up): { fromDate: toDate }.
+// A move only counts for a dated session, and only if the new day has no session of its own.
+let activeMoves = {}
+export function setMoves(moves) {
+  activeMoves = moves || {}
+}
+export function getMoves() {
+  const out = {}
+  for (const [from, to] of Object.entries(activeMoves)) {
+    if (from in RUN_SESSIONS && !(to in RUN_SESSIONS) && from !== to) out[from] = to
+  }
+  return out
+}
+// The dated runs as they stand now, moves applied.
+export function getSessions() {
+  const out = { ...RUN_SESSIONS }
+  for (const [from, to] of Object.entries(getMoves())) {
+    out[to] = RUN_SESSIONS[from]
+    delete out[from]
+  }
+  return out
+}
+
 // Distance in km at the low end of a planned run ("Easy 6 to 8 km" is 6, "Optional 5 km" is 5).
 const sessionKm = (text) => {
   const m = (text || '').match(/(\d+(?:\.\d+)?)(?: to \d+(?:\.\d+)?)? km/)
@@ -232,18 +270,19 @@ const sessionKm = (text) => {
 // that run counts for it (at least three quarters of its distance), so it is not asked for again.
 // Returns the set of planned dates that are done. runs: [{ date, distanceKm }].
 export function doneEarly(runs, today = localToday()) {
-  const planned = Object.keys(RUN_SESSIONS).filter((d) => d >= today).sort()
+  const sessions = getSessions()
+  const planned = Object.keys(sessions).filter((d) => d >= today).sort()
   const done = new Set()
   const recent = (runs || [])
     .filter((r) => r.date <= today && daysBetween(r.date, today) <= 2)
     .sort((a, b) => (a.date < b.date ? -1 : 1))
   for (const r of recent) {
     // a run on its own planned day is just that run
-    const own = sessionKm(RUN_SESSIONS[r.date])
+    const own = sessionKm(sessions[r.date])
     if (own != null && r.distanceKm >= 0.75 * own) continue
     const match = planned.find((d) => {
       const gapDays = daysBetween(r.date, d)
-      const km = sessionKm(RUN_SESSIONS[d])
+      const km = sessionKm(sessions[d])
       return !done.has(d) && gapDays >= 1 && gapDays <= 2 && km != null && r.distanceKm >= 0.75 * km
     })
     if (match) done.add(match)
@@ -395,6 +434,22 @@ export const FAMILY_SWIM = {
   from: '2026-10-29',
   text: 'Light swim with your daughter, 20 to 30 min (about 400 to 600 m), play first, heart rate under 130'
 }
+
+// How the app decides what to suggest. This is the list the schedule, the Today advice and the coach all
+// follow, kept here in plain words so it can be read in the Plan tab.
+export const APP_RULES = [
+  { title: 'Which lift is next', text: 'The lift that has gone longest without being done (shoulders, back, legs, chest, arms). The same lift is never suggested twice within 5 days. After 5 lifting days in a row there is an off day.' },
+  { title: 'Reading your workouts', text: 'The first muscle in the title is the day\'s lift. Triceps or biceps added to another muscle are extras, so "Chest, Triceps" counts as chest. Each lift flips between a heavy day and a volume day.' },
+  { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race, and not for 5 days after the marathon. From 15 Nov: no legs Thursday to Saturday (the ride), and Tuesday is legs, arms or off only (the swim).' },
+  { title: 'Days with no lifting', text: 'The long-run day, a race-rhythm run day, and the two days before a race. A full rest day has no lifting and no run.' },
+  { title: 'Easy means easy', text: 'Easy running is heart rate under 148 (zone 2), and about 80% of training stays easy. The day after a long run is rest or 30 minutes under 140. After heavy legs, keep the run to 5 to 6 km.' },
+  { title: 'The long run', text: 'It goes on the first weekend day at least 3 days after your last legs session and 4 days after another run of 15 km or more. A run of 18 km or more counts as the last long run.' },
+  { title: 'Runs done early', text: 'A run done up to 2 days before a planned one counts for it, if it is at least three quarters of the distance. Moving a run to another day makes the day it left a full rest day.' },
+  { title: 'Recovery bar', text: 'Starts at the top and loses a step for short sleep, a low Garmin HRV status, and the trends below. Training is the same bar after your recent load: heavy days in a row, a big week of running, no rest day in 14 days.' },
+  { title: 'Recovery trends', text: 'Watched against your own normal: resting HR 3 or more bpm up for 2 days, HRV 12% or more down for 3 days, a run of short nights or a week of sleep debt, and resting HR up with HRV down together. A trend you can see cuts sets by a third, then 40% with easy short runs and no legs for 2 days, and at the worst a rest day tomorrow.' },
+  { title: 'Weights and runs', text: 'Morning weights are found from a raised heart-rate block, kept apart from runs. Runs, swims and rides come from Garmin when you refresh. A run with no lift found that day counts as your run day.' },
+  { title: 'The coach', text: 'It reads all of this and your latest data after each refresh. It can lighten the day, move a planned run, add a rest day or leave a note, and every change shows with an Undo. It cannot add training or break these rules.' }
+]
 
 // The weekday lifting rules start once swim and ride sessions begin (after the 15 Nov recovery).
 export const SWIM_RIDE_FROM = '2026-11-15'

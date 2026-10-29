@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CHART } from '../theme'
 import { listWorkouts, listExercises, MUSCLE_GROUPS } from '../db'
+import { setsByGroup } from '../muscleSets'
 
 // Heat map of the muscles trained in the last 7 days: a front and a back figure, each muscle
 // coloured by how many sets it has had, with a note of what has not been trained yet.
@@ -13,29 +14,6 @@ function isoDaysAgo(n) {
   d.setDate(d.getDate() - n)
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
   return d.toISOString().slice(0, 10)
-}
-
-// Sets per muscle group over the last 7 days. A set counts for its exercise's saved muscle group;
-// sets from exercises without one are shared between the muscle groups chosen for that workout.
-function setsByGroup(workouts, categoryOf) {
-  const since = isoDaysAgo(6)
-  const sets = {}
-  const add = (g, n) => {
-    sets[g] = (sets[g] || 0) + n
-  }
-  for (const w of workouts) {
-    if (w.date < since) continue
-    let spare = 0
-    for (const ex of w.exercises || []) {
-      const n = (ex.sets || []).length
-      const cat = categoryOf.get(ex.exerciseId)
-      if (MUSCLE_GROUPS.includes(cat)) add(cat, n)
-      else spare += n
-    }
-    const chips = (w.muscleGroups || []).filter((g) => MUSCLE_GROUPS.includes(g))
-    if (spare > 0 && chips.length > 0) for (const g of chips) add(g, spare / chips.length)
-  }
-  return sets
 }
 
 const OUTLINE = { fill: 'none', stroke: CHART.heatLine, strokeWidth: 0.9 }
@@ -82,7 +60,7 @@ export default function MuscleHeatmap({ refreshKey }) {
     let live = true
     Promise.all([listWorkouts(), listExercises()]).then(([workouts, exercises]) => {
       if (!live) return
-      setSets(setsByGroup(workouts, new Map(exercises.map((e) => [e.id, e.category]))))
+      setSets(setsByGroup(workouts, new Map(exercises.map((e) => [e.id, e.category])), isoDaysAgo(6)))
     })
     return () => {
       live = false

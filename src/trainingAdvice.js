@@ -1,4 +1,4 @@
-import { currentPhase, liftRuleFor, RUN_SESSIONS, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
+import { currentPhase, liftRuleFor, getSessions, getMoves, getRules, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
 import { longRunSlot } from './upcoming'
 import { trendNote } from './trends'
 
@@ -37,7 +37,7 @@ function nextStepLine(today, runs, race, info, cp) {
 
   const ranToday = runs.some((r) => r.date === today)
   const early = doneEarly(runs, today)
-  const sessions = Object.entries(RUN_SESSIONS).filter(([d]) => d >= today && d <= race.date && !early.has(d) && !(d === today && ranToday))
+  const sessions = Object.entries(getSessions()).filter(([d]) => d >= today && d <= race.date && !early.has(d) && !(d === today && ranToday))
   // the long run in the long-run phases follows the long-run slot, not a fixed date
   if (info.runKind === 'long-due' && info.slot) {
     const { min, max, label } = info.run
@@ -92,7 +92,7 @@ function planInfo(today, runs, workouts, race) {
       info.runKind = 'long-done'
       info.line = `${cap} done (${r1(info.done.distanceKm)} km, ${dayName(info.done.date)}). Keep the rest easy.`
     } else {
-      const lastLong = runs.filter((r) => r.distanceKm >= 15 && r.date <= today).map((r) => r.date).sort().pop() || null
+      const lastLong = runs.filter((r) => r.distanceKm >= getRules().longRunKm && r.date <= today).map((r) => r.date).sort().pop() || null
       info.slot = longRunSlot(phase, today, lastLegs, lastLong)
       info.runKind = 'long-due'
       info.line = `${cap} ${min}-${max} km, easy, by ${dayName(phase.end)}. Best slot: ${info.slot === today ? 'today' : dayName(info.slot)}.`
@@ -207,7 +207,7 @@ export function buildAdvice({
   const yesterdayRuns = runs.filter((r) => r.date === yesterday)
   const yesterdayKm = yesterdayRuns.reduce((s, r) => s + r.distanceKm, 0)
   const yesterdayMin = yesterdayRuns.reduce((s, r) => s + r.durationMin, 0)
-  const longRunYesterday = yesterdayKm >= 15 || yesterdayMin >= 90
+  const longRunYesterday = yesterdayKm >= getRules().longRunKm || yesterdayMin >= 90
 
   const recentGroups = new Set(workouts.filter((w) => w.date >= groupsSince).flatMap((w) => w.muscleGroups || []))
   const fresh = muscleGroups.filter((g) => !recentGroups.has(g))
@@ -300,11 +300,19 @@ export function buildAdvice({
     else if (plan.runKind === 'race') planRun = plan.line
     else planRun = `${easyRunText(plan.phase.id)}. 80% of training stays easy.`
     // a run planned for this exact date wins over the general line, except race day and a long run due today
-    const dated = RUN_SESSIONS[today]
+    const dated = getSessions()[today]
+    const movedFromDay = Object.keys(getMoves()).find((f) => getMoves()[f] === today)
     const doneAlready = doneEarly(runs, today).has(today)
     const slotToday = plan.runKind === 'long-due' && plan.slot === today
     if (dated && doneAlready && plan.runKind !== 'race') planRun = 'Today\'s run was done early. Rest, or an easy walk.'
-    else if (dated && plan.runKind !== 'race' && !slotToday) planRun = `${dated}.`
+    else if (dated && plan.runKind !== 'race' && !slotToday) {
+      // when recovery is only fair, a race-rhythm session is cut back: shorter block, same heart rate cap
+      const text =
+        zone === 'Easy' && dated.startsWith('Race rhythm')
+          ? 'Race rhythm, lighter version as recovery is only fair: 8 km with the middle 3 km at 6:15 to 6:30 per km, heart rate 135 to 146 (zone 2). If it climbs over 150 or the legs feel heavy, drop to easy'
+          : dated
+      planRun = movedFromDay ? `${text} (moved from ${dayName(movedFromDay)}).` : `${text}.`
+    }
     else if (!dated && today >= DATED_RUNS_FROM && today <= DATED_RUNS_UNTIL && plan.runKind !== 'race' && !slotToday) {
       planRun = 'No run planned today. Rest, or an easy walk.'
     }
