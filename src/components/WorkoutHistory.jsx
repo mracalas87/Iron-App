@@ -11,7 +11,6 @@ import {
   syncRunsFromGarminCache
 } from '../db'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
-import ImportCSV from './ImportCSV'
 import ExercisesByCategory from './ExercisesByCategory'
 import { readCachedWeightSessions, clock } from '../weights'
 
@@ -61,7 +60,6 @@ export default function WorkoutHistory({ onRepeat }) {
   const [selected, setSelected] = useState(null)
   const [editDraft, setEditDraft] = useState(null) // non-null while editing
   const [editingId, setEditingId] = useState(null) // id being edited, null if editing a fresh copy
-  const [importing, setImporting] = useState(false)
   const [mode, setMode] = useState('sessions') // 'sessions' | 'bodypart' | 'runs'
   const [runs, setRuns] = useState([])
   // Morning heart-rate blocks from the Garmin data saved on this phone; matched to workouts by date.
@@ -125,19 +123,6 @@ export default function WorkoutHistory({ onRepeat }) {
     setEditingId(null)
   }
 
-  // ---- Importing from CSV ----
-  if (importing) {
-    return (
-      <ImportCSV
-        onCancel={() => setImporting(false)}
-        onDone={() => {
-          setImporting(false)
-          refresh()
-        }}
-      />
-    )
-  }
-
   // ---- Editing or copying a workout ----
   if (editDraft) {
     const canSave = canSaveWorkout(editDraft)
@@ -180,7 +165,7 @@ export default function WorkoutHistory({ onRepeat }) {
         {runs.length === 0 ? (
           <div className="empty-state">
             <div className="mark">—</div>
-            <p>No runs logged yet. Switch to "Run" on the Log tab.</p>
+            <p>No runs yet. Runs come from Garmin: tap Refresh on Home.</p>
           </div>
         ) : (
           <div className="card" style={{ padding: 4 }}>
@@ -220,9 +205,6 @@ export default function WorkoutHistory({ onRepeat }) {
         <ModeToggle mode={mode} setMode={setMode} />
         <div className="mark">—</div>
         <p>No workouts recorded yet. Start on the Log tab.</p>
-        <button className="btn btn-secondary" onClick={() => setImporting(true)}>
-          Import from Strong CSV
-        </button>
       </div>
     )
   }
@@ -291,9 +273,6 @@ export default function WorkoutHistory({ onRepeat }) {
   return (
     <div>
       <ModeToggle mode={mode} setMode={setMode} />
-      <button className="btn-ghost" onClick={() => setImporting(true)} style={{ marginBottom: 8 }}>
-        + Import from Strong CSV
-      </button>
       <div className="card" style={{ padding: 4 }}>
         {workouts.map((w) => (
           <button
