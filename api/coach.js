@@ -22,6 +22,7 @@ Goals and levels: read HIS GOALS in the data. FUN means enjoyment first: about 8
 
 How to answer:
 - Use only the data below. If something is not in it, say so. Never invent numbers, dates or workouts.
+- Always finish your last sentence. If an answer is getting long, shorten it so it ends properly.
 - Give distances, heart rate zones and days when you suggest anything. Keep replies under 150 words unless he asks for detail.
 - The app's own plan and rules come first. You can explain, compare and suggest swaps, and say what the trade-off is. You cannot change the plan or the app yourself; if he wants a plan change, say what you would change and that it needs to be made in the app.
 - You are not a doctor. For chest pain, dizziness, fainting, illness that lingers, or an injury lasting more than 3 days, tell him to see a doctor.`
@@ -178,7 +179,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: review ? 2000 : 700,
+        max_tokens: review ? 2000 : 1500,
         system,
         ...(review ? { tools: [REVIEW_TOOL], tool_choice: { type: 'tool', name: 'submit_review' } } : {}),
         messages: review ? [{ role: 'user', content: question }] : [...history, { role: 'user', content: question }]
@@ -209,7 +210,10 @@ export default async function handler(req, res) {
       res.status(200).json({ review: parsed, model: MODEL })
       return
     }
-    res.status(200).json({ reply: reply || 'No answer came back. Try again.', model: MODEL })
+    // an answer that hit the length limit is marked, so a cut-off ending is never mistaken for the whole answer
+    const cut = data.stop_reason === 'max_tokens'
+    const full = cut ? `${reply}\n\n[The answer was cut off. Reply "continue" for the rest.]` : reply
+    res.status(200).json({ reply: full || 'No answer came back. Try again.', model: MODEL, cut })
   } catch (err) {
     // say what really went wrong, with the key taken out of the message
     const clean = (t) => String(t || '').split(apiKey).join('[key]').replace(/sk-ant-[A-Za-z0-9_-]+/g, '[key]').slice(0, 160)

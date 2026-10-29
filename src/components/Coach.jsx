@@ -27,6 +27,7 @@ export default function Coach({ context, accessKey }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const endRef = useRef(null)
+  const lastBotRef = useRef(null)
 
   useEffect(() => {
     try {
@@ -34,7 +35,10 @@ export default function Coach({ context, accessKey }) {
     } catch {
       // storage blocked: the chat only lasts until the app is closed
     }
-    endRef.current?.scrollIntoView({ block: 'nearest' })
+    // a new answer is shown from its first line; anything else scrolls to the end
+    const last = messages[messages.length - 1]
+    if (last && last.role === 'assistant' && !busy) lastBotRef.current?.scrollIntoView({ block: 'start' })
+    else endRef.current?.scrollIntoView({ block: 'nearest' })
   }, [messages, busy])
 
   async function send(question) {
@@ -89,7 +93,7 @@ export default function Coach({ context, accessKey }) {
 
       <div className="coach-log">
         {messages.map((m, i) => (
-          <div key={i} className={`coach-msg ${m.role === 'user' ? 'me' : 'bot'}`}>
+          <div key={i} ref={i === messages.length - 1 && m.role === 'assistant' ? lastBotRef : null} className={`coach-msg ${m.role === 'user' ? 'me' : 'bot'}`}>
             {m.content}
           </div>
         ))}
