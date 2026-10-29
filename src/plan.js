@@ -388,7 +388,7 @@ export const PHASE_WEEKS = {
 export const RACE_PLANS = {
   lisbon: [
     'Pace: 6:15 to 6:30 per km for the first 30 km, with the first 5 km on the slow side.',
-    'Heart rate: stay under 155. If it is higher before 25 km, ease off by 10 to 15 seconds per km.',
+    'Heart rate: at this pace expect about 128 to 145 for the first 30 km (you ran 6:10 per km at 131 on 29 Oct). If it is over 155 before 25 km, ease off by 10 to 15 seconds per km.',
     'Your 30 km on 26 Sep was 6:49 per km at heart rate 144, so this pace is well inside what you have shown.',
     'Expect 4:20 to 4:35. Your half marathon (1:57) predicts faster on paper, but your weekly running is low, so protect the last 10 km.',
     'Fuel: a gel at 45 minutes, then every 30 to 40 (about 60 g of carbohydrate an hour). Walk the aid stations and drink there.',
@@ -405,7 +405,7 @@ export const RACE_PLANS = {
 // Heart rate and pace guide for running, from Andy's set zones and his own runs.
 export const RUN_GUIDE = [
   { name: 'Easy', hr: 'under 148', pace: 'about 6:00 to 6:50 per km on your recent runs' },
-  { name: 'Marathon', hr: '140 to 152, drifting up late', pace: '6:15 to 6:30 per km' },
+  { name: 'Marathon', hr: '128 to 145, drifting up late', pace: '6:15 to 6:30 per km' },
   { name: 'Steady', hr: '149 to 159', pace: 'about 5:20 to 5:50 per km' },
   { name: 'Threshold', hr: '160 to 170', pace: 'about 4:35 to 5:00 per km (10K was 45:45)' },
   { name: 'Hard', hr: '171 and up', pace: 'short efforts only' }
