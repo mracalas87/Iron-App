@@ -30,7 +30,7 @@ How to answer:
 // returns a small JSON object that the app shows on Today and, if it asks, applies to Coming up.
 const REVIEW_SYSTEM = `${SYSTEM.split('\n\nHow to answer:')[0]}
 
-Your job now is a review of today and the week ahead. Reply with ONLY a JSON object, no markdown and no other text:
+Your job now is a review of today and the week ahead. Submit your review with the submit_review tool. The fields are:
 {
   "headline": "one short sentence: what to do today",
   "lift": "today's lifting advice, under 140 characters",
@@ -58,6 +58,57 @@ Rules for the review:
 - Dates must be ISO dates within the next 7 days. Keep every string short and plain.`
 
 const trim = (s, n) => String(s || '').slice(0, n)
+
+// The review is requested as a forced tool call, so the answer arrives as structured fields and cannot be
+// cut off mid-sentence, wrapped in a code fence or padded with extra text.
+const STR = { type: 'string' }
+const REVIEW_TOOL = {
+  name: 'submit_review',
+  description: "Submit the review of today and the week ahead. Every string is short and plain.",
+  input_schema: {
+    type: 'object',
+    properties: {
+      headline: { type: 'string', description: 'One short sentence: what to do today.' },
+      lift: { type: 'string', description: "Today's lifting advice, under 140 characters." },
+      run: { type: 'string', description: "Today's run advice with a distance and a heart rate or zone, under 160 characters." },
+      why: { type: 'string', description: 'The numbers behind it, under 160 characters.' },
+      week: { type: 'string', description: 'Two short sentences on the next 7 days against his goals and the deadlines: is he on track, and what matters most this week.' },
+      actions: {
+        type: 'array',
+        description: 'Changes to make, at most 3. Empty if none are needed.',
+        items: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: ['move_run', 'rest_day', 'note', 'set_rule'] },
+            from: { ...STR, description: 'move_run: the planned date, YYYY-MM-DD' },
+            to: { ...STR, description: 'move_run: the new date, YYYY-MM-DD' },
+            date: { ...STR, description: 'rest_day or note: the date, YYYY-MM-DD' },
+            text: { ...STR, description: 'note: short note for that day, under 120 characters' },
+            field: { type: 'string', enum: ['spacingDays', 'restAfter', 'legsBuffer', 'longRunKm'], description: 'set_rule: which rule' },
+            value: { type: 'number', description: 'set_rule: the new value' },
+            reason: { ...STR, description: 'Short reason' }
+          },
+          required: ['type']
+        }
+      },
+      offers: {
+        type: 'array',
+        description: 'Extra sessions he can accept or decline, at most 2. Empty if none.',
+        items: {
+          type: 'object',
+          properties: {
+            date: { ...STR, description: 'YYYY-MM-DD' },
+            kind: { type: 'string', enum: ['Run', 'Swim', 'Ride'] },
+            text: { ...STR, description: 'The session with a distance and heart rate, under 160 characters' },
+            reason: { ...STR, description: 'Short reason' }
+          },
+          required: ['date', 'kind', 'text']
+        }
+      }
+    },
+    required: ['headline', 'lift', 'run', 'why', 'week', 'actions', 'offers']
+  }
+}
 
 // The model sometimes wraps JSON in a fence or a sentence; pull out the first object.
 function extractJson(text) {
@@ -94,7 +145,7 @@ export default async function handler(req, res) {
 
   const body = typeof req.body === 'string' ? safeParse(req.body) : req.body || {}
   const review = body.mode === 'review'
-  const question = review ? 'Review today and the week ahead and reply with the JSON object.' : trim(body.question, MAX_QUESTION).trim()
+  const question = review ? 'Review today and the week ahead and submit it with the submit_review tool.' : trim(body.question, MAX_QUESTION).trim()
   if (!question) {
     res.status(400).json({ error: 'Ask a question first.' })
     return
@@ -127,8 +178,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: review ? 1100 : 700,
+        max_tokens: review ? 2000 : 700,
         system,
+        ...(review ? { tools: [REVIEW_TOOL], tool_choice: { type: 'tool', name: 'submit_review' } } : {}),
         messages: review ? [{ role: 'user', content: question }] : [...history, { role: 'user', content: question }]
       })
     })
@@ -144,9 +196,14 @@ export default async function handler(req, res) {
       .join('\n')
       .trim()
     if (review) {
-      const parsed = extractJson(reply)
+      // the structured answer; the text fallback covers a model that answers in words instead
+      const tool = (data.content || []).find((b) => b.type === 'tool_use' && b.name === 'submit_review')
+      const parsed = tool && tool.input && typeof tool.input === 'object' ? tool.input : extractJson(reply)
       if (!parsed) {
-        res.status(502).json({ error: 'The coach review came back in a form the app could not read.' })
+        const seen = reply.replace(/sk-ant-[A-Za-z0-9_-]+/g, '[key]').slice(0, 120)
+        res.status(502).json({
+          error: `The coach review could not be read (the model stopped because: ${data.stop_reason || 'unknown'}${seen ? `; it said: "${seen}"` : ''}).`
+        })
         return
       }
       res.status(200).json({ review: parsed, model: MODEL })
