@@ -79,7 +79,8 @@ export default async function handler(req, res) {
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim()
+  if (!apiKey) {
     res.status(500).json({ error: 'The coach is not set up yet: ANTHROPIC_API_KEY is missing in the Vercel settings.' })
     return
   }
@@ -114,7 +115,7 @@ export default async function handler(req, res) {
       signal: controller.signal,
       headers: {
         'content-type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -146,8 +147,11 @@ export default async function handler(req, res) {
     }
     res.status(200).json({ reply: reply || 'No answer came back. Try again.', model: MODEL })
   } catch (err) {
-    const msg = err && err.name === 'AbortError' ? 'it took too long' : 'a network problem'
-    res.status(502).json({ error: `The coach could not answer: ${msg}.` })
+    // say what really went wrong, with the key taken out of the message
+    const clean = (t) => String(t || '').split(apiKey).join('[key]').replace(/sk-ant-[A-Za-z0-9_-]+/g, '[key]').slice(0, 160)
+    const detail = err && err.name === 'AbortError' ? 'it took too long' : `${clean(err && err.name)}: ${clean(err && err.message)}${err && err.cause ? ` (${clean(err.cause.code || err.cause.message)})` : ''}`
+    console.error('coach request failed:', clean(err && err.stack))
+    res.status(502).json({ error: `The coach could not answer: ${detail}.` })
   } finally {
     clearTimeout(timer)
   }
