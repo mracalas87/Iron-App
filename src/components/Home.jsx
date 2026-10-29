@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CHART } from '../theme'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import LiftChart from './LiftChart'
@@ -193,12 +193,12 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
     }
   }, [garmin.data, idle, moveTick])
 
-  // The coach's review of today, made after each Garmin refresh and kept for the day. It lightens the
-  // day, moves a run or adds a rest day when needed (each with an Undo), and offers extra sessions.
+  // The coach's review of today, made only when Andy taps the Coach button (each review costs a little),
+  // and kept for the day. It lightens the day, moves a run or adds a rest day when needed (each with an
+  // Undo), and offers extra sessions.
   const [review, setReview] = useState(readReview)
   const [reviewing, setReviewing] = useState(false)
   const [reviewError, setReviewError] = useState('')
-  const triedFor = useRef(null)
 
   const runReview = async (forKey) => {
     if (!stats || !garmin.accessKey || reviewing) return
@@ -236,18 +236,6 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
       setReviewing(false)
     }
   }
-
-  // After each refresh (a new sync time) the coach reviews once; a failed try is not repeated in a loop.
-  useEffect(() => {
-    const key = garmin.data?.fetchedAt
-    if (!stats || !garmin.accessKey || !key) return
-    // the summary is rebuilt a moment after new Garmin data arrives; wait for the one made from this sync
-    if (stats.lastSynced !== key) return
-    if (review && review.for === key) return
-    if (triedFor.current === key) return
-    triedFor.current = key
-    runReview(key)
-  }, [stats, garmin.accessKey, garmin.data?.fetchedAt])
 
   const persistReview = (next) => {
     saveReview(next)
@@ -307,6 +295,10 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
     <div className="coach-badge">Coach is reviewing your data…</div>
   ) : fresh ? (
     <div className="coach-badge">Coach review · {new Date(review.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+  ) : null
+  const staleHint =
+    fresh && garmin.data?.fetchedAt && review.for !== garmin.data.fetchedAt ? (
+      <div className="advice-why">Garmin data is newer than this review. Tap ↻ Coach for a new one.</div>
   ) : null
   const openOffers = fresh ? (review.offers || []).map((o, i) => ({ o, i })).filter(({ o }) => o.state === 'open') : []
   const coachExtras = (
@@ -431,6 +423,7 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
 
               <div className="advice">
                 {coachBadge}
+                {staleHint}
                 <div className="advice-headline">{fresh ? review.headline : advice.headline}</div>
                 {advice.plan && (
                   <div className="advice-line">
