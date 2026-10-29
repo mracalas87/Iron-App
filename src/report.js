@@ -344,7 +344,8 @@ export async function buildReport() {
     rules,
     coachChanges: coachChangeLines(),
     goals: readGoals(),
-    categoryOf
+    categoryOf,
+    loggedRuns: runs
   })
 
   return {

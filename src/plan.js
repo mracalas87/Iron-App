@@ -260,6 +260,37 @@ export function getSessions() {
   return out
 }
 
+const addIso = (iso, n) => {
+  const d = new Date(iso + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+// A missed easy run is simply dropped, but the key session before the race (the race-rhythm run) is not:
+// if it was missed in the last 3 days it carries to the first free day from today, as long as that is at
+// least 8 days before the race (after that the taper matters more than the session). A run done
+// around its day, up to 2 days early or any time since, counts as done. Returns the sessions with it
+// carried, and which dates were carried from where: { sessions, carried: { newDate: oldDate } }.
+export function carryMissed(sessions, runs, today = localToday()) {
+  const out = { ...sessions }
+  const carried = {}
+  const race = nextRace(today)
+  const lastDay = race ? addIso(race.date, -8) : null
+  for (const [d, text] of Object.entries(sessions)) {
+    if (!text.startsWith('Race rhythm') || d >= today || daysBetween(d, today) > 3 || !lastDay) continue
+    const km = sessionKm(text)
+    const done = (runs || []).some((r) => r.date >= addIso(d, -2) && r.date <= today && km != null && r.distanceKm >= 0.75 * km)
+    if (done) continue
+    let to = today
+    while ((to in out || RACES.some((r) => r.date === to)) && to <= lastDay) to = addIso(to, 1)
+    if (to > lastDay) continue
+    out[to] = text
+    delete out[d]
+    carried[to] = d
+  }
+  return { sessions: out, carried }
+}
+
 // Distance in km at the low end of a planned run ("Easy 6 to 8 km" is 6, "Optional 5 km" is 5).
 const sessionKm = (text) => {
   const m = (text || '').match(/(\d+(?:\.\d+)?)(?: to \d+(?:\.\d+)?)? km/)

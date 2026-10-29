@@ -1,4 +1,4 @@
-import { RACES, RUN_GUIDE, currentPhase, weekPlan, daysUntil } from './plan'
+import { RACES, RUN_GUIDE, MILESTONES, currentPhase, weekPlan, daysUntil, getSessions, carryMissed } from './plan'
 import { setsByGroup } from './muscleSets'
 import { MUSCLE_GROUPS } from './db'
 
@@ -26,7 +26,7 @@ const pace = (meters, seconds) => {
 }
 
 // today: ISO date. vitals: getVitals() output. workouts: annotated workouts. garminActs: Garmin activities.
-export function buildCoachContext({ today, status, level, trend, advice, upcoming, last30, vitals, workouts, loadTypes, volumeOf, garminActs, customRules, rules, coachChanges, goals, categoryOf }) {
+export function buildCoachContext({ today, status, level, trend, advice, upcoming, last30, vitals, workouts, loadTypes, volumeOf, garminActs, customRules, rules, coachChanges, goals, categoryOf, loggedRuns }) {
   const L = []
 
   L.push('TODAY AND GOALS')
@@ -40,6 +40,28 @@ export function buildCoachContext({ today, status, level, trend, advice, upcomin
   const wk = weekPlan(today)
   if (wk) L.push(`This week (${wk.label}${wk.km ? ', ' + wk.km : ''}): ${wk.sessions.join(' | ')}`)
   if (advice && advice.plan) L.push(`Next step: ${advice.plan}`)
+
+  // The timeframes the week has to fit inside: the next race, every planned run still to come before it,
+  // where the phase ends, and any test or checkpoint coming.
+  const targetRace = RACES.find((r) => r.date >= today)
+  if (targetRace) {
+    L.push('')
+    L.push('DEADLINES AND WHAT IS STILL PLANNED')
+    const short = (t) => t.split(', heart rate')[0].split('. ')[0]
+    const left = Object.entries(carryMissed(getSessions(), loggedRuns || [], today).sessions)
+      .filter(([d]) => d >= today && d <= targetRace.date)
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([d, t]) => `${dayLabel(d)}: ${short(t)}`)
+    L.push(`Next race: ${targetRace.name}, ${dayLabel(targetRace.date)}, in ${daysUntil(targetRace.date, today)} days.`)
+    L.push(`Planned runs still to come before it: ${left.join(' | ') || 'none'}.`)
+    if (cp.state === 'active') {
+      L.push(`This phase (${cp.phase.name}) ends ${dayLabel(cp.phase.end)}${cp.next ? `, then ${cp.next.name} from ${dayLabel(cp.next.start)}` : ''}.`)
+    }
+    for (const m of MILESTONES) {
+      const n = daysUntil(m.date, today)
+      if (n >= 0 && n <= 90) L.push(`Coming: ${dayLabel(m.date)}, ${m.text} (${n} days).`)
+    }
+  }
 
   if (goals) {
     const level = (g) => (g === 'competitive' ? 'COMPETITIVE: chase a time and race it' : 'FUN: enjoy it and finish in a time that suits him, pushing slightly but not racing')

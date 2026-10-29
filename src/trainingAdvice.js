@@ -1,4 +1,4 @@
-import { currentPhase, liftRuleFor, getSessions, getMoves, getRules, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
+import { currentPhase, liftRuleFor, getSessions, getMoves, getRules, carryMissed, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
 import { longRunSlot } from './upcoming'
 import { trendNote } from './trends'
 
@@ -37,7 +37,7 @@ function nextStepLine(today, runs, race, info, cp) {
 
   const ranToday = runs.some((r) => r.date === today)
   const early = doneEarly(runs, today)
-  const sessions = Object.entries(getSessions()).filter(([d]) => d >= today && d <= race.date && !early.has(d) && !(d === today && ranToday))
+  const sessions = Object.entries(carryMissed(getSessions(), runs, today).sessions).filter(([d]) => d >= today && d <= race.date && !early.has(d) && !(d === today && ranToday))
   // the long run in the long-run phases follows the long-run slot, not a fixed date
   if (info.runKind === 'long-due' && info.slot) {
     const { min, max, label } = info.run
@@ -300,7 +300,9 @@ export function buildAdvice({
     else if (plan.runKind === 'race') planRun = plan.line
     else planRun = `${easyRunText(plan.phase.id)}. 80% of training stays easy.`
     // a run planned for this exact date wins over the general line, except race day and a long run due today
-    const dated = getSessions()[today]
+    const carry = carryMissed(getSessions(), runs, today)
+    const dated = carry.sessions[today]
+    const carriedFromDay = carry.carried[today]
     const movedFromDay = Object.keys(getMoves()).find((f) => getMoves()[f] === today)
     const doneAlready = doneEarly(runs, today).has(today)
     const slotToday = plan.runKind === 'long-due' && plan.slot === today
@@ -311,7 +313,7 @@ export function buildAdvice({
         zone === 'Easy' && dated.startsWith('Race rhythm')
           ? 'Race rhythm, lighter version as recovery is only fair: 8 km with the middle 3 km at 6:15 to 6:30 per km, heart rate 135 to 146 (zone 2). If it climbs over 150 or the legs feel heavy, drop to easy'
           : dated
-      planRun = movedFromDay ? `${text} (moved from ${dayName(movedFromDay)}).` : `${text}.`
+      planRun = movedFromDay ? `${text} (moved from ${dayName(movedFromDay)}).` : carriedFromDay ? `${text} (carried over from ${dayName(carriedFromDay)}, which was missed).` : `${text}.`
     }
     else if (!dated && today >= DATED_RUNS_FROM && today <= DATED_RUNS_UNTIL && plan.runKind !== 'race' && !slotToday) {
       planRun = 'No run planned today. Rest, or an easy walk.'

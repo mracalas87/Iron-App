@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, easyRunText, TAPER_RUN, DATED_RUNS_UNTIL, doneEarly } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, carryMissed, easyRunText, TAPER_RUN, DATED_RUNS_UNTIL, doneEarly } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -134,7 +134,8 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
 
   // A race-rhythm run is a key session, so that day is a rest day from lifting (like the long-run day).
   // A session Andy has moved to another day is his own call: lifting that day stays as planned.
-  const sessions = getSessions()
+  const carry = carryMissed(getSessions(), runs, today)
+  const sessions = carry.sessions
   const moves = getMoves()
   const movedTo = new Set(Object.values(moves))
   for (const [d, text] of Object.entries(sessions)) {
@@ -308,7 +309,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: sessions[d] || longRuns.get(d) })
       else if (sessions[d] && ranEarly.has(d)) row.note = row.note ? `${row.note}. Run done early` : 'Run done early, none today'
       else if (sessions[d] && !(forcedOff.get(d) || '').startsWith('recovery trend') && !(forcedOff.get(d) || '').startsWith('rest day (coach)')) {
-        row.cardio.push({ kind: 'Run', text: sessions[d], movable: !movedFrom, movedFrom, date: d })
+        row.cardio.push({ kind: 'Run', text: sessions[d], movable: !movedFrom, movedFrom, carriedFrom: carry.carried[d], date: d })
       }
       else if (off && !forcedOff.has(d) && !swimOrRide && d > DATED_RUNS_UNTIL) row.cardio.push({ kind: 'Run', text: easyRunText(ph.id) })
       if (d >= FAMILY_SWIM.from && dow(d) === 4) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })

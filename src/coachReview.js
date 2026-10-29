@@ -65,7 +65,7 @@ export function cleanReview(raw, today) {
   const raceDates = new Set(RACES.map((r) => r.date))
   const moves = readMoves()
   const extras = readCoachExtras()
-  const out = { headline: str(raw && raw.headline, 140), lift: str(raw && raw.lift, 180), run: str(raw && raw.run, 200), why: str(raw && raw.why, 200), actions: [], offers: [] }
+  const out = { headline: str(raw && raw.headline, 140), lift: str(raw && raw.lift, 180), run: str(raw && raw.run, 200), why: str(raw && raw.why, 200), week: str(raw && raw.week, 280), actions: [], offers: [] }
 
   for (const a of Array.isArray(raw && raw.actions) ? raw.actions : []) {
     if (out.actions.length >= 3 || !a || typeof a !== 'object') continue

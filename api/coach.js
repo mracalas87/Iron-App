@@ -36,6 +36,7 @@ Your job now is a review of today and the week ahead. Reply with ONLY a JSON obj
   "lift": "today's lifting advice, under 140 characters",
   "run": "today's run advice with a distance and a heart rate or zone, under 160 characters",
   "why": "the numbers behind it, under 160 characters",
+  "week": "two short sentences on the next 7 days against his goals and the deadlines: is he on track, and what matters most this week",
   "actions": [
     { "type": "move_run", "from": "YYYY-MM-DD", "to": "YYYY-MM-DD", "reason": "short" },
     { "type": "rest_day", "date": "YYYY-MM-DD", "reason": "short" },
@@ -52,7 +53,8 @@ Rules for the review:
 - Look at sleep, resting heart rate, HRV, yesterday's training, how his weeks have really looked and the sessions coming up. If recovery looks poor (short sleep, resting heart rate up, HRV down), lighten today and say what to cut.
 - Actions never add training. If an extra session would suit his week and his life, put it in offers (at most 2, each with a distance and a heart rate); he accepts or declines. Offer only when his week has room, and push him gently when he has been consistent.
 - If his logs show his lifting pattern has changed (fewer lifting days a week, a longer or shorter gap between the same lift), you may use one set_rule to match it. Only change a rule when the logs clearly show the change.
-- Only add an action when a change is really needed, at most 3. "move_run" can only move a planned run listed in THIS WEEK's plan to a date in the next 7 days that has no run planned. "rest_day" is a full day off with no lifting or run. If no change is needed, "actions" must be [].
+- Go through each of the next 7 days in COMING UP and check it against how he is recovering, his goals (fun or competitive, hold or gain muscle), what "life right now" allows, and the deadlines in DEADLINES AND WHAT IS STILL PLANNED (days to the race, the phase, a taper, a test). Protect the key sessions (the long run, race-rhythm run, taper runs, the race itself) and cut or move smaller things first. Say in "week" whether he is on track for the next deadline.
+- Prefer small changes. Only add an action when a change is really needed, at most 3. "move_run" can only move a planned run listed in THIS WEEK's plan to a date in the next 7 days that has no run planned. "rest_day" is a full day off with no lifting or run. If no change is needed, "actions" must be [].
 - Dates must be ISO dates within the next 7 days. Keep every string short and plain.`
 
 const trim = (s, n) => String(s || '').slice(0, n)

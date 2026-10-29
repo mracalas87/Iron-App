@@ -12,7 +12,7 @@ import { ADVICE_ZONES } from '../trainingAdvice'
 import { getVitals, trendLabel, round } from '../vitals'
 import { loadLocalEntries, buildFeed } from '../activityFeed'
 import { syncRunsFromGarminCache } from '../db'
-import { moveRun, undoMove } from '../overrides'
+import { undoMove } from '../overrides'
 
 const tooltipStyle = { background: CHART.tipBg, border: `1px solid ${CHART.grid}`, borderRadius: 8 }
 
@@ -155,15 +155,11 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   const [local, setLocal] = useState([])
   const idle = !activeWorkout // recompute after a workout is saved
 
-  // "Do today": move a planned run to today. The day it came from becomes a full rest day.
+  // Undo a run move the coach made: the run goes back to its planned day.
   const localToday = () => {
     const d = new Date()
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
     return d.toISOString().slice(0, 10)
-  }
-  const doToday = (from) => {
-    moveRun(from, localToday())
-    setMoveTick((n) => n + 1)
   }
   const undo = (from) => {
     undoMove(from)
@@ -226,6 +222,7 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
         lift: clean.lift,
         run: clean.run,
         why: clean.why,
+        week: clean.week,
         applied: [...(prev ? prev.applied || [] : []), ...applied],
         offers: [...declined, ...offers],
         sessions: prev ? prev.sessions || [] : []
@@ -456,6 +453,11 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
                     <span>Trend</span> {stats.trend.summary}
                   </div>
                 )}
+                {fresh && review.week && (
+                  <div className="advice-line">
+                    <span>Week</span> {review.week}
+                  </div>
+                )}
                 {fresh && review.why ? <div className="advice-why">{review.why}</div> : reasonsLine && <div className="advice-why">{reasonsLine}</div>}
                 {coachExtras}
               </div>
@@ -484,12 +486,8 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
                 {row.cardio.map((c) => (
                   <div key={c.kind + c.text}>
                     <SportIcon kind={c.kind} /> {c.text}
-                    {c.movable && (
-                      <button className="mini-act" onClick={() => doToday(c.date)}>
-                        Do today
-                      </button>
-                    )}
                     {c.movedFrom && <span className="up-note"> (moved from {shortDate(c.movedFrom)})</span>}
+                    {c.carriedFrom && <span className="up-note"> (carried over from {shortDate(c.carriedFrom)}, missed)</span>}
                   </div>
                 ))}
                 {row.note && <div className="up-note">{row.note}</div>}
