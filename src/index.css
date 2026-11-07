@@ -1097,6 +1097,30 @@ select:focus-visible {
   display: grid;
 }
 
+.fuel-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.fuel-lap {
+  display: flex;
+  flex-direction: column;
+}
+
+.fuel-lap span {
+  color: var(--chalk-dim);
+  font-size: 12px;
+}
+
+.fuel-items > div + div {
+  margin-top: 2px;
+}
+
 .coach-badge {
   display: inline-block;
   margin-bottom: 8px;

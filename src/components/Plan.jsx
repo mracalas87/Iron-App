@@ -8,6 +8,8 @@ import {
   GROUND_RULES,
   APP_RULES,
   RACE_PLANS,
+  FUEL,
+  fuelTable,
   RUN_GUIDE,
   weekPlan,
   nextRace,
@@ -54,6 +56,47 @@ function Bullets({ lines }) {
       {t}
     </div>
   ))
+}
+
+function FuelBlock({ title, lines }) {
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div className="dim-label">{title}</div>
+      <Bullets lines={lines} />
+    </div>
+  )
+}
+
+// The race-day plan for the Lisbon loop: numbers, the day before, and a lap-by-lap table.
+function FuelPlan() {
+  const rows = fuelTable()
+  return (
+    <div>
+      <div className="dim-label">The numbers</div>
+      <Bullets lines={FUEL.targets} />
+      <FuelBlock title="Before the start (Sat 14 Nov)" lines={FUEL.before} />
+      <div className="dim-label" style={{ marginTop: 12 }}>Lap by lap (times assume 6:20 per km)</div>
+      {rows.map((r) => (
+        <div className="fuel-row" key={r.lap}>
+          <div className="fuel-lap">
+            <b>{typeof r.lap === 'number' ? `Lap ${r.lap}` : r.lap}</b>
+            <span>
+              {r.km > 0 ? `km ${r.km} · ` : ''}
+              {r.clock}
+            </span>
+          </div>
+          <div className="fuel-items">
+            {r.items.map((t) => (
+              <div key={t}>{t}</div>
+            ))}
+          </div>
+        </div>
+      ))}
+      <FuelBlock title="Solid food" lines={FUEL.solids} />
+      <FuelBlock title="Caffeine" lines={FUEL.caffeine} />
+      <FuelBlock title="Rules" lines={FUEL.rules} />
+    </div>
+  )
 }
 
 function MonthRow({ m, current }) {
@@ -304,6 +347,12 @@ export default function Plan() {
       {RACE_PLANS[race.id] && (
         <Panel id="raceplan" icon="race" title="Race plan" summary={`${race.name} · ${goals[race.id] === 'competitive' ? 'Competitive' : 'Fun'}`} {...back}>
           <Bullets lines={RACE_PLANS[race.id]} />
+        </Panel>
+      )}
+
+      {race.id === 'lisbon' && (
+        <Panel id="fuel" icon="fuel" title="Race fuelling" summary={FUEL.summary} {...back}>
+          <FuelPlan />
         </Panel>
       )}
 

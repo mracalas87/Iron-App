@@ -10,7 +10,7 @@ export const RACES = [
     kind: 'run',
     distanceKm: 42.195,
     goal: 'Your first marathon.',
-    pacing: 'Start at 6:15 to 6:30 per km (finish 4:24 to 4:34). Walk the aid stations. Fuel from 45 minutes.'
+    pacing: 'Run 6:15 to 6:30 per km (finish about 23:25 to 23:35). Evening start at 19:00, 18.5 laps of a 2.28 km loop. Fuel by the lap: see Race fuelling.'
   },
   {
     id: 'cascais',
@@ -179,7 +179,7 @@ export const WEEKS = [
       'Tue: 4 km easy with 4 strides. Thu: 3 km shake-out.',
       'Upper body only, short and easy, until Wednesday. No lifting Thursday or Friday.',
       'Thu and Fri: raise carbohydrate (about 8 g per kg a day), nothing new to eat, early nights.',
-      'Fri: collect the number, lay out kit, gels and shoes. Sat 14 Nov: race.'
+      'Fri: collect the number, lay out kit, gels and shoes, and plan your lap-line table. Sat 14 Nov: race at 19:00, 18.5 laps of 2.28 km. Eat and drink by the Race fuelling plan all day.'
     ]
   },
   {
@@ -385,13 +385,86 @@ export const PHASE_WEEKS = {
   ]
 }
 
+// ---------- Lisbon race fuelling, lap by lap ----------
+// The marathon is run in the evening on a loop, so food and fluid are planned by the lap, from a table at
+// the lap line. Quantities use the labels of the gels he uses (Decathlon Energy Gel+: 30 g carbohydrate,
+// 70 mg sodium, 56 mg magnesium, 300 mg potassium per 35 mL; the caffeine one has 80 mg of caffeine) and the
+// GoldNutrition electrolyte sticks (238 mg sodium, 169 mg magnesium each).
+export const LOOP = { km: 2.28, start: '19:00', paceSecPerKm: 380 } // 6:20 per km
+
+export const FUEL = {
+  summary: 'A gel every 2 laps, water every lap, about 500 ml an hour',
+  gelLaps: [2, 4, 6, 8, 10, 12, 14, 16],
+  caffeineLaps: [14, 16],
+  bananaLaps: [5, 9, 13],
+  stickLaps: [7, 15],
+  targets: [
+    'Carbs: about 55 to 60 g an hour. That is one gel (30 g) every 2 laps, about every 29 minutes, with a little banana on the lap between if you want something solid.',
+    'Fluid: about 500 ml an hour, 2 to 2.5 litres in all. The night is cool, so drink to thirst: 2 or 3 mouthfuls on a lap with no gel, 150 to 200 ml with each gel. Never more than 800 ml in an hour.',
+    'Salt: each gel has about 70 mg of sodium (about 560 mg over 8 gels). Add 1 electrolyte stick, 2 at most, and only if you have run with them. Each stick has 169 mg of magnesium and each gel has 56 mg, so more than 2 sticks can upset your stomach.',
+    'Table: put it at the lap line. Gels in the order you will use them, a cut banana, 2 bottles of water, the sticks, and a spare of each.',
+    'Shopping: 2 packs of 6 gels (one plain, one with caffeine), 2 bananas, 2 or 3 electrolyte sticks.'
+  ],
+  before: [
+    'Fri: carbohydrate at every meal (about 8 g per kg across the day), normal salt, nothing new.',
+    'Sat 08:00: your usual breakfast (oats, banana, toast).',
+    'Sat 12:30: a big carb lunch (pasta or rice, about 120 to 150 g of carbs), low in fat and fibre.',
+    'Sat 15:30: the last proper meal, 3 to 3.5 hours before the start: toast and jam, rice or a banana (60 to 80 g of carbs).',
+    'Sat 16:30 to 18:30: sip 500 to 700 ml of water. Pale yellow pee is the sign. Add 1 electrolyte stick if you use one before long runs.',
+    'Sat 18:45: 1 gel with a few sips of water, a few minutes of walking and easy jogging, then the start at 19:00.'
+  ],
+  solids: [
+    'Half a banana (about 13 g of carbs) on laps 5, 9 and 13 if you want something solid or are tired of gels. Salted pretzels, crisps or boiled salted potatoes work if you crave salt.',
+    'Stop solid food by lap 15. After that, gels and water only.'
+  ],
+  caffeine: [
+    'The caffeine gels (80 mg each) go on laps 14 and 16, only if you have run with them.',
+    'The race ends about 23:30, so skip caffeine altogether if it keeps you awake.'
+  ],
+  rules: [
+    'Nothing new on race day. Take every gel with water.',
+    'If your stomach turns: drop the sticks and the banana first, slow down for 3 to 5 minutes, then carry on with small amounts of gel and water.',
+    'It will be cool (about 10 to 14 C): wear a layer to the start. After the finish, eat carbs and protein within the hour and keep drinking.',
+    'This is a plan from standard marathon guidelines, not medical advice.'
+  ]
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+
+// The lap table: for each lap, the distance, the clock time at the pace below, and what to take.
+export function fuelTable(paceSecPerKm = LOOP.paceSecPerKm, totalKm = 42.195) {
+  const [h, m] = LOOP.start.split(':').map(Number)
+  const clock = (km) => {
+    const mins = h * 60 + m + (km * paceSecPerKm) / 60
+    return `${pad2(Math.floor(mins / 60) % 24)}:${pad2(Math.floor(mins % 60))}`
+  }
+  const rows = [{ lap: 'Before', km: 0, clock: LOOP.start, items: ['1 gel with a few sips of water at 18:45'] }]
+  const laps = Math.ceil(totalKm / LOOP.km)
+  for (let lap = 1; lap <= laps; lap++) {
+    const km = Math.min(lap * LOOP.km, totalKm)
+    const items = []
+    const last = lap === laps
+    if (last) items.push('Finish. Half a lap to go: just water if you want it')
+    else {
+      if (FUEL.gelLaps.includes(lap)) {
+        const caf = FUEL.caffeineLaps.includes(lap)
+        items.push(`${caf ? 'Caffeine gel (if you have tried it)' : 'Gel'} with 150 to 200 ml of water`)
+      } else items.push('2 or 3 mouthfuls of water')
+      if (FUEL.bananaLaps.includes(lap)) items.push('Half a banana (optional)')
+      if (FUEL.stickLaps.includes(lap)) items.push('Electrolyte stick with water (optional)')
+    }
+    rows.push({ lap, km: Math.round(km * 10) / 10, clock: clock(km), items })
+  }
+  return rows
+}
+
 export const RACE_PLANS = {
   lisbon: [
     'Pace: 6:15 to 6:30 per km for the first 30 km, with the first 5 km on the slow side.',
     'Heart rate: at this pace expect about 128 to 145 for the first 30 km (you ran 6:10 per km at 131 on 29 Oct). If it is over 155 before 25 km, ease off by 10 to 15 seconds per km.',
     'Your 30 km on 26 Sep was 6:49 per km at heart rate 144, so this pace is well inside what you have shown.',
     'Expect 4:20 to 4:35. Your half marathon (1:57) predicts faster on paper, but your weekly running is low, so protect the last 10 km.',
-    'Fuel: a gel at 45 minutes, then every 30 to 40 (about 60 g of carbohydrate an hour). Walk the aid stations and drink there.',
+    'Fuel and fluid: follow the Race fuelling panel. A gel every 2 laps, water every lap, about 500 ml an hour.',
     'From 32 km, if heart rate is under 158 and the legs are good, you may lift the pace a little. Otherwise hold.'
   ],
   cascais: [
