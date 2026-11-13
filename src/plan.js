@@ -10,7 +10,7 @@ export const RACES = [
     kind: 'run',
     distanceKm: 42.195,
     goal: 'Your first marathon.',
-    pacing: 'Run 6:15 to 6:30 per km (finish about 23:25 to 23:35). Evening start at 19:00, 18.5 laps of a 2.28 km loop. Fuel by the lap: see Race fuelling.'
+    pacing: 'Run 6:15 to 6:30 per km (finish about 23:25 to 23:35). Evening start at 19:00, about 19 laps (18.9) of a 2.235 km loop. Fuel by the lap: see Race fuelling.'
   },
   {
     id: 'cascais',
@@ -179,7 +179,7 @@ export const WEEKS = [
       'Tue: 4 km easy with 4 strides. Thu: 3 km shake-out.',
       'Upper body only, short and easy, until Wednesday. No lifting Thursday or Friday.',
       'Thu and Fri: raise carbohydrate (about 8 g per kg a day), nothing new to eat, early nights.',
-      'Fri: collect the number, lay out kit, gels and shoes, and plan your lap-line table. Sat 14 Nov: race at 19:00, 18.5 laps of 2.28 km. Eat and drink by the Race fuelling plan all day.'
+      'Fri: collect the number (Fri 15:00 to 21:00, or Sat 08:30 to 23:00), lay out kit, gels and shoes, and plan your lap-line table. Bring your own cup: the organisers say every athlete must carry one. Sat 14 Nov: Night Marathon at 19:00, about 19 laps of 2.235 km (asphalt and dirt, lit at night). Eat and drink by the Race fuelling plan all day.'
     ]
   },
   {
@@ -390,7 +390,7 @@ export const PHASE_WEEKS = {
 // the lap line. Quantities use the labels of the gels he uses (Decathlon Energy Gel+: 30 g carbohydrate,
 // 70 mg sodium, 56 mg magnesium, 300 mg potassium per 35 mL; the caffeine one has 80 mg of caffeine) and the
 // GoldNutrition electrolyte sticks (238 mg sodium, 169 mg magnesium each).
-export const LOOP = { km: 2.28, start: '19:00', paceSecPerKm: 380 } // 6:20 per km
+export const LOOP = { km: 2.235, start: '19:00', paceSecPerKm: 380 } // 6:20 per km; the loop is about 2,235 m (Grifo 24H athlete guide)
 
 export const FUEL = {
   summary: 'A gel every 2 laps, water every lap, about 500 ml an hour',
@@ -402,7 +402,8 @@ export const FUEL = {
     'Carbs: about 55 to 60 g an hour. That is one gel (30 g) every 2 laps, about every 29 minutes, with a little banana on the lap between if you want something solid.',
     'Fluid: about 500 ml an hour, 2 to 2.5 litres in all. The night is cool, so drink to thirst: 2 or 3 mouthfuls on a lap with no gel, 150 to 200 ml with each gel. Never more than 800 ml in an hour.',
     'Salt: each gel has about 70 mg of sodium (about 560 mg over 8 gels). Add 1 electrolyte stick, 2 at most, and only if you have run with them. Each stick has 169 mg of magnesium and each gel has 56 mg, so more than 2 sticks can upset your stomach.',
-    'Table: put it at the lap line. Gels in the order you will use them, a cut banana, 2 bottles of water, the sticks, and a spare of each.',
+    'Table: put it at the lap line, in the athlete support area. Gels in the order you will use them, a cut banana, 2 bottles of water, the sticks, and a spare of each.',
+    'Aid station: the organisers provide water, isotonic drink and food on the loop, and you must carry your own cup. Take water from there on the lap with no gel. If you drink their isotonic, it counts as carbs, so take a gel less or a smaller amount of it.',
     'Shopping: 2 packs of 6 gels (one plain, one with caffeine), 2 bananas, 2 or 3 electrolyte sticks.'
   ],
   before: [
@@ -450,7 +451,7 @@ export function fuelTable(paceSecPerKm = LOOP.paceSecPerKm, totalKm = 42.195) {
     const km = Math.min(lap * LOOP.km, totalKm)
     const items = []
     const last = lap === laps
-    if (last) items.push('Finish. Half a lap to go: just water if you want it')
+    if (last) items.push('Finish. The last lap is short (about 2 km): just water if you want it')
     else {
       if (FUEL.gelLaps.includes(lap)) {
         const caf = FUEL.caffeineLaps.includes(lap)
