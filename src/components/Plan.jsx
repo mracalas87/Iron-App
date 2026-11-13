@@ -92,6 +92,7 @@ function FuelPlan() {
           </div>
         </div>
       ))}
+      <FuelBlock title="Nrgy Drink 90" lines={FUEL.drink} />
       <FuelBlock title="Solid food" lines={FUEL.solids} />
       <FuelBlock title="Caffeine" lines={FUEL.caffeine} />
       <FuelBlock title="Rules" lines={FUEL.rules} />

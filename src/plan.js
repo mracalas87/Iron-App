@@ -406,12 +406,18 @@ export const FUEL = {
     'Shopping: 2 packs of 6 gels (one plain, one with caffeine), 2 bananas, 2 or 3 electrolyte sticks.'
   ],
   before: [
-    'Fri: carbohydrate at every meal (about 8 g per kg across the day), normal salt, nothing new.',
+    'Fri breakfast: a big bowl of porridge with milk (about 65 g of carbs), a protein shake, and 3 scoops of Nrgy Drink 90 (about 68 g of carbs) mixed in 500 to 600 ml of water and sipped over 1.5 to 2 hours, not with the porridge. About 135 g of carbs in all. Only use the drink if you have had it before; if not, 1 scoop at most.',
+    'Fri rest of day: carbohydrate at every meal (about 8 g per kg across the day), low fibre and low fat, normal salt, nothing new. Drink until your pee is pale yellow. Finish the big evening meal by about 20:00 and get to bed early.',
     'Sat 08:00: your usual breakfast (oats, banana, toast).',
     'Sat 12:30: a big carb lunch (pasta or rice, about 120 to 150 g of carbs), low in fat and fibre.',
     'Sat 15:30: the last proper meal, 3 to 3.5 hours before the start: toast and jam, rice or a banana (60 to 80 g of carbs).',
-    'Sat 16:30 to 18:30: sip 500 to 700 ml of water. Pale yellow pee is the sign. Add 1 electrolyte stick if you use one before long runs.',
+    'Sat 16:30 to 18:30: sip 500 to 700 ml. Either water, or 2 scoops of Nrgy Drink 90 (about 45 g of carbs) in 500 ml of water if you have used it before. Pale yellow pee is the sign. Add 1 electrolyte stick only if you use one before long runs, and skip it if you take the drink (it has salt in it).',
     'Sat 18:45: 1 gel with a few sips of water, a few minutes of walking and easy jogging, then the start at 19:00.'
+  ],
+  drink: [
+    'Nrgy Drink 90: 4 scoops (96 g) is 90 g of carbs, so 1 scoop is about 22 g of carbs and 0.18 g of salt. It is half maltodextrin and half fructose, so a big dose all at once can bloat you.',
+    'Use it before the start (Fri breakfast and Sat 16:30 to 18:30), not in the race. One full serving an hour is 90 g, which is far more than the 55 to 60 g an hour in this plan.',
+    'Race fallback: if gels turn you off, mix 2 scoops in 500 ml for one bottle an hour (about 45 g of carbs), alongside a banana. Only do this if you have run with it.'
   ],
   solids: [
     'Half a banana (about 13 g of carbs) on laps 5, 9 and 13 if you want something solid or are tired of gels. Salted pretzels, crisps or boiled salted potatoes work if you crave salt.',
