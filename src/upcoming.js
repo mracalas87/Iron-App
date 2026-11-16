@@ -140,6 +140,11 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   const movedTo = new Set(Object.values(moves))
   for (const [d, text] of Object.entries(sessions)) {
     if (d >= today && d <= end && getRules().keyRunNoLift && text.startsWith('Race rhythm') && !forcedOff.has(d) && !movedTo.has(d)) forcedOff.set(d, 'key run day')
+    // A VO2 session (hard intervals): no leg lifting the day before or on the day, but other lifts stay.
+    if (text.startsWith('VO2') && d >= today && d <= addDays(end, 1)) {
+      if (!legsBlocked.has(d)) legsBlocked.set(d, 'VO2 session day')
+      if (!legsBlocked.has(addDays(d, -1))) legsBlocked.set(addDays(d, -1), 'VO2 session tomorrow')
+    }
   }
   // Days the coach made full rest days (shown on Today with an Undo).
   for (const [d, reason] of Object.entries(coach.rest || {})) {

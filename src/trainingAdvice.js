@@ -312,7 +312,9 @@ export function buildAdvice({
       const text =
         zone === 'Easy' && dated.startsWith('Race rhythm')
           ? 'Race rhythm, lighter version as recovery is only fair: 8 km with the middle 3 km at 6:15 to 6:30 per km, heart rate 135 to 146 (zone 2). If it climbs over 150 or the legs feel heavy, drop to easy'
-          : dated
+          : zone === 'Easy' && dated.startsWith('VO2 ') && !dated.startsWith('VO2 test')
+            ? 'VO2 session, lighter version as recovery is only fair: 10 min easy warm-up, then 3 x 4 min hard at heart rate 160 to 170 (zone 4), 3 min easy jog between, 5 min cool-down. If the legs feel heavy or the heart rate will not climb, run easy 5 km instead'
+            : dated
       planRun = movedFromDay ? `${text} (moved from ${dayName(movedFromDay)}).` : carriedFromDay ? `${text} (carried over from ${dayName(carriedFromDay)}, which was missed).` : `${text}.`
     }
     else if (!dated && today >= DATED_RUNS_FROM && today <= DATED_RUNS_UNTIL && plan.runKind !== 'race' && !slotToday) {
