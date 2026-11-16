@@ -17,7 +17,7 @@ export const RACES = [
       lines: [
         'Heart rate stayed low: average 137, max 156, and nothing above zone 3. Effort was easy, so the limit was the stomach, the cramps and the legs, not the heart.',
         'Your best 10 km was 64:39 (6:28 per km) and your best half was 2:20:41. The rest averaged about 7:30 per km.',
-        'After 25 km the stomach got tight and eating stopped. Cramps began in the mid 30s km, so laps were run more carefully.',
+        'After 25 km the stomach got tight and eating stopped. The legs got heavy around 30 km and cramps began in the mid 30s km, so laps were run more carefully.',
         'The loop had 392 m of climbing (about 9 m per km), asphalt and dirt, and the watch read up to 26 C.',
         'Recovery: HRV 45 and 1.1 h of sleep on Sun 15 Nov, back to 109 with 10 h of sleep on Mon 16 Nov.',
         'For next time: practise the race fuel on 2 long runs of 25 km or more, at race pace and at the same time of day. Try less concentrated carbs (gel diluted in more water, or a lower strength drink), consider fewer gels and sticks, and build the long run to 32 km or more.'
