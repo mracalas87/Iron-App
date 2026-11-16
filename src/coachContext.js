@@ -35,6 +35,12 @@ export function buildCoachContext({ today, status, level, trend, advice, upcomin
     const n = daysUntil(r.date, today)
     if (n >= 0) L.push(`${r.name}: ${dayLabelY(r.date, today)} (${n} days). ${r.pacing}`)
   }
+  for (const r of RACES) {
+    if (r.result && r.date <= today) {
+      L.push(`${r.name} RESULT: ${r.result.summary}`)
+      for (const t of r.result.lines) L.push(`- ${t}`)
+    }
+  }
   const cp = currentPhase(today)
   if (cp.state === 'active') L.push(`Phase: ${cp.phase.name}, week ${cp.week} of ${cp.totalWeeks}. ${cp.phase.instruction}`)
   const wk = weekPlan(today)

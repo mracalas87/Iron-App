@@ -384,6 +384,13 @@ export default function Plan() {
             <div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div>
             <div style={{ fontSize: 13, marginTop: 2 }}>{r.goal}</div>
             <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginTop: 2, lineHeight: 1.45 }}>{r.pacing}</div>
+            {r.result && (
+              <div style={{ marginTop: 8 }}>
+                <div className="dim-label">Result</div>
+                <div style={{ fontSize: 13, marginTop: 2, lineHeight: 1.45 }}>{r.result.summary}</div>
+                <Bullets lines={r.result.lines} />
+              </div>
+            )}
           </div>
         ))}
       </Panel>
