@@ -72,7 +72,7 @@ export const PHASES = [
     name: 'Recovery and baseline tests',
     start: '2026-11-15',
     end: '2026-11-30',
-    instruction: 'Recover first, then baseline tests: a 400 m swim and a 30 km ride.',
+    instruction: 'Recover first, then baseline tests: a 400 m swim (done 17 Nov, 9:56) and a 30 km ride.',
     liftNote: 'Recovering: lift light and stop well short of failure.',
     legsNote: 'Legs: half the usual sets.'
   },
@@ -221,7 +221,7 @@ export const WEEKS = [
     label: 'Baseline tests',
     km: '12 to 16 km running',
     sessions: [
-      'Tue 24 Nov, 5 to 6pm: 400 m swim test at a steady effort, heart rate under 150. Time it, note how it felt.',
+      'Swim baseline done on Tue 17 Nov: 400 m in 9:56 (about 2:29 per 100 m), average heart rate 118. Tue 24 Nov, 5 to 6pm: an ordinary easy swim, 400 to 600 m.',
       'Sat 28 Nov: 30 km ride, steady, heart rate under 145 (zone 2). Note average speed and heart rate.',
       'Easy runs: Sun 22, Thu 26 (with 6 strides at the end) and Sun 29 Nov, 6 to 8 km, heart rate under 148. The VO2 block starts on Wed 2 Dec.'
     ]
@@ -407,7 +407,7 @@ export function doneEarly(runs, today = localToday()) {
 
 // Dated tests and checkpoints that are not runs; the Plan line on Today points to the next one.
 export const MILESTONES = [
-  { date: '2026-11-24', text: '400 m swim baseline test' },
+  { date: '2026-11-17', text: '400 m swim baseline done: 9:56, about 2:29 per 100 m' },
   { date: '2026-11-28', text: '30 km baseline ride' },
   { date: '2026-12-23', text: 'VO2 max test run (goal: Garmin VO2 max over 50)' },
   { date: '2027-02-27', text: 'base checkpoint: 1,500 m swim and 60 km ride' },
@@ -578,7 +578,7 @@ export const RUN_GUIDE = [
 
 // Month by month swim and ride targets. A dash means the brief sets no target.
 export const MONTH_TARGETS = [
-  { month: '2026-11', swim: '400 m baseline test, after the 15 Nov recovery', ride: '30 km baseline test', note: 'Lisbon marathon on 14 Nov.' },
+  { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '30 km baseline test', note: 'Lisbon marathon on 14 Nov.' },
   { month: '2026-12', swim: 'Technique', ride: '25 to 60 km, easy', note: 'VO2 max block to 23 Dec: Norwegian 4 x 4 on Wednesday and Friday. Goal: Garmin VO2 max over 50.' },
   { month: '2027-01', swim: 'Technique', ride: '25 to 60 km' },
   { month: '2027-02', swim: 'Technique. Checkpoint: 1,500 m', ride: '25 to 60 km. Checkpoint: 60 km', note: 'End of base.' },

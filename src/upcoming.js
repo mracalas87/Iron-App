@@ -57,8 +57,8 @@ const rangeMax = (text) => {
 // reads low and unreliable, so swim figures are an easy-effort guide; bike zones are about 5 to 10 bpm
 // under running ones until measured on the road.
 function swimText(d) {
-  if (d < '2026-11-24') return 'Easy swim 400 to 600 m, relaxed, heart rate under 135 (zone 1-2)'
-  if (d <= '2026-11-30') return '400 m baseline swim, steady effort, time it, heart rate under 150 (zone 2-3)'
+  // 400 m baseline already done on 17 Nov (9:56, about 2:29 per 100 m, heart rate 118)
+  if (d <= '2026-11-30') return 'Easy swim 400 to 600 m, relaxed, heart rate under 135 (zone 1-2)'
   if (d < '2027-02-01') return 'Technique 800 to 1,200 m: drills and easy lengths, heart rate under 135 (zone 1-2)'
   if (d < '2027-03-01') return 'Technique 1,000 to 1,500 m, building to 1,500 m continuous, heart rate under 140 (zone 2)'
   if (d < '2027-07-01') return 'Swim 1,800 to 2,500 m: drills then steady sets, heart rate under 140 (zone 2)'
