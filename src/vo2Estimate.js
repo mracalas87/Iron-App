@@ -58,7 +58,6 @@ export function paceForVo2max(target, hrr) {
 }
 
 export function paceLabel(secondsPerKm) {
-  const m = Math.floor(secondsPerKm / 60)
-  const s = Math.round(secondsPerKm - m * 60)
-  return `${m}:${String(s === 60 ? 0 : s).padStart(2, '0')}`
+  const total = Math.round(secondsPerKm)
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
