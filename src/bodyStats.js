@@ -10,7 +10,7 @@ export const EXPERIENCE = [
   { id: 'advanced', label: 'Over 3 years', sets: 1.1 }
 ]
 
-export const DEFAULT_STATS = { age: 39, weightKg: null, experience: 'advanced' }
+export const DEFAULT_STATS = { age: 39, weightKg: null, experience: 'advanced', sessionsPerWeek: null } // null = work it out from your log
 
 const num = (v, lo, hi) => {
   const n = Number(v)
@@ -27,7 +27,8 @@ export function readStats() {
   return {
     age: num(raw.age, 14, 90) ?? DEFAULT_STATS.age,
     weightKg: num(raw.weightKg, 30, 250),
-    experience: EXPERIENCE.some((e) => e.id === raw.experience) ? raw.experience : DEFAULT_STATS.experience
+    experience: EXPERIENCE.some((e) => e.id === raw.experience) ? raw.experience : DEFAULT_STATS.experience,
+    sessionsPerWeek: [1, 2, 3, 4].includes(Number(raw.sessionsPerWeek)) ? Number(raw.sessionsPerWeek) : null
   }
 }
 

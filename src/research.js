@@ -127,14 +127,31 @@ function findLogged(pick, exercises, best, group) {
   return hits[0] || null
 }
 
+// Hard sets for one muscle in one session stop adding much past about 10 to 12 (Schoenfeld 2019), and heavy sets are the
+// most tiring, so the target is capped lower for them.
+export const MAX_SESSION_SETS = { Heavy: 8, Mixed: 10, Volume: 12 }
+
+// Sets for each block of a session after the factors (age, experience, sleep, ...) are applied, never fewer than 2 a block
+// and never more than MAX_SESSION_SETS for the type in all.
+export function scaledSets(type, factor = 1) {
+  const sets = TYPE_INFO[type].blocks.map((b) => Math.max(2, Math.round(b.sets * factor)))
+  while (sets.reduce((a, b) => a + b, 0) > MAX_SESSION_SETS[type]) {
+    const top = sets.indexOf(Math.max(...sets))
+    if (sets[top] <= 2) break
+    sets[top]--
+  }
+  return sets
+}
+
 // The research-backed session for a muscle group and type, with weights from your own bests where the lift is in
-// your log. setsFactor comes from bodyStats.js (age and training experience).
+// your log. setsFactor comes from targets.js (age, training experience, sessions a week, sleep and running load).
 // Returns { type, goal, effort, evidence, blocks: [{ name, note, sets, reps, rest, pct, kg, logged }], totalSets }.
 export function researchWorkout(type, group, { exercises = [], best = new Map(), setsFactor = 1 } = {}) {
   const info = TYPE_INFO[type]
   const picks = EXERCISES[group] || EXERCISES.Chest
   const used = new Set()
-  const blocks = info.blocks.map((b) => {
+  const counts = scaledSets(type, setsFactor)
+  const blocks = info.blocks.map((b, i) => {
     // An accessory can be a second compound variation (incline press for chest) as well as a true accessory;
     // between those, the lift already in your log is preferred so the weight can be set from your best on it.
     const fits = picks.filter((p) => !used.has(p.name) && (p.slot === b.slot || (b.slot === 'accessory' && p.slot === 'second')))
@@ -143,7 +160,7 @@ export function researchWorkout(type, group, { exercises = [], best = new Map(),
     used.add(pick.name)
     const logged = findLogged(pick, exercises, best, group)
     const pct = Math.round(percentOfBest(b.reps) * 100)
-    const sets = Math.max(2, Math.round(b.sets * setsFactor))
+    const sets = counts[i]
     return {
       name: pick.name,
       note: pick.note || null,
@@ -166,25 +183,28 @@ export function researchWorkout(type, group, { exercises = [], best = new Map(),
   }
 }
 
-// The research dose for one logged workout, in kg lifted: the same blocks as researchWorkout, with each block's weight
-// taken from the strength of the lifts you chose (strongest lift first). nGroups > 1 adds blocks for the extra muscles.
-// strengths: your best est. 1RM for each lift in the workout.
-export function optimalVolume(type, strengths, { setsFactor = 1, nGroups = 1 } = {}) {
+// How strong a lift in each slot usually is next to your main lift, for when only some of the lifts are in your log
+// (an isolation exercise is lifted far lighter than a bench or a squat).
+const SLOT_RATIO = { main: 1, second: 0.85, accessory: 0.6, isolation: 0.35 }
+
+// The research dose for one session of a muscle group, in kg lifted: the blocks of the session (sets, reps and
+// percentage of your max), each with the weight from your own lifts for that muscle, strongest lift first. A slot with no
+// lift of yours yet is estimated from your strongest lift. strengths = your best estimated 1RM for each lift of that muscle.
+// It is one fixed target for the muscle and type, so it does not move from one workout to the next.
+export function optimalVolume(type, strengths, { setsFactor = 1 } = {}) {
   const info = TYPE_INFO[type]
   const sorted = [...strengths].filter((x) => x > 0).sort((a, b) => b - a)
   if (!sorted.length) return null
-  const scale = 1 + 0.7 * Math.max(0, nGroups - 1)
+  const counts = scaledSets(type, setsFactor)
   return Math.round(
     info.blocks.reduce((sum, b, i) => {
-      const oneRM = sorted[Math.min(i, sorted.length - 1)]
-      const sets = Math.max(2, Math.round(b.sets * setsFactor))
-      return sum + sets * b.reps * percentOfBest(b.reps) * oneRM
-    }, 0) * scale
+      const oneRM = sorted[i] != null ? sorted[i] : sorted[0] * SLOT_RATIO[b.slot]
+      return sum + counts[i] * b.reps * percentOfBest(b.reps) * oneRM
+    }, 0)
   )
 }
 
 // Sets the research dose asks for in one session (for the "sets" stat under each chart).
-export function optimalSets(type, { setsFactor = 1, nGroups = 1 } = {}) {
-  const scale = 1 + 0.7 * Math.max(0, nGroups - 1)
-  return Math.round(TYPE_INFO[type].blocks.reduce((s, b) => s + Math.max(2, Math.round(b.sets * setsFactor)), 0) * scale)
+export function optimalSets(type, { setsFactor = 1 } = {}) {
+  return scaledSets(type, setsFactor).reduce((a, b) => a + b, 0)
 }

@@ -1673,3 +1673,58 @@ select:focus-visible {
   font-weight: 700;
   cursor: pointer;
 }
+
+.pt-vars summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pt-vars summary::-webkit-details-marker {
+  display: none;
+}
+
+.pt-vars-sum {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--iron);
+}
+
+.pt-var {
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.pt-var-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.pt-var-name {
+  font-weight: 700;
+}
+
+.pt-var-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
+}
+
+.pt-var-src {
+  font-size: 11px;
+  color: var(--iron);
+  margin-top: 2px;
+}
+
+.pt-var-note {
+  font-size: 12px;
+  color: var(--chalk-dim);
+  line-height: 1.45;
+  margin-top: 3px;
+}

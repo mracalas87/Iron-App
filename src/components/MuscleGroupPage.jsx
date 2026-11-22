@@ -3,7 +3,8 @@ import { listWorkouts, listExercises, addExercise } from '../db'
 import { buildReference } from '../loadType'
 import { typedWorkouts, topWorkout } from '../liftStats'
 import { researchWorkout, TYPES, TYPE_COLOUR } from '../research'
-import { readStats, setsFactor, ageFactor } from '../bodyStats'
+import { readStats } from '../bodyStats'
+import { buildTargets } from '../targets'
 import { GROUP_STYLE } from '../groupStyle'
 import { MuscleIcon } from './Icons'
 
@@ -81,17 +82,17 @@ export default function MuscleGroupPage({ group, onBack, onStart, onStartDraft }
   const [tab, setTab] = useState('Heavy')
   const [showAll, setShowAll] = useState(false)
   const stats = readStats()
-  const factor = setsFactor(stats)
   const colour = (GROUP_STYLE[group] || {}).colour || '#9bb0c9'
 
   useEffect(() => {
     let live = true
-    Promise.all([listWorkouts(), listExercises()]).then(([workouts, exercises]) => {
+    Promise.all([listWorkouts(), listExercises()]).then(async ([workouts, exercises]) => {
+      const targets = await buildTargets(group, readStats(), workouts)
       if (!live) return
       const categoryOf = new Map(exercises.map((e) => [e.id, e.category]))
       const typed = typedWorkouts(workouts, categoryOf).filter((t) => t.groups.includes(group))
       const { best } = buildReference(workouts)
-      setData({ typed, exercises, best })
+      setData({ typed, exercises, best, targets })
     })
     return () => {
       live = false
@@ -103,7 +104,7 @@ export default function MuscleGroupPage({ group, onBack, onStart, onStartDraft }
   const count = (t) => data.typed.filter((x) => x.type === t).length
   const history = data.typed.filter((x) => x.type === tab)
   const top = topWorkout(data.typed, tab)
-  const plan = researchWorkout(tab, group, { exercises: data.exercises, best: data.best, setsFactor: factor })
+  const plan = researchWorkout(tab, group, { exercises: data.exercises, best: data.best, setsFactor: data.targets.factor })
   const shown = showAll ? history : history.slice(0, 8)
 
   return (
@@ -166,12 +167,10 @@ export default function MuscleGroupPage({ group, onBack, onStart, onStartDraft }
         <div className="mgp-meta">{plan.totalSets} sets in all. {plan.effort}</div>
         <ul className="mgp-why">
           {plan.evidence.map((e) => <li key={e}>{e}</li>)}
-          {factor !== 1 && (
-            <li>
-              Sets are set to {Math.round(factor * 100)}% of the standard dose for your {stats.experience} training and age {stats.age}
-              {ageFactor(stats.age) < 1 ? ', because recovery slows with age' : ''}. Change this under Progress, Your stats.
-            </li>
-          )}
+          <li>
+            Sets are scaled to {Math.round(data.targets.factor * 100)}% of the standard dose for your age, lifting years, {group.toLowerCase()} sessions a
+            week and sleep{data.targets.items.some((i) => i.key === 'running') ? ' and running' : ''}. See Progress, "What sets your {group.toLowerCase()} target" for each one.
+          </li>
         </ul>
         <button
           className="btn btn-primary mgp-act"

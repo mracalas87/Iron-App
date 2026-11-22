@@ -48,41 +48,52 @@ export function topWorkout(list, type) {
   return of.reduce((best, t) => (score(t) > score(best) ? t : best))
 }
 
-// The last ten workouts of a kind, oldest first, each with the research dose for the same lifts.
-export function lastTen(typed, type, workouts, stats, setsFactor) {
+// The last ten workouts of a kind for one muscle group, oldest first. Only that muscle's exercises are counted, so a
+// chest-and-triceps day shows its chest work on the Chest chart. `optimal` is one fixed target for the muscle and type
+// (research.js), the same on every point, so the line to aim for does not move from workout to workout.
+export function groupSeries(workouts, exercises, group, type, stats, setsFactor) {
+  const categoryOf = new Map(exercises.map((e) => [e.id, e.category]))
   const reference = buildReference(workouts)
-  const rows = typed
-    .filter((t) => t.type === type)
-    .slice(0, 10)
-    .reverse()
-    .map((t) => {
-      const ids = [...new Set(workingSets([t.workout]).map((s) => s.id))]
-      const strengths = ids.map((id) => reference.best.get(id)).filter(Boolean)
-      const nGroups = Math.max(1, t.groups.length)
-      return {
-        id: t.id,
-        date: t.date,
-        actual: t.volume,
-        optimal: optimalVolume(type, strengths, { setsFactor, nGroups }),
-        sets: t.sets,
-        optimalSets: optimalSets(type, { setsFactor, nGroups }),
-        medianReps: t.medianReps,
-        intensity: t.intensity,
-        topEst: t.topEst,
-        perBodyweight: stats.weightKg ? Math.round((t.topEst / stats.weightKg) * 100) / 100 : null
-      }
+  const strengths = exercises.filter((e) => e.category === group).map((e) => reference.best.get(e.id)).filter(Boolean)
+  const optimal = optimalVolume(type, strengths, { setsFactor })
+  const target = optimalSets(type, { setsFactor })
+
+  const rows = []
+  for (const w of workouts) {
+    let exs = (w.exercises || []).filter((e) => categoryOf.get(e.exerciseId) === group)
+    // an older workout whose lifts were never filed under a muscle still counts when it was a single-muscle day
+    if (!exs.length && (w.muscleGroups || []).length === 1 && w.muscleGroups[0] === group) exs = w.exercises || []
+    if (!exs.length) continue
+    const part = { ...w, exercises: exs }
+    const kind = classifyDay([part], reference)
+    if (!kind || kind.type !== type) continue
+    const sets = workingSets([part])
+    const topEst = Math.round(Math.max(...sets.map((x) => estimateBest(x.weight, x.reps))))
+    rows.push({
+      id: w.id,
+      date: w.date,
+      actual: Math.round(sum(sets.map((x) => x.weight * x.reps))),
+      optimal,
+      sets: kind.sets,
+      optimalSets: target,
+      medianReps: kind.medianReps,
+      intensity: Math.round(kind.intensity * 100),
+      topEst,
+      perBodyweight: stats.weightKg ? Math.round((topEst / stats.weightKg) * 100) / 100 : null
     })
-  return rows
+  }
+  rows.sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : (y.id || 0) - (x.id || 0)))
+  return { rows: rows.slice(0, 10).reverse(), optimal, optimalSets: target, total: rows.length, hasLifts: strengths.length > 0 }
 }
 
-// One sentence on how the last ten compare with the research dose.
-export function verdict(type, rows) {
+// One sentence on how the last ten compare with the target line.
+export function verdict(type, rows, group) {
   const withDose = rows.filter((r) => r.optimal)
   if (withDose.length < 2) return null
   const ratio = sum(withDose.map((r) => r.actual)) / sum(withDose.map((r) => r.optimal))
   const pct = Math.round(ratio * 100)
   const reps = TYPE_INFO[type].reps
-  if (ratio > 1.3) return `You lift about ${pct}% of the research volume for a ${type.toLowerCase()} session. Sets past that add little and cost recovery, so keep the weight and trim sets if you feel flat.`
-  if (ratio < 0.7) return `You lift about ${pct}% of the research volume for a ${type.toLowerCase()} session. Adding a set or an exercise (${reps[0]} to ${reps[1]} reps) would bring you to it.`
-  return `You are at about ${pct}% of the research volume for a ${type.toLowerCase()} session, which is the right range.`
+  if (ratio > 1.3) return `You lift about ${pct}% of the ${type.toLowerCase()} ${group.toLowerCase()} target. Sets past it add little and cost recovery, so keep the weight and trim sets if you feel flat.`
+  if (ratio < 0.7) return `You lift about ${pct}% of the ${type.toLowerCase()} ${group.toLowerCase()} target. Adding a set or an exercise (${reps[0]} to ${reps[1]} reps) would bring you to it.`
+  return `You are at about ${pct}% of the ${type.toLowerCase()} ${group.toLowerCase()} target, which is the right range.`
 }
