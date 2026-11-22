@@ -80,16 +80,16 @@ export const PHASES = [
     id: 'vo2',
     name: 'VO2 max block',
     start: '2026-12-01',
-    end: '2026-12-25',
+    end: '2027-01-17',
     instruction:
-      'Goal: raise your Garmin VO2 max from 49 to over 50 by Christmas. Two hard runs a week (Wednesday and Friday): the Norwegian 4 x 4, four 4-minute efforts at heart rate 165 to 175 with 3 minutes easy between. Everything else stays easy, under heart rate 148. Test run on Wed 23 Dec.',
+      'Goal: raise VO2 max from about 49 toward 55 by mid-January (51 to 53 is the realistic range). Two hard runs a week (Wednesday and Friday): 1 km warm-up, the Norwegian 4 x 4 (four 4-minute efforts at heart rate 165 to 175 with 3 minutes easy between), 1 km cool-down. Everything else stays easy, under heart rate 148. Test run on Fri 15 Jan. Track progress in the VO2 score panel.',
     liftNote: 'Lift as normal. On a VO2 day lift upper body, or skip legs.',
     legsNote: 'Legs: none the day before a VO2 run or on the day itself.'
   },
   {
     id: 'base',
     name: 'Base',
-    start: '2026-12-26',
+    start: '2027-01-18',
     end: '2027-02-28',
     instruction: 'Swim technique. Rides of 25 to 60 km. Checkpoint: a 1,500 m swim and a 60 km ride.',
     liftNote: 'Muscle phase: lift as normal while swim and ride stay at the minimum.'
@@ -255,27 +255,62 @@ export const WEEKS = [
     label: 'VO2 week 3',
     km: 'about 22 km running',
     sessions: [
-      'Wed 16 Dec and Fri 18 Dec: 4 x 4 min hard, 3 min easy jog between. These are the last two hard sessions.',
-      'Sun 20 Dec: easy 6 km, heart rate under 148.',
+      'Wed 16 Dec and Fri 18 Dec: 4 x 4 min hard, 3 min easy jog between. School is out from here, so the extra time goes into easy running, not more hard sessions: still just two a week.',
+      'Sun 20 Dec: easy 6 to 8 km, heart rate under 148. Add one extra easy 5 to 6 km on Mon 14 or Tue 15 if the legs feel fresh.',
       'Keep sleep above 7 hours.'
     ]
   },
   {
     start: '2026-12-21',
-    end: '2026-12-25',
-    label: 'Test week',
-    km: 'about 12 km running',
+    end: '2026-12-27',
+    label: 'VO2 week 4 (Christmas)',
+    km: 'about 24 km running',
     sessions: [
-      'Mon 21 Dec: easy 5 km, heart rate under 148.',
-      'Wed 23 Dec: the test run. 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors with a good heart rate signal. The watch updates your VO2 max after a run like this.',
-      'Thu 24 and Fri 25 Dec: rest or a walk. Then the base phase starts on 26 Dec.'
+      'Wed 23 Dec: 4 x 4 min hard. Sat 26 Dec: 4 x 4 min hard (Friday is Christmas, so the second session moves to Saturday and the ride is skipped).',
+      'Mon 21 Dec and Sun 27 Dec: easy 6 to 8 km, heart rate under 148.',
+      'Fri 25 Dec: rest or a walk. Wednesday has a mid-block check: use the VO2 score panel to compare with the baseline.'
+    ]
+  },
+  {
+    start: '2026-12-28',
+    end: '2027-01-03',
+    label: 'VO2 week 5 (New Year)',
+    km: 'about 24 km running',
+    sessions: [
+      'Wed 30 Dec: 4 x 4 min hard. Sat 2 Jan: 4 x 4 min hard (Friday is New Year, so the second session moves to Saturday).',
+      'Mon 28 Dec and Sun 3 Jan: easy 6 to 8 km, heart rate under 148.',
+      'Skip or cut a session if the legs feel heavy, your heart rate will not climb, or HRV is well below about 110.'
+    ]
+  },
+  {
+    start: '2027-01-04',
+    end: '2027-01-10',
+    label: 'VO2 week 6',
+    km: 'about 22 km running',
+    sessions: [
+      'Wed 6 Jan: the full 4 x 4 min hard. Fri 8 Jan: 3 x 4 min hard (a lighter day to freshen up for the test).',
+      'Sun 10 Jan: easy 6 km, heart rate under 148.',
+      'Lift as normal, no legs the day before a VO2 run or on the day.'
+    ]
+  },
+  {
+    start: '2027-01-11',
+    end: '2027-01-17',
+    label: 'Test week',
+    km: 'about 14 km running',
+    sessions: [
+      'Mon 11 and Wed 13 Jan: easy 5 km, heart rate under 148, with 4 strides on Wednesday.',
+      'Fri 15 Jan: the test run. 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors with a good heart rate signal. The watch updates your VO2 max after a run like this. Also log the session in the VO2 score panel (Plan tab).',
+      'Sat 16 and Sun 17 Jan: rest or an easy ride or walk. The base phase starts on Mon 18 Jan.'
     ]
   }
 ]
 
 // The Norwegian 4 x 4 (four 4-minute efforts at 90 to 95% of max heart rate, 3 minutes easy between).
 const VO2_4X4 =
-  'VO2 4 x 4 min: 10 min easy warm-up, then 4 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 5 min cool-down. About 7 km, uphill or flat. Upper body only if you lift'
+  'VO2 4 x 4 min: 1 km easy warm-up, then 4 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 7 km, uphill or flat. Upper body only if you lift. Baseline 22 Nov: about 1 km per effort at 4:08 per km, heart rate 175'
+const VO2_3X4 =
+  'VO2 3 x 4 min: 1 km easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 6 km, uphill or flat. Upper body only if you lift'
 
 // The run planned for a date: distance and heart rate zone. Zones are Andy's own: zone 1 100 to 132,
 // zone 2 133 to 148, zone 3 149 to 159, zone 4 160 to 170, zone 5 171 and up.
@@ -293,7 +328,7 @@ export const RUN_SESSIONS = {
   '2026-11-26': 'Easy 6 to 8 km, heart rate under 148 (zone 2), 6 strides at the end',
   '2026-11-29': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   // The VO2 max block: the Norwegian 4 x 4 on Wednesday and Friday (Tuesday is the swim, Saturday the ride).
-  '2026-12-02': 'VO2 on-ramp, 3 x 4 min: 10 min easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 5 min cool-down. About 6 km, uphill or flat. Upper body only if you lift',
+  '2026-12-02': 'VO2 on-ramp, 3 x 4 min: 1 km easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 6 km, uphill or flat. Upper body only if you lift',
   '2026-12-04': VO2_4X4,
   '2026-12-06': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   '2026-12-09': VO2_4X4,
@@ -301,9 +336,21 @@ export const RUN_SESSIONS = {
   '2026-12-13': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   '2026-12-16': VO2_4X4,
   '2026-12-18': VO2_4X4,
-  '2026-12-20': 'Easy 6 km, heart rate under 148 (zone 2)',
-  '2026-12-21': 'Easy 5 km, heart rate under 148 (zone 2)',
-  '2026-12-23': 'VO2 test run: 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors, good heart rate signal, then 5 min easy. About 7 km. The watch updates your VO2 max after it'
+  '2026-12-20': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
+  '2026-12-21': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
+  '2026-12-23': VO2_4X4,
+  '2026-12-26': VO2_4X4,
+  '2026-12-27': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
+  '2026-12-28': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
+  '2026-12-30': VO2_4X4,
+  '2027-01-02': VO2_4X4,
+  '2027-01-03': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
+  '2027-01-06': VO2_4X4,
+  '2027-01-08': VO2_3X4,
+  '2027-01-10': 'Easy 6 km, heart rate under 148 (zone 2)',
+  '2027-01-11': 'Easy 5 km, heart rate under 148 (zone 2)',
+  '2027-01-13': 'Easy 5 km, heart rate under 148 (zone 2), 4 strides',
+  '2027-01-15': 'VO2 test run: 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors, good heart rate signal, then 5 min easy. About 7 km. The watch updates your VO2 max after it'
 }
 
 // The rules Andy can change in the Plan tab (settings.js keeps his choices; report.js applies them).
@@ -409,7 +456,8 @@ export function doneEarly(runs, today = localToday()) {
 export const MILESTONES = [
   { date: '2026-11-17', text: '400 m swim baseline done: 9:56, about 2:29 per 100 m' },
   { date: '2026-11-28', text: '30 km baseline ride' },
-  { date: '2026-12-23', text: 'VO2 max test run (goal: Garmin VO2 max over 50)' },
+  { date: '2026-12-23', text: 'VO2 mid-block check: log the 4 x 4 in the VO2 score panel and compare with the 22 Nov baseline (49)' },
+  { date: '2027-01-15', text: 'VO2 max test run (goal: VO2 score toward 55, Garmin over 50)' },
   { date: '2027-02-27', text: 'base checkpoint: 1,500 m swim and 60 km ride' },
   { date: '2027-06-26', text: 'build checkpoint: 1,900 m swim and 85 km ride' },
   { date: '2027-09-18', text: 'dress rehearsal' },
@@ -422,7 +470,7 @@ export const TAPER_RUN = 'Taper run 10 to 12 km, easy, middle 3 km at 6:15 to 6:
 // Between these dates every run is spelled out in RUN_SESSIONS (or the long-run slot), so a day with
 // no run there means no run, and no extra easy run is added on off days.
 export const DATED_RUNS_FROM = '2026-10-25'
-export const DATED_RUNS_UNTIL = '2026-12-25'
+export const DATED_RUNS_UNTIL = '2027-01-17'
 
 // An easy run on an off day, by phase, when no dated run is planned.
 export function easyRunText(phaseId) {
@@ -579,8 +627,8 @@ export const RUN_GUIDE = [
 // Month by month swim and ride targets. A dash means the brief sets no target.
 export const MONTH_TARGETS = [
   { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '30 km baseline test', note: 'Lisbon marathon on 14 Nov.' },
-  { month: '2026-12', swim: 'Technique', ride: '25 to 60 km, easy', note: 'VO2 max block to 23 Dec: Norwegian 4 x 4 on Wednesday and Friday. Goal: Garmin VO2 max over 50.' },
-  { month: '2027-01', swim: 'Technique', ride: '25 to 60 km' },
+  { month: '2026-12', swim: 'Technique', ride: '25 to 60 km, easy', note: 'VO2 max block: Norwegian 4 x 4 on Wednesday and Friday (Christmas and New Year week: Wednesday and Saturday). Check on 23 Dec.' },
+  { month: '2027-01', swim: 'Technique', ride: '25 to 60 km', note: 'VO2 block to the test run on Fri 15 Jan. Goal: VO2 score toward 55 (51 to 53 realistic). Base phase from 18 Jan.' },
   { month: '2027-02', swim: 'Technique. Checkpoint: 1,500 m', ride: '25 to 60 km. Checkpoint: 60 km', note: 'End of base.' },
   { month: '2027-03', swim: 'Build up to 2,500 m', ride: '60 to 85 km, hilly', note: 'Road bike in place by March.' },
   { month: '2027-04', swim: 'Build up to 2,500 m', ride: '60 to 85 km, hilly' },
@@ -637,7 +685,7 @@ export const APP_RULES = [
   { title: 'Which lift is next', text: 'The lift that has gone longest without being done (shoulders, back, legs, chest, arms). The same lift is never suggested twice within 5 days. After 5 lifting days in a row there is an off day.' },
   { title: 'Reading your workouts', text: 'The first muscle in the title is the day\'s lift. Triceps or biceps added to another muscle are extras, so "Chest, Triceps" counts as chest. Each lift flips between a heavy day and a volume day.' },
   { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race, and not for 5 days after the marathon. From 15 Nov: no legs Thursday to Saturday (the ride), and Tuesday is legs, arms or off only (the swim). In the VO2 block, no legs the day before a VO2 run or on the day.' },
-  { title: 'VO2 block', text: 'From 2 to 23 Dec: two hard runs a week on Wednesday and Friday (the Norwegian 4 x 4), an easy run on Sunday, and a test run on 23 Dec. If recovery is only fair the session is cut to 3 x 4 min, and if the trend is down it becomes an easy run.' },
+  { title: 'VO2 block', text: 'From 2 Dec to 15 Jan: two hard runs a week on Wednesday and Friday (1 km warm-up, the Norwegian 4 x 4, 1 km cool-down), an easy run on Sunday, and a test run on 15 Jan. If recovery is only fair the session is cut to 3 x 4 min, and if the trend is down it becomes an easy run.' },
   { title: 'Days with no lifting', text: 'The long-run day, a race-rhythm run day, and the two days before a race. A full rest day has no lifting and no run.' },
   { title: 'Easy means easy', text: 'Easy running is heart rate under 148 (zone 2), and about 80% of training stays easy. The day after a long run is rest or 30 minutes under 140. After heavy legs, keep the run to 5 to 6 km.' },
   { title: 'The long run', text: 'It goes on the first weekend day at least 3 days after your last legs session and 4 days after another run of 15 km or more. A run of 18 km or more counts as the last long run.' },

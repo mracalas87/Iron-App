@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import Panel from './Panel'
 import { readRules, saveRules, resetRules, readGoals, saveGoals } from '../settings'
+import { vo2FromIntervals, intervalRange, vdotFromRace, paceForVo2max, paceLabel } from '../vo2Estimate'
+import { VO2_PROFILE, VO2_BASELINE, VO2_SUMMER, VO2_RACES, readVo2Sessions, saveVo2Session, removeVo2Session, parseEfforts } from '../vo2Log'
 import {
   RACES,
   MONTH_TARGETS,
@@ -96,6 +98,100 @@ function FuelPlan() {
       <FuelBlock title="Solid food" lines={FUEL.solids} />
       <FuelBlock title="Caffeine" lines={FUEL.caffeine} />
       <FuelBlock title="Rules" lines={FUEL.rules} />
+    </div>
+  )
+}
+
+const sessionPace = (e) => paceLabel((e.seconds / e.distanceM) * 1000)
+
+// The VO2 score: not from the watch. Interval sessions (pace and heart rate) through the Daniels running
+// equation and percent of heart rate reserve, with race times as a cross-check.
+function Vo2Score() {
+  const [sessions, setSessions] = useState(readVo2Sessions)
+  const [text, setText] = useState('')
+  const [date, setDate] = useState(localToday())
+  const [msg, setMsg] = useState('')
+  const all = [VO2_SUMMER, VO2_BASELINE, ...sessions].map((s) => {
+    const est = vo2FromIntervals(s.efforts, VO2_PROFILE)
+    const range = intervalRange(s.efforts, VO2_PROFILE)
+    return { ...s, est, range }
+  })
+  const latest = all[all.length - 1]
+  const hrr = latest.est ? latest.est.hrr : 0.93
+
+  function add() {
+    const { efforts, bad } = parseEfforts(text)
+    if (bad.length) return setMsg(`Could not read: ${bad.join(' | ')}. Use "distance_m m:ss avg_hr", e.g. 1000 4:09 174`)
+    if (!efforts.length) return setMsg('Add at least one effort.')
+    setSessions(saveVo2Session({ date, garmin: null, note: 'logged in the app', efforts }))
+    setText('')
+    setMsg('Saved.')
+  }
+
+  return (
+    <div>
+      <div className="metric-grid">
+        <div className="metric-box">
+          <div className="label">VO2 score</div>
+          <div className="value">{latest.est ? latest.est.vo2max.toFixed(1) : '-'}</div>
+          <div className="sub">
+            {latest.range ? `${latest.range.low.toFixed(0)} to ${latest.range.high.toFixed(0)} range` : ''}
+          </div>
+        </div>
+        <div className="metric-box">
+          <div className="label">Garmin</div>
+          <div className="value">{VO2_BASELINE.garmin}</div>
+          <div className="sub">22 Nov</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--chalk-dim)', lineHeight: 1.5, margin: '8px 0' }}>
+        Pace gives the oxygen cost (Daniels and Gilbert running equation). Heart rate says how much of your maximum that was
+        (percent of heart rate reserve, Swain 1997). Typical error is about 4 to 5 points, so look at the trend between sessions,
+        not one reading. Only a lab test is exact. Resting {VO2_PROFILE.restingHr}, max {VO2_PROFILE.maxHr}.
+      </div>
+
+      <div className="dim-label">Sessions</div>
+      {all.map((s) => (
+        <div key={s.date} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>
+            {formatDate(s.date)}: {s.est ? s.est.vo2max.toFixed(1) : '-'}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--chalk-dim)', marginTop: 2, lineHeight: 1.45 }}>
+            {s.efforts.map((e) => `${e.distanceM} m ${Math.floor(e.seconds / 60)}:${String(e.seconds % 60).padStart(2, '0')} (${sessionPace(e)}/km) HR ${e.avgHr}`).join(' · ')}
+          </div>
+          {s.note && <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginTop: 2 }}>{s.note}</div>}
+          {s.garmin != null && <div style={{ fontSize: 12, color: 'var(--chalk-dim)', marginTop: 2 }}>Garmin showed {s.garmin}</div>}
+          {s.garmin == null && (
+            <button className="link-btn" onClick={() => setSessions(removeVo2Session(s.date))}>Remove</button>
+          )}
+        </div>
+      ))}
+
+      <div className="dim-label" style={{ marginTop: 12 }}>Race cross-check (Daniels VDOT)</div>
+      <Bullets
+        lines={VO2_RACES.map(
+          (r) => `${r.name} in ${Math.floor(r.seconds / 60)}:${String(r.seconds % 60).padStart(2, '0')}: VDOT ${vdotFromRace(r.distanceM, r.seconds).toFixed(1)}`
+        )}
+      />
+      <div style={{ fontSize: 12, color: 'var(--chalk-dim)', lineHeight: 1.45, marginTop: 4 }}>
+        These race times are older and may not have been a full effort, so they read lower. A fresh hard 5K would update this cross-check.
+      </div>
+
+      <div className="dim-label" style={{ marginTop: 12 }}>What a higher score needs</div>
+      <Bullets
+        lines={[50, 52, 55].map(
+          (t) => `Score ${t}: about ${paceLabel(paceForVo2max(t, hrr))} per km at the same effort (heart rate about ${Math.round(VO2_PROFILE.restingHr + hrr * (VO2_PROFILE.maxHr - VO2_PROFILE.restingHr))})`
+        )}
+      />
+
+      <div className="dim-label" style={{ marginTop: 12 }}>Log a session</div>
+      <div style={{ fontSize: 12, color: 'var(--chalk-dim)', margin: '4px 0' }}>
+        One line per hard effort: distance in metres, time, average heart rate. Example: 1000 4:09 174. Use each effort's lap on the watch.
+      </div>
+      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ marginBottom: 6 }} />
+      <textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} placeholder={'1000 4:09 174\n1000 4:05 176'} style={{ width: '100%' }} />
+      <button className="btn" onClick={add} style={{ marginTop: 6 }}>Add session</button>
+      {msg && <div style={{ fontSize: 13, marginTop: 6 }}>{msg}</div>}
     </div>
   )
 }
@@ -376,6 +472,10 @@ export default function Plan() {
         {upcomingMonths.map((m) => (
           <MonthRow key={m.month} m={m} current={m.month === thisMonthKey} />
         ))}
+      </Panel>
+
+      <Panel id="vo2" icon="pace" title="VO2 score" summary="Your own estimate, not from the watch" {...back}>
+        <Vo2Score />
       </Panel>
 
       <Panel id="races" icon="race" title="Races" summary={RACES.map((r) => r.name).join(' · ')} {...back}>
