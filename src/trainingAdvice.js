@@ -1,4 +1,4 @@
-import { currentPhase, liftRuleFor, getSessions, getMoves, getRules, carryMissed, easyRunText, TAPER_RUN, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
+import { currentPhase, liftRuleFor, getSessions, getMoves, getRules, carryMissed, easyRunText, DATED_RUNS_FROM, DATED_RUNS_UNTIL, doneEarly, MILESTONES } from './plan'
 import { longRunSlot } from './upcoming'
 import { trendNote } from './trends'
 
@@ -41,7 +41,7 @@ function nextStepLine(today, runs, race, info, cp) {
   // the long run in the long-run phases follows the long-run slot, not a fixed date
   if (info.runKind === 'long-due' && info.slot) {
     const { min, max, label } = info.run
-    const text = info.phase.id === 'marathon-taper' ? TAPER_RUN : `${label[0].toUpperCase() + label.slice(1)} ${min} to ${max} km, easy`
+    const text = `${label[0].toUpperCase() + label.slice(1)} ${min} to ${max} km, easy`
     sessions.push([info.slot, text])
   }
   sessions.sort((a, b) => (a[0] < b[0] ? -1 : 1))
@@ -291,7 +291,7 @@ export function buildAdvice({
   if (plan) {
     if (plan.runKind === 'long-due') {
       const { min, max } = plan.run
-      if (plan.slot === today && zone === 'Go') planRun = plan.phase.id === 'marathon-taper' ? `${TAPER_RUN}.` : `Long run today: ${min}-${max} km, easy, heart rate under ${EASY_HR_CAP} (zone 2).`
+      if (plan.slot === today && zone === 'Go') planRun = `Long run today: ${min}-${max} km, easy, heart rate under ${EASY_HR_CAP} (zone 2).`
       else if (plan.slot === today)
         planRun = `Long run is due: go only if you feel good, keep it near ${min} km, heart rate under ${EASY_HR_CAP} (zone 2), otherwise move it a day.`
       else planRun = `Easy 4-5 km at most, heart rate under ${EASY_HR_CAP} (zone 2), so your legs are fresh for the long run on ${dayName(plan.slot)}.`

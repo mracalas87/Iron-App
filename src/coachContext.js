@@ -73,7 +73,6 @@ export function buildCoachContext({ today, status, level, trend, advice, upcomin
     const level = (g) => (g === 'competitive' ? 'COMPETITIVE: chase a time and race it' : 'FUN: enjoy it and finish in a time that suits him, pushing slightly but not racing')
     L.push('')
     L.push('HIS GOALS')
-    L.push(`Lisbon marathon: ${level(goals.lisbon)}.`)
     L.push(`Ironman 70.3 Cascais: ${level(goals.cascais)}.`)
     L.push(goals.lifting === 'gain' ? 'Lifting: hold his muscle and try to gain some while doing the endurance training.' : 'Lifting: hold his muscle while doing the endurance training.')
     L.push(

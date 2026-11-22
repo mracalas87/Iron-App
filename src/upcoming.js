@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, carryMissed, easyRunText, TAPER_RUN, DATED_RUNS_UNTIL, doneEarly } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, carryMissed, easyRunText, DATED_RUNS_UNTIL, doneEarly } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -116,7 +116,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       const doneLong = runs.filter((r) => r.distanceKm >= getRules().longRunKm && r.date <= today).map((r) => r.date).sort().pop() || null
       const slot = longRunSlot(ph, d, lastLegs ? lastLegs.date : null, doneLong)
       const cap = ph.run.label[0].toUpperCase() + ph.run.label.slice(1)
-      longRuns.set(slot, ph.id === 'marathon-taper' ? TAPER_RUN : `${cap} ${ph.run.min}-${ph.run.max} km, easy, heart rate under ${EASY_HR} (zone 2)`)
+      longRuns.set(slot, `${cap} ${ph.run.min}-${ph.run.max} km, easy, heart rate under ${EASY_HR} (zone 2)`)
       forcedOff.set(slot, 'long run day')
       for (let k = 1; k <= getRules().legsBuffer; k++) legsBlocked.set(addDays(slot, -k), 'long run coming')
       legsBlocked.set(slot, 'long run day')

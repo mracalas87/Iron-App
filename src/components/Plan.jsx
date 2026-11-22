@@ -10,8 +10,6 @@ import {
   GROUND_RULES,
   APP_RULES,
   RACE_PLANS,
-  FUEL,
-  fuelTable,
   RUN_GUIDE,
   weekPlan,
   nextRace,
@@ -58,48 +56,6 @@ function Bullets({ lines }) {
       {t}
     </div>
   ))
-}
-
-function FuelBlock({ title, lines }) {
-  return (
-    <div style={{ marginTop: 12 }}>
-      <div className="dim-label">{title}</div>
-      <Bullets lines={lines} />
-    </div>
-  )
-}
-
-// The race-day plan for the Lisbon loop: numbers, the day before, and a lap-by-lap table.
-function FuelPlan() {
-  const rows = fuelTable()
-  return (
-    <div>
-      <div className="dim-label">The numbers</div>
-      <Bullets lines={FUEL.targets} />
-      <FuelBlock title="Before the start (Sat 14 Nov)" lines={FUEL.before} />
-      <div className="dim-label" style={{ marginTop: 12 }}>Lap by lap (times assume 6:20 per km)</div>
-      {rows.map((r) => (
-        <div className="fuel-row" key={r.lap}>
-          <div className="fuel-lap">
-            <b>{typeof r.lap === 'number' ? `Lap ${r.lap}` : r.lap}</b>
-            <span>
-              {r.km > 0 ? `km ${r.km} · ` : ''}
-              {r.clock}
-            </span>
-          </div>
-          <div className="fuel-items">
-            {r.items.map((t) => (
-              <div key={t}>{t}</div>
-            ))}
-          </div>
-        </div>
-      ))}
-      <FuelBlock title="Nrgy Drink 90" lines={FUEL.drink} />
-      <FuelBlock title="Solid food" lines={FUEL.solids} />
-      <FuelBlock title="Caffeine" lines={FUEL.caffeine} />
-      <FuelBlock title="Rules" lines={FUEL.rules} />
-    </div>
-  )
 }
 
 const sessionPace = (e) => paceLabel((e.seconds / e.distanceM) * 1000)
@@ -254,7 +210,6 @@ function GoalsEditor({ goals, setGoals }) {
   ]
   return (
     <div>
-      <Choice label="Lisbon marathon" note={LEVEL_NOTE[goals.lisbon]} value={goals.lisbon} options={levels} onChange={(v) => set({ lisbon: v })} />
       <Choice label="Ironman 70.3 Cascais" note={LEVEL_NOTE[goals.cascais]} value={goals.cascais} options={levels} onChange={(v) => set({ cascais: v })} />
       <Choice
         label="Lifting"
@@ -407,7 +362,7 @@ export default function Plan() {
         id="goals"
         icon="goal"
         title="My goals"
-        summary={`Lisbon ${goals.lisbon === 'competitive' ? 'competitive' : 'fun'} · Cascais ${goals.cascais === 'competitive' ? 'competitive' : 'fun'} · ${goals.lifting === 'gain' ? 'hold and gain muscle' : 'hold muscle'}`}
+        summary={`Cascais ${goals.cascais === 'competitive' ? 'competitive' : 'fun'} · ${goals.lifting === 'gain' ? 'hold and gain muscle' : 'hold muscle'}`}
         {...back}
       >
         <GoalsEditor goals={goals} setGoals={setGoals} />
@@ -447,13 +402,7 @@ export default function Plan() {
         </Panel>
       )}
 
-      {race.id === 'lisbon' && (
-        <Panel id="fuel" icon="fuel" title="Race fuelling" summary={FUEL.summary} {...back}>
-          <FuelPlan />
-        </Panel>
-      )}
-
-      <Panel id="pace" icon="pace" title="Pace and heart rate" summary="Easy under 148 · Marathon 6:15 to 6:30" {...back}>
+      <Panel id="pace" icon="pace" title="Pace and heart rate" summary="Easy under 148 · Threshold 160 to 170" {...back}>
         {RUN_GUIDE.map((z, i) => (
           <div key={z.name} style={{ padding: '8px 0', borderBottom: i < RUN_GUIDE.length - 1 ? '1px solid var(--border)' : 'none' }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>

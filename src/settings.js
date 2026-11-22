@@ -46,7 +46,7 @@ export function saveRules(patch) {
 // What he is aiming for, which the coach reads: a level for each race (fun or competitive), the lifting goal
 // (hold his muscle, or hold it and try to gain some), and what his life allows right now.
 const GOALS_KEY = 'iron-goals'
-export const DEFAULT_GOALS = { lisbon: 'fun', cascais: 'fun', lifting: 'gain', period: 'normal' }
+export const DEFAULT_GOALS = { cascais: 'fun', lifting: 'gain', period: 'normal' }
 const pick = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback)
 
 export function readGoals() {
@@ -58,7 +58,6 @@ export function readGoals() {
   }
   const d = DEFAULT_GOALS
   return {
-    lisbon: pick(raw.lisbon, ['fun', 'competitive'], d.lisbon),
     cascais: pick(raw.cascais, ['fun', 'competitive'], d.cascais),
     lifting: pick(raw.lifting, ['hold', 'gain'], d.lifting),
     period: pick(raw.period, ['normal', 'busy', 'more'], d.period)

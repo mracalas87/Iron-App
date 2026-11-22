@@ -1,29 +1,8 @@
-// Training plan: Lisbon Marathon (14 Nov 2026), then Ironman 70.3 Cascais (23 Oct 2027).
+// Training plan: recovery and a VO2 max block, then the build to Ironman 70.3 Cascais (23 Oct 2027).
 // All dates are ISO (YYYY-MM-DD). Edit the plan here; the Plan tab and the race
 // countdown in config.js read from this file.
 
 export const RACES = [
-  {
-    id: 'lisbon',
-    name: 'Lisbon marathon',
-    date: '2026-11-14',
-    kind: 'run',
-    distanceKm: 42.195,
-    goal: 'Your first marathon.',
-    pacing: 'Run 6:15 to 6:30 per km (finish about 23:25 to 23:35). Evening start at 19:00, about 19 laps (18.9) of a 2.235 km loop. Fuel by the lap: see Race fuelling.',
-    // Filled in after the race, from the watch and what he said about it.
-    result: {
-      summary: 'Finished on 14 Nov: 42.83 km in 5:04:08 on the watch (7:06 per km, 5:00:23 moving). About 30 minutes slower than the 4:24 to 4:34 plan.',
-      lines: [
-        'Heart rate stayed low: average 137, max 156, and nothing above zone 3. Effort was easy, so the limit was the stomach, the cramps and the legs, not the heart.',
-        'Your best 10 km was 64:39 (6:28 per km) and your best half was 2:20:41. The rest averaged about 7:30 per km.',
-        'After 25 km the stomach got tight and eating stopped. The legs got heavy around 30 km and cramps began in the mid 30s km, so laps were run more carefully.',
-        'The loop had 392 m of climbing (about 9 m per km), asphalt and dirt, and the watch read up to 26 C.',
-        'Recovery: HRV 45 and 1.1 h of sleep on Sun 15 Nov, back to 109 with 10 h of sleep on Mon 16 Nov.',
-        'For next time: practise the race fuel on 2 long runs of 25 km or more, at race pace and at the same time of day. Try less concentrated carbs (gel diluted in more water, or a lower strength drink), consider fewer gels and sticks, and build the long run to 32 km or more.'
-      ]
-    }
-  },
   {
     id: 'cascais',
     name: 'Ironman 70.3 Cascais',
@@ -37,36 +16,6 @@ export const RACES = [
 
 // Dated phases. `sequence` (optional) names the weeks of a phase in order.
 export const PHASES = [
-  {
-    id: 'marathon-long',
-    name: 'Marathon: last long run',
-    start: '2026-10-21',
-    end: '2026-11-01',
-    instruction: 'Long run 18 to 20 km. Keep it easy: heart rate under 148. Then taper.',
-    run: { kind: 'long', min: 18, max: 20, label: 'last long run' },
-    liftNote: 'Keep the weights heavy, but trim the sets.',
-    legsNote: 'Legs: about 40% fewer sets.'
-  },
-  {
-    id: 'marathon-taper',
-    name: 'Marathon: taper',
-    start: '2026-11-02',
-    end: '2026-11-08',
-    instruction: 'Taper. Long run 10 to 12 km.',
-    run: { kind: 'long', min: 10, max: 12, label: 'taper long run' },
-    liftNote: 'Taper the lifting too: same weights, about 40% fewer sets, nothing new.',
-    legsNote: 'Legs: light, or skip.'
-  },
-  {
-    id: 'marathon-race',
-    name: 'Marathon: race week',
-    start: '2026-11-09',
-    end: '2026-11-14',
-    instruction: 'Race week: 6 to 8 km. Race on Saturday 14 Nov. Start at 6:15 to 6:30 per km, walk the aid stations, fuel from 45 minutes.',
-    run: { kind: 'cap', max: 8 },
-    liftNote: 'Race week: short and easy, upper body only.',
-    legsNote: 'No legs this week.'
-  },
   {
     id: 'recovery',
     name: 'Recovery and baseline tests',
@@ -146,75 +95,10 @@ export const PHASES = [
 ]
 
 // ---------- coaching: what each week looks like ----------
-// Built from Andy's Garmin history (Feb to Oct 2026): 12 to 20 km of running a week in 1 or 2 runs,
-// a 30.1 km run on 26 Sep at 6:49 per km and heart rate 144, a 17 km run at 5:58 per km and heart rate
-// 145, VO2 max 47 rising to 49, 5K 21:51, 10K 45:45, half 1:57. Fitness is ahead of the weekly running
-// volume, so the marathon plan protects the legs and adds nothing new.
+// Built from Andy's Garmin history (Feb to Nov 2026): VO2 max 47 rising to 49, 5K 21:51, 10K 45:45.
 
-// Dated weeks (Monday to Sunday) for the marathon and the weeks after it.
+// Dated weeks (Monday to Sunday) for the recovery and the VO2 block.
 export const WEEKS = [
-  {
-    start: '2026-10-19',
-    end: '2026-10-25',
-    label: 'Last long run week',
-    km: 'about 26 km running',
-    sessions: [
-      'Thu or Fri: 6 to 8 km easy, heart rate under 148 (the off-day run).',
-      'Sat 24 Oct: long run 18 to 20 km, easy. Practise race fuelling: a gel at 45 minutes, then every 30 to 40. Race shoes and kit.',
-      'No hard runs from now. The 5K and tempo work is done; more adds injury risk, not fitness.',
-      'No legs on the day before or the two days after the long run.'
-    ]
-  },
-  {
-    start: '2026-10-26',
-    end: '2026-11-01',
-    label: 'Hold',
-    km: 'about 20 km running',
-    sessions: [
-      'The last long run is done (21.3 km on 24 Oct). Nothing longer than 10 km from here to race day.',
-      'Sun 25 and Mon 26: no running or only a 5 km very easy jog (heart rate under 140). The long run was a big load.',
-      'Wed 28: 6 to 8 km easy, heart rate under 148, with 4 relaxed strides at the end.',
-      'Thu 29 Oct: light swim with your daughter (easy, 20 to 30 minutes, about 400 to 600 m, heart rate under 130).',
-      'Fri 30: 8 to 10 km with the middle 4 to 5 km at race pace, 6:15 to 6:30 per km. Heart rate should sit between 135 and 146; if it is over 150, slow down. Practise a gel at 45 minutes.',
-      'Lifting stays heavy; trim leg sets by about 40%.'
-    ]
-  },
-  {
-    start: '2026-11-02',
-    end: '2026-11-08',
-    label: 'Taper',
-    km: 'about 20 km running',
-    sessions: [
-      'Tue 3: easy 5 km. Thu 5: easy 4 to 5 km with 4 strides.',
-      'Sat 7 Nov: 10 to 12 km easy, with the middle 3 km at race pace (6:15 to 6:30 per km).',
-      'Thu 5 Nov: light swim with your daughter. It is easy on the legs.',
-      'Lifting: same weights, about 40% fewer sets, nothing new. Legs light or skipped.',
-      'Sleep is the main job this week: 7.5 hours or more.'
-    ]
-  },
-  {
-    start: '2026-11-09',
-    end: '2026-11-14',
-    label: 'Race week',
-    km: '6 to 8 km running',
-    sessions: [
-      'Tue: 4 km easy with 4 strides. Thu: 3 km shake-out.',
-      'Upper body only, short and easy, until Wednesday. No lifting Thursday or Friday.',
-      'Thu and Fri: raise carbohydrate (about 8 g per kg a day), nothing new to eat, early nights.',
-      'Fri: collect the number (Fri 15:00 to 21:00, or Sat 08:30 to 23:00), lay out kit, gels and shoes, and plan your lap-line table. Bring your own cup: the organisers say every athlete must carry one. Sat 14 Nov: Night Marathon at 19:00, about 19 laps of 2.235 km (asphalt and dirt, lit at night). Eat and drink by the Race fuelling plan all day.'
-    ]
-  },
-  {
-    start: '2026-11-15',
-    end: '2026-11-21',
-    label: 'Recover',
-    km: 'little running',
-    sessions: [
-      'Sun to Wed: no running. Walk, easy spin, mobility.',
-      'Thu 19 Nov: light swim with your daughter, good for tired legs. Then 20 to 30 minutes of easy jogging if the legs feel normal, heart rate under 140.',
-      'Lifting light, stop well short of failure. Legs from the following week.'
-    ]
-  },
   {
     start: '2026-11-22',
     end: '2026-11-30',
@@ -315,15 +199,6 @@ const VO2_3X4 =
 // The run planned for a date: distance and heart rate zone. Zones are Andy's own: zone 1 100 to 132,
 // zone 2 133 to 148, zone 3 149 to 159, zone 4 160 to 170, zone 5 171 and up.
 export const RUN_SESSIONS = {
-  '2026-10-25': 'Rest, or 20 to 30 min very easy, heart rate under 140 (zone 1-2)',
-  '2026-10-26': 'Optional 5 km very easy, heart rate under 140 (zone 1-2)',
-  '2026-10-28': 'Easy 6 to 8 km, heart rate under 148 (zone 2), 4 strides at the end',
-  '2026-10-30': 'Race rhythm 8 to 10 km: middle 4 to 5 km at 6:15 to 6:30 per km, heart rate 135 to 146 (zone 2). Gel at 45 min',
-  '2026-11-03': 'Easy 5 km, heart rate under 148 (zone 2)',
-  '2026-11-05': 'Easy 4 to 5 km, heart rate under 148 (zone 2), 4 strides',
-  '2026-11-10': 'Easy 4 km, heart rate under 148 (zone 2), 4 strides',
-  '2026-11-12': 'Shake-out 3 km, very easy, heart rate under 140 (zone 1-2)',
-  '2026-11-19': 'Easy jog 20 to 30 min, heart rate under 140 (zone 1-2)',
   '2026-11-22': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   '2026-11-26': 'Easy 6 to 8 km, heart rate under 148 (zone 2), 6 strides at the end',
   '2026-11-29': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
@@ -464,12 +339,9 @@ export const MILESTONES = [
   { date: '2027-10-02', text: 'last long session' }
 ]
 
-// The taper long run follows the long-run slot (normally Saturday 7 Nov), so it is not tied to one date.
-export const TAPER_RUN = 'Taper run 10 to 12 km, easy, middle 3 km at 6:15 to 6:30 per km, heart rate under 150 (zone 2-3)'
-
 // Between these dates every run is spelled out in RUN_SESSIONS (or the long-run slot), so a day with
 // no run there means no run, and no extra easy run is added on off days.
-export const DATED_RUNS_FROM = '2026-10-25'
+export const DATED_RUNS_FROM = '2026-11-15'
 export const DATED_RUNS_UNTIL = '2027-01-17'
 
 // An easy run on an off day, by phase, when no dated run is planned.
@@ -518,95 +390,7 @@ export const PHASE_WEEKS = {
   ]
 }
 
-// ---------- Lisbon race fuelling, lap by lap ----------
-// The marathon is run in the evening on a loop, so food and fluid are planned by the lap, from a table at
-// the lap line. Quantities use the labels of the gels he uses (Decathlon Energy Gel+: 30 g carbohydrate,
-// 70 mg sodium, 56 mg magnesium, 300 mg potassium per 35 mL; the caffeine one has 80 mg of caffeine) and the
-// GoldNutrition electrolyte sticks (238 mg sodium, 169 mg magnesium each).
-export const LOOP = { km: 2.235, start: '19:00', paceSecPerKm: 380 } // 6:20 per km; the loop is about 2,235 m (Grifo 24H athlete guide)
-
-export const FUEL = {
-  summary: 'A gel every 2 laps, water every lap, about 500 ml an hour',
-  gelLaps: [2, 4, 6, 8, 10, 12, 14, 16],
-  caffeineLaps: [14, 16],
-  bananaLaps: [5, 9, 13],
-  stickLaps: [7, 15],
-  targets: [
-    'Carbs: about 55 to 60 g an hour. That is one gel (30 g) every 2 laps, about every 29 minutes, with a little banana on the lap between if you want something solid.',
-    'Fluid: about 500 ml an hour, 2 to 2.5 litres in all. The night is cool, so drink to thirst: 2 or 3 mouthfuls on a lap with no gel, 150 to 200 ml with each gel. Never more than 800 ml in an hour.',
-    'Salt: each gel has about 70 mg of sodium (about 560 mg over 8 gels). Add 1 electrolyte stick, 2 at most, and only if you have run with them. Each stick has 169 mg of magnesium and each gel has 56 mg, so more than 2 sticks can upset your stomach.',
-    'Table: put it at the lap line, in the athlete support area. Gels in the order you will use them, a cut banana, 2 bottles of water, the sticks, and a spare of each.',
-    'Aid station: the organisers provide water, isotonic drink and food on the loop, and you must carry your own cup. Take water from there on the lap with no gel. If you drink their isotonic, it counts as carbs, so take a gel less or a smaller amount of it.',
-    'Shopping: 2 packs of 6 gels (one plain, one with caffeine), 2 bananas, 2 or 3 electrolyte sticks.'
-  ],
-  before: [
-    'Fri breakfast: a big bowl of porridge with milk (about 65 g of carbs), a protein shake, and 3 scoops of Nrgy Drink 90 (about 68 g of carbs) mixed in 500 to 600 ml of water and sipped over 1.5 to 2 hours, not with the porridge. About 135 g of carbs in all. Only use the drink if you have had it before; if not, 1 scoop at most.',
-    'Fri rest of day: carbohydrate at every meal (about 8 g per kg across the day), low fibre and low fat, normal salt, nothing new. Drink until your pee is pale yellow. Finish the big evening meal by about 20:00 and get to bed early.',
-    'Sat 08:00: your usual breakfast (oats, banana, toast).',
-    'Sat 12:30: a big carb lunch (pasta or rice, about 120 to 150 g of carbs), low in fat and fibre.',
-    'Sat 15:30: the last proper meal, 3 to 3.5 hours before the start: toast and jam, rice or a banana (60 to 80 g of carbs).',
-    'Sat 16:30 to 18:30: sip 500 to 700 ml. Either water, or 2 scoops of Nrgy Drink 90 (about 45 g of carbs) in 500 ml of water if you have used it before. Pale yellow pee is the sign. Add 1 electrolyte stick only if you use one before long runs, and skip it if you take the drink (it has salt in it).',
-    'Sat 18:45: 1 gel with a few sips of water, a few minutes of walking and easy jogging, then the start at 19:00.'
-  ],
-  drink: [
-    'Nrgy Drink 90: 4 scoops (96 g) is 90 g of carbs, so 1 scoop is about 22 g of carbs and 0.18 g of salt. It is half maltodextrin and half fructose, so a big dose all at once can bloat you.',
-    'Use it before the start (Fri breakfast and Sat 16:30 to 18:30), not in the race. One full serving an hour is 90 g, which is far more than the 55 to 60 g an hour in this plan.',
-    'Race fallback: if gels turn you off, mix 2 scoops in 500 ml for one bottle an hour (about 45 g of carbs), alongside a banana. Only do this if you have run with it.'
-  ],
-  solids: [
-    'Half a banana (about 13 g of carbs) on laps 5, 9 and 13 if you want something solid or are tired of gels. Salted pretzels, crisps or boiled salted potatoes work if you crave salt.',
-    'Stop solid food by lap 15. After that, gels and water only.'
-  ],
-  caffeine: [
-    'The caffeine gels (80 mg each) go on laps 14 and 16, only if you have run with them.',
-    'The race ends about 23:30, so skip caffeine altogether if it keeps you awake.'
-  ],
-  rules: [
-    'Nothing new on race day. Take every gel with water.',
-    'If your stomach turns: drop the sticks and the banana first, slow down for 3 to 5 minutes, then carry on with small amounts of gel and water.',
-    'It will be cool (about 10 to 14 C): wear a layer to the start. After the finish, eat carbs and protein within the hour and keep drinking.',
-    'This is a plan from standard marathon guidelines, not medical advice.'
-  ]
-}
-
-const pad2 = (n) => String(n).padStart(2, '0')
-
-// The lap table: for each lap, the distance, the clock time at the pace below, and what to take.
-export function fuelTable(paceSecPerKm = LOOP.paceSecPerKm, totalKm = 42.195) {
-  const [h, m] = LOOP.start.split(':').map(Number)
-  const clock = (km) => {
-    const mins = h * 60 + m + (km * paceSecPerKm) / 60
-    return `${pad2(Math.floor(mins / 60) % 24)}:${pad2(Math.floor(mins % 60))}`
-  }
-  const rows = [{ lap: 'Before', km: 0, clock: LOOP.start, items: ['1 gel with a few sips of water at 18:45'] }]
-  const laps = Math.ceil(totalKm / LOOP.km)
-  for (let lap = 1; lap <= laps; lap++) {
-    const km = Math.min(lap * LOOP.km, totalKm)
-    const items = []
-    const last = lap === laps
-    if (last) items.push('Finish. The last lap is short (about 2 km): just water if you want it')
-    else {
-      if (FUEL.gelLaps.includes(lap)) {
-        const caf = FUEL.caffeineLaps.includes(lap)
-        items.push(`${caf ? 'Caffeine gel (if you have tried it)' : 'Gel'} with 150 to 200 ml of water`)
-      } else items.push('2 or 3 mouthfuls of water')
-      if (FUEL.bananaLaps.includes(lap)) items.push('Half a banana (optional)')
-      if (FUEL.stickLaps.includes(lap)) items.push('Electrolyte stick with water (optional)')
-    }
-    rows.push({ lap, km: Math.round(km * 10) / 10, clock: clock(km), items })
-  }
-  return rows
-}
-
 export const RACE_PLANS = {
-  lisbon: [
-    'Pace: 6:15 to 6:30 per km for the first 30 km, with the first 5 km on the slow side.',
-    'Heart rate: at this pace expect about 128 to 145 for the first 30 km (you ran 6:10 per km at 131 on 29 Oct). If it is over 155 before 25 km, ease off by 10 to 15 seconds per km.',
-    'Your 30 km on 26 Sep was 6:49 per km at heart rate 144, so this pace is well inside what you have shown.',
-    'Expect 4:20 to 4:35. Your half marathon (1:57) predicts faster on paper, but your weekly running is low, so protect the last 10 km.',
-    'Fuel and fluid: follow the Race fuelling panel. A gel every 2 laps, water every lap, about 500 ml an hour.',
-    'From 32 km, if heart rate is under 158 and the legs are good, you may lift the pace a little. Otherwise hold.'
-  ],
   cascais: [
     'Swim: calm and wide at the start, no sprint. Set the pace from your 1,900 m checkpoint.',
     'Bike: easy-steady, heart rate under about 145. Eat 60 to 90 g of carbohydrate an hour from the first 15 minutes.',
@@ -618,7 +402,6 @@ export const RACE_PLANS = {
 // Heart rate and pace guide for running, from Andy's set zones and his own runs.
 export const RUN_GUIDE = [
   { name: 'Easy', hr: 'under 148', pace: 'about 6:00 to 6:50 per km on your recent runs' },
-  { name: 'Marathon', hr: '128 to 145, drifting up late', pace: '6:15 to 6:30 per km' },
   { name: 'Steady', hr: '149 to 159', pace: 'about 5:20 to 5:50 per km' },
   { name: 'Threshold', hr: '160 to 170', pace: 'about 4:35 to 5:00 per km (10K was 45:45)' },
   { name: 'Hard', hr: '171 and up', pace: 'short efforts only' }
@@ -626,7 +409,7 @@ export const RUN_GUIDE = [
 
 // Month by month swim and ride targets. A dash means the brief sets no target.
 export const MONTH_TARGETS = [
-  { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '30 km baseline test', note: 'Lisbon marathon on 14 Nov.' },
+  { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '30 km baseline test' },
   { month: '2026-12', swim: 'Technique', ride: '25 to 60 km, easy', note: 'VO2 max block: Norwegian 4 x 4 on Wednesday and Friday (Christmas and New Year week: Wednesday and Saturday). Check on 23 Dec.' },
   { month: '2027-01', swim: 'Technique', ride: '25 to 60 km', note: 'VO2 block to the test run on Fri 15 Jan. Goal: VO2 score toward 55 (51 to 53 realistic). Base phase from 18 Jan.' },
   { month: '2027-02', swim: 'Technique. Checkpoint: 1,500 m', ride: '25 to 60 km. Checkpoint: 60 km', note: 'End of base.' },
@@ -672,7 +455,7 @@ export const GROUND_RULES = [
   }
 ]
 
-// A light swim with his daughter every Thursday, from the first Thursday after the marathon block
+// A light swim with his daughter every Thursday, from the first Thursday after the race block
 // started. It is easy, short and for fun, so it counts as practice in the water, not training load.
 export const FAMILY_SWIM = {
   from: '2026-10-29',
@@ -684,7 +467,7 @@ export const FAMILY_SWIM = {
 export const APP_RULES = [
   { title: 'Which lift is next', text: 'The lift that has gone longest without being done (shoulders, back, legs, chest, arms). The same lift is never suggested twice within 5 days. After 5 lifting days in a row there is an off day.' },
   { title: 'Reading your workouts', text: 'The first muscle in the title is the day\'s lift. Triceps or biceps added to another muscle are extras, so "Chest, Triceps" counts as chest. Each lift flips between a heavy day and a volume day.' },
-  { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race, and not for 5 days after the marathon. From 15 Nov: no legs Thursday to Saturday (the ride), and Tuesday is legs, arms or off only (the swim). In the VO2 block, no legs the day before a VO2 run or on the day.' },
+  { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race. From 15 Nov: no legs Thursday to Saturday (the ride), and Tuesday is legs, arms or off only (the swim). In the VO2 block, no legs the day before a VO2 run or on the day.' },
   { title: 'VO2 block', text: 'From 2 Dec to 15 Jan: two hard runs a week on Wednesday and Friday (1 km warm-up, the Norwegian 4 x 4, 1 km cool-down), an easy run on Sunday, and a test run on 15 Jan. If recovery is only fair the session is cut to 3 x 4 min, and if the trend is down it becomes an easy run.' },
   { title: 'Days with no lifting', text: 'The long-run day, a race-rhythm run day, and the two days before a race. A full rest day has no lifting and no run.' },
   { title: 'Easy means easy', text: 'Easy running is heart rate under 148 (zone 2), and about 80% of training stays easy. The day after a long run is rest or 30 minutes under 140. After heavy legs, keep the run to 5 to 6 km.' },

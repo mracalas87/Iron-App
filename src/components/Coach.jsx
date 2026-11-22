@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 // training and health data. The server function (api/coach.js) holds the API key.
 
 const KEY = 'iron-coach-chat'
-const SUGGESTIONS = ['Is it okay to run today?', 'How was my last run?', 'Am I ready for Lisbon?', 'What should I change this week?']
+const SUGGESTIONS = ['Is it okay to run today?', 'How was my last run?', 'How is my VO2 block going?', 'What should I change this week?']
 
 function loadChat() {
   try {
