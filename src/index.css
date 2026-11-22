@@ -1657,3 +1657,19 @@ select:focus-visible {
   font-weight: 700;
   margin-bottom: 2px;
 }
+
+.mgp-act {
+  margin-top: 12px;
+}
+
+.mgp-again {
+  display: block;
+  margin: 8px 0 0 auto;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: var(--iron);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}

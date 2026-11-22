@@ -116,9 +116,11 @@ export const EXERCISES = {
 const round25 = (kg) => Math.round(kg / 2.5) * 2.5
 
 // Looks for one of your logged exercises that matches a suggested lift. best: Map(exerciseId -> best est. 1RM).
-function findLogged(pick, exercises, best) {
+function findLogged(pick, exercises, best, group) {
   const hits = (exercises || []).filter((e) => {
     const name = e.name.toLowerCase()
+    // only lifts filed under this muscle group (or not filed yet), so a chest press never stands in for a shoulder press
+    if (e.category && e.category !== group && e.category !== 'Other') return false
     return pick.match.some((m) => name.includes(m)) && !(pick.not || []).some((n) => name.includes(n)) && best.get(e.id)
   })
   hits.sort((a, b) => best.get(b.id) - best.get(a.id))
@@ -137,9 +139,9 @@ export function researchWorkout(type, group, { exercises = [], best = new Map(),
     // between those, the lift already in your log is preferred so the weight can be set from your best on it.
     const fits = picks.filter((p) => !used.has(p.name) && (p.slot === b.slot || (b.slot === 'accessory' && p.slot === 'second')))
     const pick =
-      fits.find((p) => findLogged(p, exercises, best)) || fits[0] || picks.find((p) => !used.has(p.name)) || picks[0]
+      fits.find((p) => findLogged(p, exercises, best, group)) || fits[0] || picks.find((p) => !used.has(p.name)) || picks[0]
     used.add(pick.name)
-    const logged = findLogged(pick, exercises, best)
+    const logged = findLogged(pick, exercises, best, group)
     const pct = Math.round(percentOfBest(b.reps) * 100)
     const sets = Math.max(2, Math.round(b.sets * setsFactor))
     return {
@@ -150,7 +152,8 @@ export function researchWorkout(type, group, { exercises = [], best = new Map(),
       rest: b.rest,
       pct,
       kg: logged ? round25((pct / 100) * best.get(logged.id)) : null,
-      logged: logged ? logged.name : null
+      logged: logged ? logged.name : null,
+      loggedId: logged ? logged.id : null
     }
   })
   return {

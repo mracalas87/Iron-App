@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listWorkouts, listExercises } from '../db'
+import { listWorkouts, listExercises, addExercise } from '../db'
 import { buildReference } from '../loadType'
 import { typedWorkouts, topWorkout } from '../liftStats'
 import { researchWorkout, TYPES, TYPE_COLOUR } from '../research'
@@ -21,6 +21,47 @@ function setsText(sets) {
   return parts.map((p) => (p.n > 1 ? `${p.n} x ${p.t}` : p.t)).join(', ')
 }
 
+function todayISO() {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 10)
+}
+
+// A logged workout as an editable draft for today, the same shape History's "Repeat this workout" makes.
+function repeatDraft(workout) {
+  return {
+    title: workout.title,
+    date: todayISO(),
+    muscleGroups: workout.muscleGroups || [],
+    exercises: (workout.exercises || []).map((ex) => ({
+      exerciseId: ex.exerciseId,
+      exerciseName: ex.exerciseName,
+      sets: ex.sets.map((s) => ({ reps: String(s.reps), weight: String(s.weight) }))
+    }))
+  }
+}
+
+// The research session as a draft: your own lift where it is in your log, otherwise the suggested lift
+// (added to your exercise list under this muscle group), with the sets, reps and weight filled in.
+async function researchDraft(plan, group, type) {
+  const exercises = []
+  for (const b of plan.blocks) {
+    let id = b.loggedId
+    let name = b.logged
+    if (id == null) {
+      const made = await addExercise(b.name, group)
+      id = made.id
+      name = made.name
+    }
+    exercises.push({
+      exerciseId: id,
+      exerciseName: name,
+      sets: Array.from({ length: b.sets }, () => ({ reps: String(b.reps), weight: b.kg ? String(b.kg) : '' }))
+    })
+  }
+  return { title: `${group} ${type.toLowerCase()}`, date: todayISO(), muscleGroups: [group], exercises }
+}
+
 function WorkoutLines({ workout }) {
   return (
     <>
@@ -34,8 +75,9 @@ function WorkoutLines({ workout }) {
   )
 }
 
-export default function MuscleGroupPage({ group, onBack, onStart }) {
+export default function MuscleGroupPage({ group, onBack, onStart, onStartDraft }) {
   const [data, setData] = useState(null)
+  const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('Heavy')
   const [showAll, setShowAll] = useState(false)
   const stats = readStats()
@@ -99,6 +141,9 @@ export default function MuscleGroupPage({ group, onBack, onStart }) {
             </div>
             <div className="mgp-meta">{fmtDate(top.date)} · {top.sets} working sets · about {top.medianReps} reps a set · {top.intensity}% of your best</div>
             <WorkoutLines workout={top.workout} />
+            <button className="btn btn-secondary mgp-act" onClick={() => onStartDraft(repeatDraft(top.workout))}>
+              Repeat this workout
+            </button>
           </>
         ) : (
           <div className="mgp-meta">No {tab.toLowerCase()} {group.toLowerCase()} workout logged yet. The research session below is a good one to start with.</div>
@@ -128,6 +173,21 @@ export default function MuscleGroupPage({ group, onBack, onStart }) {
             </li>
           )}
         </ul>
+        <button
+          className="btn btn-primary mgp-act"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              onStartDraft(await researchDraft(plan, group, tab))
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          Do this {tab.toLowerCase()} session
+        </button>
+        <div className="mgp-meta">It opens as a draft you can change before you save. Lifts not in your log yet are added to your exercise list.</div>
       </div>
 
       <div className="mgp-label" style={{ margin: '14px 2px 6px' }}>{tab} history · {group}</div>
@@ -142,6 +202,7 @@ export default function MuscleGroupPage({ group, onBack, onStart }) {
                 <span>{t.volume.toLocaleString('en-GB')} kg · {t.sets} sets</span>
               </div>
               <WorkoutLines workout={t.workout} />
+              <button className="mgp-again" onClick={() => onStartDraft(repeatDraft(t.workout))}>Repeat this workout</button>
             </div>
           ))}
           {history.length > 8 && !showAll && (

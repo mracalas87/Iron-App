@@ -72,6 +72,10 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
       <MuscleGroupPage
         group={viewGroup}
         onBack={() => setViewGroup(null)}
+        onStartDraft={(draft) => {
+          setActiveWorkout(draft)
+          setViewGroup(null)
+        }}
         onStart={(g) => {
           setActiveWorkout({ title: g, date: todayISO(), muscleGroups: [g], exercises: [] })
           setViewGroup(null)
