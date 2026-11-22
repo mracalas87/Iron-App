@@ -47,8 +47,8 @@ export function buildReference(workouts) {
   return { best, sessions }
 }
 
-// dayWorkouts: all workouts logged on one date. Returns null if nothing can be judged.
-export function classifyDay(dayWorkouts, reference) {
+// The working sets of some workouts (warm-ups left out): [{ id, reps, weight }].
+export function workingSets(dayWorkouts) {
   const sets = []
   for (const w of dayWorkouts) {
     for (const ex of w.exercises || []) {
@@ -57,6 +57,16 @@ export function classifyDay(dayWorkouts, reference) {
       for (const s of valid) if (s.weight >= WARMUP_BELOW * top) sets.push({ id: ex.exerciseId, reps: s.reps, weight: s.weight })
     }
   }
+  return sets
+}
+
+// The weight that would be lifted for this many reps at this share of the best (the Epley line the rest of this file uses).
+export const percentOfBest = (reps) => fromReps(reps)
+export const estimateBest = epley
+
+// dayWorkouts: all workouts logged on one date. Returns null if nothing can be judged.
+export function classifyDay(dayWorkouts, reference) {
+  const sets = workingSets(dayWorkouts)
   if (!sets.length) return null
 
   let heavy = 0

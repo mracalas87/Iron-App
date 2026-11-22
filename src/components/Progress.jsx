@@ -11,6 +11,7 @@ import {
   Dot
 } from 'recharts'
 import { listExercises, exerciseHistory, sessionMetrics } from '../db'
+import ProgressTypes from './ProgressTypes'
 
 function formatDateShort(iso) {
   const d = new Date(iso + 'T00:00:00')
@@ -24,6 +25,23 @@ function PRDot(props) {
 }
 
 export default function Progress() {
+  const [view, setView] = useState('types')
+  return (
+    <div>
+      <div className="seg">
+        <button className={view === 'types' ? 'active' : ''} onClick={() => setView('types')}>
+          Workout types
+        </button>
+        <button className={view === 'exercise' ? 'active' : ''} onClick={() => setView('exercise')}>
+          Single exercise
+        </button>
+      </div>
+      {view === 'types' ? <ProgressTypes /> : <SingleExercise />}
+    </div>
+  )
+}
+
+function SingleExercise() {
   const [exercises, setExercises] = useState([])
   const [selected, setSelected] = useState(null)
   const [chartData, setChartData] = useState([])

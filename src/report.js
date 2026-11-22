@@ -10,7 +10,7 @@ import { readMoves, readCoachExtras } from './overrides'
 import { coachChangeLines } from './coachReview'
 import { getWeightSessions } from './weights'
 import { buildUpcoming } from './upcoming'
-import { analyzeTrends } from './trends'
+import { analyzeTrends, MIN_REAL_NIGHT } from './trends'
 import { mergeHealthDays } from './healthHistory'
 import { mergeActivities } from './activityHistory'
 
@@ -102,21 +102,30 @@ export async function buildReport() {
     reasons.push(text)
   }
 
-  const sleepAvg = v.sleepHours.avg
+  // Sleep over the last 7 recorded nights. A night under 3 h is the watch missing the night, not
+  // sleep, so it is left out (it used to drag the average down and count as 6 h of sleep debt).
+  const realNights = v.sleepHours.values.filter((x) => x != null && x >= MIN_REAL_NIGHT).slice(-7)
+  const sleepAvg = realNights.length >= 3 ? realNights.reduce((a, b) => a + b, 0) / realNights.length : null
   if (sleepAvg != null && sleepAvg < 6.5) warn(2, `Sleep averaging ${round(sleepAvg, 1)}h, well under 7h`)
   else if (sleepAvg != null && sleepAvg < 7) warn(1, `Sleep averaging ${round(sleepAvg, 1)}h, under 7h`)
 
-  const hrvStatusWarned = ['LOW', 'POOR', 'UNBALANCED'].includes(v.hrvStatus)
-  if (['LOW', 'POOR'].includes(v.hrvStatus)) warn(2, `HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()}`)
-  else if (v.hrvStatus === 'UNBALANCED') warn(1, 'HRV status is unbalanced')
-
-  // Trends over several days against your own baseline (trends.js). Garmin's own HRV status and the
-  // sleep average above already count, so the same thing is not counted twice.
+  // Trends over several days against your own baseline (trends.js): the median of your last 5 days
+  // against your own 4-week normal. This is the main recovery signal.
   const trend = analyzeTrends(mergeHealthDays(health))
+  const ownHrvSignal = trend.signals.some((s) => s.key === 'hrv')
+
+  // Garmin's HRV status compares its own 7-day average with a 3-week baseline, so a single odd night or a
+  // big race can set it to Unbalanced while your numbers are fine. Unbalanced only counts when your own
+  // 5-day HRV is also below your normal; Low or Poor counts for one point even when your own trend is steady.
+  const hrvStatusWarned = ['LOW', 'POOR'].includes(v.hrvStatus)
+  if (hrvStatusWarned && !ownHrvSignal) warn(1, `Garmin HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()}`)
+
   for (const s of trend.signals) {
-    if (s.key === 'hrv' && hrvStatusWarned) continue
-    if (s.key === 'sleep' && sleepAvg != null && sleepAvg < 7) continue
+    if (s.key === 'sleep' && sleepAvg != null && sleepAvg < 7) continue // the sleep average above already counts
     warn(s.points, s.text)
+  }
+  if (ownHrvSignal && ['UNBALANCED', 'LOW', 'POOR'].includes(v.hrvStatus)) {
+    warn(1, `Garmin HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()} too`)
   }
 
   const hasHealth = v.hasData
@@ -126,9 +135,17 @@ export async function buildReport() {
   const level = hasHealth ? 6 - Math.min(points, 5) : null
 
   // ---- Detailed vitals rows ----
+  // A night the watch missed (under 3 h) and the HRV from that same recording are left out of the ranges and averages.
+  const goodNight = v.sleepHours.values.map((s) => s == null || s >= MIN_REAL_NIGHT)
+  const keep = (values) => values.filter((x, i) => x != null && goodNight[i])
+  const avgOf = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null)
   const rhrRange = spread(v.restingHR.values)
-  const hrvRange = spread(v.hrv.values)
-  const sleepRange = spread(v.sleepHours.values)
+  const hrvKept = keep(v.hrv.values)
+  const sleepKept = v.sleepHours.values.filter((s) => s != null && s >= MIN_REAL_NIGHT)
+  const hrvRange = spread(hrvKept)
+  const sleepRange = spread(sleepKept)
+  const hrvAvg = avgOf(hrvKept)
+  const sleepAvgShown = avgOf(sleepKept)
   const hrvStatusText = formatHrvStatus(v.hrvStatus)
 
   const vitalRows = !hasHealth
@@ -145,14 +162,14 @@ export async function buildReport() {
           figure: v.hrv.latest != null ? `${round(v.hrv.latest)} ms` : '—',
           trend: trendLabel(v.hrv.delta, 'ms', true),
           detail: hrvRange
-            ? `${hrvStatusText ? hrvStatusText + ' · ' : ''}avg ${round(v.hrv.avg)} · range ${round(hrvRange.min)}-${round(hrvRange.max)}`
+            ? `${hrvStatusText ? hrvStatusText + ' · ' : ''}avg ${round(hrvAvg)} · range ${round(hrvRange.min)}-${round(hrvRange.max)}`
             : 'Not in saved data yet, refresh on the Health tab'
         },
         {
           name: 'Sleep',
           figure: v.sleepHours.latest != null ? `${round(v.sleepHours.latest, 1)} h` : '—',
           trend: trendLabel(v.sleepHours.delta != null ? v.sleepHours.delta * 60 : null, 'min', true),
-          detail: sleepRange ? `avg ${round(v.sleepHours.avg, 1)}h · shortest ${round(sleepRange.min, 1)}h` : ''
+          detail: sleepRange ? `avg ${round(sleepAvgShown, 1)}h · shortest ${round(sleepRange.min, 1)}h` : ''
         },
         {
           name: 'Deep sleep',
@@ -215,6 +232,12 @@ export async function buildReport() {
     notes.push('No Garmin data yet. Go to the Health tab and tap "Refresh from Garmin".')
   } else if (reasons.length === 0) {
     notes.push('Recovery signals (sleep, resting HR, HRV) all look steady.')
+  }
+  // Show the numbers behind the verdict: the median of your last 5 days against your own 4-week normal.
+  if (hasHealth && trend.now.hrv != null && trend.normal.hrv != null) {
+    const rhrPart = trend.now.rhr != null && trend.normal.rhr != null ? `, resting HR ${round(trend.now.rhr)} (normal ${round(trend.normal.rhr)})` : ''
+    const garmin = v.hrvStatus && v.hrvStatus !== 'BALANCED' && !ownHrvSignal ? ` Garmin says ${formatHrvStatus(v.hrvStatus).toLowerCase()}, but its view is a 7-day average and is not counted against you while your own 5 days are steady.` : ''
+    notes.push(`Last 5 days (median): HRV ${round(trend.now.hrv)} ms (your normal ${round(trend.normal.hrv)})${rhrPart}.${garmin}`)
   }
 
   // How heavy or high-volume each logged lifting day was (loadType.js), and how you responded.

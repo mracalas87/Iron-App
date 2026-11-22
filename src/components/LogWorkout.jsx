@@ -2,24 +2,14 @@ import { useEffect, useState } from 'react'
 import WorkoutEditor, { canSaveWorkout, cleanWorkout } from './WorkoutEditor'
 import { MuscleIcon } from './Icons'
 import MuscleHeatmap from './MuscleHeatmap'
+import MuscleGroupPage from './MuscleGroupPage'
+import { GROUP_STYLE } from '../groupStyle'
 import { saveWorkout, listWorkouts, MUSCLE_GROUPS } from '../db'
 
 function todayISO() {
   const d = new Date()
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
   return d.toISOString().slice(0, 10)
-}
-
-// A colour for each muscle group tile.
-const GROUP_STYLE = {
-  Shoulders: { colour: '#ff8a3d' },
-  Chest: { colour: '#ff6b61' },
-  Back: { colour: '#6b8cff' },
-  Quads: { colour: '#3fd07a' },
-  Hamstrings: { colour: '#34d3be' },
-  Biceps: { colour: '#a98bff' },
-  Triceps: { colour: '#e8639e' },
-  Abs: { colour: '#9bb0c9' }
 }
 
 const daysSince = (iso) => Math.round((new Date(todayISO() + 'T12:00:00Z') - new Date(iso + 'T12:00:00Z')) / 86400000)
@@ -33,6 +23,7 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
   const [draftMuscleGroups, setDraftMuscleGroups] = useState([])
   const [saved, setSaved] = useState(false)
   const [lastDone, setLastDone] = useState({}) // group -> most recent date it was chosen
+  const [viewGroup, setViewGroup] = useState(null) // muscle group whose history and research sessions are open
 
   // When each muscle group was last trained, from the logged workouts.
   useEffect(() => {
@@ -76,6 +67,19 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
     setTimeout(() => setSaved(false), 2000)
   }
 
+  if (!activeWorkout && viewGroup) {
+    return (
+      <MuscleGroupPage
+        group={viewGroup}
+        onBack={() => setViewGroup(null)}
+        onStart={(g) => {
+          setActiveWorkout({ title: g, date: todayISO(), muscleGroups: [g], exercises: [] })
+          setViewGroup(null)
+        }}
+      />
+    )
+  }
+
   if (!activeWorkout) {
     const picked = draftMuscleGroups
     const startLabel =
@@ -96,21 +100,31 @@ export default function LogWorkout({ activeWorkout, setActiveWorkout, onSaved })
             const on = order >= 0
             const style = GROUP_STYLE[g] || { colour: '#9bb0c9' }
             return (
-              <button
-                key={g}
-                type="button"
-                className={`mg-btn${on ? ' on' : ''}`}
-                style={{ '--mg': style.colour }}
-                onClick={() => toggleDraftGroup(g)}
-                aria-pressed={on}
-              >
-                <span className="mg-ico"><MuscleIcon name={g} size={26} /></span>
-                <span className="mg-text">
-                  <span className="mg-name">{g}</span>
-                  <span className="mg-sub">{lastTrained(lastDone[g])}</span>
-                </span>
-                <span className="mg-badge">{on ? (order === 0 ? 'Main' : order + 1) : ''}</span>
-              </button>
+              <div className="mg-row" key={g}>
+                <button
+                  type="button"
+                  className={`mg-btn${on ? ' on' : ''}`}
+                  style={{ '--mg': style.colour }}
+                  onClick={() => toggleDraftGroup(g)}
+                  aria-pressed={on}
+                >
+                  <span className="mg-ico"><MuscleIcon name={g} size={26} /></span>
+                  <span className="mg-text">
+                    <span className="mg-name">{g}</span>
+                    <span className="mg-sub">{lastTrained(lastDone[g])}</span>
+                  </span>
+                  <span className="mg-badge">{on ? (order === 0 ? 'Main' : order + 1) : ''}</span>
+                </button>
+                <button
+                  type="button"
+                  className="mg-hist"
+                  style={{ '--mg': style.colour }}
+                  onClick={() => setViewGroup(g)}
+                  aria-label={`${g}: history and research sessions`}
+                >
+                  History
+                </button>
+              </div>
             )
           })}
         </div>

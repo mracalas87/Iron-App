@@ -32,10 +32,18 @@ function streakOf(values, bad) {
 
 const MIN_BASELINE = 6 // readings needed before resting HR / HRV signals mean anything
 const SLEEP_NEED = 7.5
+// A night under this is almost always the watch missing the night (it was off, or the recording was
+// split by a late finish), not real sleep. Its HRV comes from the same recording, so both are dropped.
+export const MIN_REAL_NIGHT = 3
+// One short night cannot add more than this to sleep debt; a long night afterwards pays it back.
+const MAX_NIGHT_SHORTFALL = 2.5
+const RECENT_DAYS = 5 // the "what is it like right now" window for HRV and resting HR
 
 // series: [{ date, rhr, hrv, sleep }] oldest first. Returns
-// { level: 'steady' | 'watch' | 'concern' | 'alert', points, signals: [{ key, points, text }], summary, baselineDays }
-export function analyzeTrends(series) {
+// { level: 'steady' | 'watch' | 'concern' | 'alert', points, signals: [{ key, points, text }], summary, baselineDays,
+//   now: { hrv, rhr }, normal: { hrv, rhr } }  (now = median of the last 5 days, normal = your own 4-week median)
+export function analyzeTrends(rawSeries) {
+  const series = rawSeries.map((d) => (d.sleep != null && d.sleep < MIN_REAL_NIGHT ? { ...d, sleep: null, hrv: null } : d))
   const column = (key) => series.map((d) => d[key]).filter((x) => x != null)
   const signals = []
 
@@ -63,10 +71,12 @@ export function analyzeTrends(series) {
       const down = Math.round(((base - mean(hrv.slice(-n))) / base) * 100)
       signals.push({ key: 'hrv', points: n >= 5 ? 2 : 1, text: `HRV ${down}% below normal for ${n} days` })
     } else {
-      const week = hrv.slice(-7)
-      if (week.length >= 5 && mean(week) <= base - Math.max(0.08 * base, 0.75 * sd(hrvBase))) {
-        const down = Math.round(((base - mean(week)) / base) * 100)
-        signals.push({ key: 'hrv', points: 1, text: `HRV averaging ${down}% below normal this week` })
+      // the median of the last 5 readings, so one odd night cannot drag it
+      const recentHrv = hrv.slice(-RECENT_DAYS)
+      const now = median(recentHrv)
+      if (recentHrv.length >= 4 && now <= base - Math.max(0.08 * base, 0.75 * sd(hrvBase))) {
+        const down = Math.round(((base - now) / base) * 100)
+        signals.push({ key: 'hrv', points: 1, text: `HRV ${down}% below normal over the last ${recentHrv.length} days` })
       }
     }
   }
@@ -75,7 +85,7 @@ export function analyzeTrends(series) {
   const sleep = column('sleep')
   const recent = sleep.slice(-5)
   const short = recent.filter((v) => v < 6.5).length
-  const debt = sleep.slice(-7).reduce((s, v) => s + Math.max(0, SLEEP_NEED - v), 0)
+  const debt = sleep.slice(-7).reduce((s, v) => s + Math.min(MAX_NIGHT_SHORTFALL, Math.max(0, SLEEP_NEED - v)), 0)
   if (sleep.length >= 5 && debt >= 6) {
     signals.push({ key: 'sleep', points: 2, text: `About ${Math.round(debt)}h of sleep debt this week` })
   } else if (short >= 3) {
@@ -97,7 +107,16 @@ export function analyzeTrends(series) {
     alert: 'Rest day recommended.'
   }[level]
   const summary = level === 'steady' ? 'Recovery trend steady.' : `${signals.filter((s) => s.key !== 'combo').slice(0, 2).map((s) => s.text).join('; ')}. ${action}`
-  return { level, points, signals, summary, baselineDays: Math.max(rhrBase.length, hrvBase.length) }
+  const lastN = (a) => (a.length >= 3 ? median(a.slice(-RECENT_DAYS)) : null)
+  return {
+    level,
+    points,
+    signals,
+    summary,
+    baselineDays: Math.max(rhrBase.length, hrvBase.length),
+    now: { hrv: lastN(hrv), rhr: lastN(rhr) },
+    normal: { hrv: hrvBase.length >= MIN_BASELINE ? median(hrvBase) : null, rhr: rhrBase.length >= MIN_BASELINE ? median(rhrBase) : null }
+  }
 }
 
 export const trendNote = (level) =>
