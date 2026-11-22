@@ -192,9 +192,9 @@ export const WEEKS = [
 
 // The Norwegian 4 x 4 (four 4-minute efforts at 90 to 95% of max heart rate, 3 minutes easy between).
 const VO2_4X4 =
-  'VO2 4 x 4 min: 1 km easy warm-up, then 4 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 7 km, uphill or flat. Upper body only if you lift. Baseline 22 Nov: about 1 km per effort at 4:08 per km, heart rate 175'
+  'VO2 4 x 4 min: 1 km easy warm-up, then 4 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 7 km, uphill or flat. Upper body only if you lift. TARGET for a VO2 score of 50: 4:02 per km on every hard effort (0.99 km in 4 min) at heart rate about 174. Hit it on every effort and the next target is 3:58 per km. Baseline 22 Nov: 4:08 per km'
 const VO2_3X4 =
-  'VO2 3 x 4 min: 1 km easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 6 km, uphill or flat. Upper body only if you lift'
+  'VO2 3 x 4 min: 1 km easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 6 km, uphill or flat. Upper body only if you lift. TARGET for a VO2 score of 50: 4:02 per km on every hard effort (0.99 km in 4 min) at heart rate about 174. Hit it on every effort and the next target is 3:58 per km'
 
 // The run planned for a date: distance and heart rate zone. Zones are Andy's own: zone 1 100 to 132,
 // zone 2 133 to 148, zone 3 149 to 159, zone 4 160 to 170, zone 5 171 and up.
@@ -203,7 +203,7 @@ export const RUN_SESSIONS = {
   '2026-11-26': 'Easy 6 to 8 km, heart rate under 148 (zone 2), 6 strides at the end',
   '2026-11-29': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   // The VO2 max block: the Norwegian 4 x 4 on Wednesday and Friday (Tuesday is the swim, Saturday the ride).
-  '2026-12-02': 'VO2 on-ramp, 3 x 4 min: 1 km easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 6 km, uphill or flat. Upper body only if you lift',
+  '2026-12-02': 'VO2 on-ramp, 3 x 4 min: 1 km easy warm-up, then 3 x 4 min hard at heart rate 165 to 175 (zone 4-5, in zone 5 by the second minute), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 6 km, uphill or flat. Upper body only if you lift. TARGET for a VO2 score of 50: 4:02 per km on every hard effort (0.99 km in 4 min) at heart rate about 174. Hit it on every effort and the next target is 3:58 per km',
   '2026-12-04': VO2_4X4,
   '2026-12-06': 'Easy 6 to 8 km, heart rate under 148 (zone 2)',
   '2026-12-09': VO2_4X4,

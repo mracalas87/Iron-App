@@ -74,6 +74,7 @@ function Vo2Score() {
   })
   const latest = all[all.length - 1]
   const hrr = latest.est ? latest.est.hrr : 0.93
+  const nextScore = latest.est ? Math.floor(latest.est.vo2max + 0.05) + 1 : 50
 
   function add() {
     const { efforts, bad } = parseEfforts(text)
@@ -98,6 +99,14 @@ function Vo2Score() {
           <div className="label">Garmin</div>
           <div className="value">{VO2_BASELINE.garmin}</div>
           <div className="sub">22 Nov</div>
+        </div>
+      </div>
+      <div className="metric-box" style={{ margin: '8px 0' }}>
+        <div className="label">Next run target (score {nextScore})</div>
+        <div className="value">{paceLabel(paceForVo2max(nextScore, hrr))}/km</div>
+        <div className="sub">
+          each 4 min effort: {(240 / paceForVo2max(nextScore, hrr)).toFixed(2)} km or more, heart rate about{' '}
+          {Math.round(VO2_PROFILE.restingHr + hrr * (VO2_PROFILE.maxHr - VO2_PROFILE.restingHr))}
         </div>
       </div>
       <div style={{ fontSize: 13, color: 'var(--chalk-dim)', lineHeight: 1.5, margin: '8px 0' }}>
