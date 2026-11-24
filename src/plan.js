@@ -483,7 +483,7 @@ export const SWIM_SESSIONS = {
   '2027-02-02': swimSession('Two long repeats at the same pace.', [swWarm(), swSets(2, 500, '2:25', 30), swCool()]),
   '2027-02-09': swimSession('A long steady swim, then drills to tidy the stroke.', [swWarm(), swSteady(1000, '2:26'), swDrills(2), swCool()]),
   '2027-02-16': swimSession('Last build before the checkpoint: relaxed and steady.', [swWarm(), swSteady(1000, '2:26'), swCool()]),
-  '2027-02-23': swimSession('Checkpoint. Go out easy and hold an even pace.', [swWarm(), swTimed(1500, 'timed 1,500 m continuous at about 2:25 to 2:30 per 100 m (37 to 37:30 for the 1,500 m)'), swCool()])
+  '2027-02-23': swimSession('Checkpoint. Go out easy and hold an even pace.', [swWarm(), swTimed(1500, 'timed 1,500 m continuous at about 2:25 to 2:30 per 100 m (36:15 to 37:30 for the 1,500 m)'), swCool()])
 }
 
 // How the app decides what to suggest. This is the list the schedule, the Today advice and the coach all
