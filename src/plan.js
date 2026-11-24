@@ -155,10 +155,10 @@ export const WEEKS = [
     start: '2026-12-28',
     end: '2027-01-03',
     label: 'VO2 week 5 (New Year)',
-    km: 'about 24 km running (two VO2 runs and a 10 km long run)',
+    km: 'about 14 km running (two runs)',
     sessions: [
       'Wed 30 Dec: 4 x 4 min hard. Sat 2 Jan: 4 x 4 min hard (Friday is New Year, so the second session moves to Saturday).',
-      'Sun 3 Jan: the first long run, 10 km easy, heart rate under 148. Long runs start in January and build by 2 km a week.',
+      'Sun 3 Jan: rest. Long runs start the week after, once the hard sessions are done for the week.',
       'Skip or cut a session if the legs feel heavy, your heart rate will not climb, or HRV is well below about 110.'
     ]
   },
@@ -166,11 +166,11 @@ export const WEEKS = [
     start: '2027-01-04',
     end: '2027-01-10',
     label: 'VO2 week 6',
-    km: 'about 25 km running (two VO2 runs and a 12 km long run)',
+    km: 'about 21 km running (two VO2 runs and an 8 km long run)',
     sessions: [
       'Wed 6 Jan: the full 4 x 4 min hard. Fri 8 Jan: 3 x 4 min hard (a lighter day to freshen up for the test).',
       'Sat 9 Jan: the bike is back, so the 30 km baseline ride, steady, heart rate under 145 (zone 2).',
-      'Sun 10 Jan: long run 12 km, easy, heart rate under 148.',
+      'Sun 10 Jan: the first long run, 8 km easy, heart rate under 148. The week before it is only two runs, so the long run starts short and builds by 2 km at a time.',
       'Lift as normal, no legs the day before a VO2 run or the day before and after a long run.'
     ]
   },
@@ -178,11 +178,11 @@ export const WEEKS = [
     start: '2027-01-11',
     end: '2027-01-17',
     label: 'Test week',
-    km: 'about 26 km running (the opener, the test and a 14 km long run)',
+    km: 'about 12 km running (the opener and the test)',
     sessions: [
       'Wed 13 Jan: a short opener, 2 x 4 min hard, to keep the legs fresh for the test.',
       'Fri 15 Jan: the test run. 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors with a good heart rate signal. The watch updates your VO2 max after a run like this. Also log the session in the VO2 score panel (Plan tab).',
-      'Sat 16 Jan: rest or an easy ride. Sun 17 Jan: long run 14 km, easy, heart rate under 148. The base phase starts on Mon 18 Jan.'
+      'Sat 16 Jan: rest or an easy ride. Sun 17 Jan: rest or an easy walk, no long run two days after the test. The base phase starts on Mon 18 Jan, with long runs on Sundays: 10 km on 24 Jan, 12 km on 31 Jan.'
     ]
   }
 ]
@@ -208,15 +208,13 @@ export const RUN_SESSIONS = {
   '2026-12-26': VO2_4X4,
   '2026-12-30': VO2_4X4,
   '2027-01-02': VO2_4X4,
-  '2027-01-03': 'Long run 10 km, easy, heart rate under 148 (zone 2). The first long run since the marathon: walk the hills if you need to, there is no time target',
   '2027-01-06': VO2_4X4,
   '2027-01-08': VO2_3X4,
-  '2027-01-10': 'Long run 12 km, easy, heart rate under 148 (zone 2)',
+  '2027-01-10': 'Long run 8 km, easy, heart rate under 148 (zone 2). The first long run since the marathon: walk the hills if you need to, there is no time target',
   '2027-01-13': 'VO2 opener, 2 x 4 min: 1 km easy warm-up, then 2 x 4 min hard at heart rate 165 to 175 (zone 4-5), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 5 km. It keeps the legs fresh for the test on Friday',
   '2027-01-15': 'VO2 test run: 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors, good heart rate signal, then 5 min easy. About 7 km. The watch updates your VO2 max after it',
-  '2027-01-17': 'Long run 14 km, easy, heart rate under 148 (zone 2). Two days after the test, so go slowly',
-  '2027-01-24': 'Long run 16 km, easy, heart rate under 148 (zone 2)',
-  '2027-01-31': 'Long run 12 km, easy, heart rate under 148 (zone 2). A lighter week'
+  '2027-01-24': 'Long run 10 km, easy, heart rate under 148 (zone 2)',
+  '2027-01-31': 'Long run 12 km, easy, heart rate under 148 (zone 2)'
 }
 
 // The rules Andy can change in the Plan tab (settings.js keeps his choices; report.js applies them).
@@ -334,9 +332,10 @@ export const MILESTONES = [
 // Between these dates every run is spelled out in RUN_SESSIONS (or the long-run slot), so a day with
 // no run there means no run, and no extra easy run is added on off days.
 export const DATED_RUNS_FROM = '2026-11-15'
-// Two VO2 runs a week until the test, and a Sunday long run from 3 Jan. Nothing else is added: no easy or recovery runs, and
-// no runs after the January long runs until the next block is planned.
-export const DATED_RUNS_UNTIL = '2027-02-28'
+// Two VO2 runs a week until the test, and a Sunday long run from 10 Jan. Nothing else is added: no easy or recovery runs, and
+// no runs after the January long runs until the next block is planned. The window runs to race eve so the generic phase text
+// (easyRunText, the phase weeks) can never turn into a suggested run: only runs dated in RUN_SESSIONS appear.
+export const DATED_RUNS_UNTIL = '2027-10-22'
 
 // An easy run on an off day, by phase, when no dated run is planned.
 export function easyRunText(phaseId) {
@@ -357,12 +356,12 @@ export const PHASE_WEEKS = {
   base: [
     'Tue 5 to 6pm: swim for technique, 30 to 40 minutes of drills and easy lengths (about 800 to 1,200 m, heart rate under 135). Book a few lessons or a video check in the first month.',
     'Sat: long easy ride, 25 to 60 km, adding 5 to 10 km a month. Keep heart rate under about 140 on the bike until you have measured it.',
-    'Sun: long easy run, heart rate under 148, adding 2 km a week with an easier week every fourth. No other runs are planned until the next block is set.'
+    'Sun: long easy run, heart rate under 148: 10 km on 24 Jan, 12 km on 31 Jan. No other runs are planned until the next block is set.'
   ],
   build: [
     'Tue: swim, building to 2,500 m a session (drills, then steady sets, heart rate under 140). First sea swims in May, in the wetsuit.',
     'Sat: long ride of 60 to 85 km, hilly, 10 km longer than the last at most. From May, one ride a month ends with a 15 minute easy run.',
-    'Off day: easy run of 45 to 75 minutes. A long run of 14 to 18 km every second week keeps the half marathon legs.',
+    'Runs: not planned yet. Set the next run block before March; until then Today shows no run.',
     'Keep 80% of it easy. One short hard effort a week is plenty.'
   ],
   summer: [
@@ -404,7 +403,7 @@ export const RUN_GUIDE = [
 export const MONTH_TARGETS = [
   { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '' },
   { month: '2026-12', swim: 'One swim a week, Tuesday: 700 m building to 1,000 m', ride: '', note: 'No bike until the end of December. VO2 max block: Norwegian 4 x 4 on Wednesday and Friday (Christmas and New Year week: Wednesday and Saturday). Check on 23 Dec.' },
-  { month: '2027-01', swim: 'Tuesday: 1,000 m building to 1,300 m', ride: '30 km baseline on 9 Jan, then 25 to 60 km', note: 'Long runs on Sunday from 3 Jan (10 km, adding 2 km a week). VO2 block to the test run on Fri 15 Jan. Goal: VO2 score toward 55 (51 to 53 realistic). Base phase from 18 Jan.' },
+  { month: '2027-01', swim: 'Tuesday: 1,000 m building to 1,300 m', ride: '25 to 60 km', note: 'The bike arrives at the end of December: 30 km baseline ride on Sat 9 Jan. Long runs on Sunday from 10 Jan (8 km, then 10 and 12 km after the test). VO2 block to the test run on Fri 15 Jan. Goal: VO2 score toward 55 (51 to 53 realistic). Base phase from 18 Jan.' },
   { month: '2027-02', swim: 'Tuesday: 1,300 m, then the 1,500 m checkpoint on 23 Feb', ride: '25 to 60 km. Checkpoint: 60 km', note: 'End of base.' },
   { month: '2027-03', swim: 'Build up to 2,500 m', ride: '60 to 85 km, hilly', note: 'Road bike in place by March.' },
   { month: '2027-04', swim: 'Build up to 2,500 m', ride: '60 to 85 km, hilly' },
@@ -493,7 +492,7 @@ export const APP_RULES = [
   { title: 'Reading your workouts', text: 'The first muscle in the title is the day\'s lift. Triceps or biceps added to another muscle are extras, so "Chest, Triceps" counts as chest. Each lift flips between a heavy day and a volume day.' },
   { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race. From the day the bike is back (9 Jan): no legs Thursday to Saturday (the ride). Tuesday is legs, arms or off only (the swim). No legs the day before a VO2 run or on the day, and none the day before, the day of and the day after a long run.' },
   { title: 'VO2 block', text: 'From 2 Dec to 15 Jan: two runs a week, both hard, on Wednesday and Friday (1 km warm-up, the Norwegian 4 x 4, 1 km cool-down), and a test run on 15 Jan. There are no easy, recovery or long runs in between. If recovery is only fair the session is cut to 3 x 4 min, and if the trend is down it becomes an easy run.' },
-  { title: 'Two runs a week', text: 'Until the 15 Jan test the only runs are the two VO2 sessions a week, and from 3 Jan a long run on Sunday as well (10, 12, 14, 16 km, then an easier 12). The app never adds an easy or recovery run on an off day, and on every other day Today says there is no run planned. After the January long runs, nothing is planned until the next block is set.' },
+  { title: 'Two runs a week', text: 'Until the 15 Jan test the only runs are the two VO2 sessions a week, and from 10 Jan a long run on Sunday as well (8 km, none on 17 Jan after the test, then 10 and 12 km). The app never adds an easy or recovery run on an off day, and on every other day Today says there is no run planned. After 31 Jan nothing is planned until the next block is set; the app will not make up runs in the meantime.' },
   { title: 'The swim', text: 'One structured swim a week on Tuesday, 5 to 6pm, building from your baseline (400 m in 9:56 on 17 Nov, 500 m in 12:22 on 24 Nov, about 2:28 per 100 m) to 1,500 m continuous on Tue 23 Feb. If Tuesday is missed, the same session moves to Thursday. There is no other swim in the plan.' },
   { title: 'Days with no lifting', text: 'The long-run day, a race-rhythm run day, and the two days before a race. A full rest day has no lifting and no run.' },
   { title: 'Easy means easy', text: 'Easy running is heart rate under 148 (zone 2), and about 80% of training stays easy. The day after a long run is rest or 30 minutes under 140. After heavy legs, keep the run to 5 to 6 km.' },

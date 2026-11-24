@@ -28,6 +28,7 @@ const r1 = (n) => Math.round(n * 10) / 10
 
 export const HR_MAX = 184
 export const MIN_REAL_NIGHT = 3
+const STALE_CAP = 58 // with no reliable overnight reading Recovery cannot read better than Fair
 export const SLEEP_NEED = 7.5
 
 // ---------------------------------------------------------------------------------------------- training load
@@ -164,6 +165,13 @@ export function recoveryScore(rawSeries) {
   // a night the watch missed is not sleep: drop it and the HRV from the same recording
   const series = rawSeries.map((d) => (d.sleep != null && d.sleep < MIN_REAL_NIGHT ? { ...d, sleep: null, hrv: null, deep: null, rem: null, awake: null, bb: null } : d))
   if (!series.length) return null
+  // If last night is the one the watch missed (under 3 h recorded), or there is no night at all for two days, there is no
+  // reliable overnight reading: the score still uses the earlier nights, but it is held at Fair until a proper night comes in.
+  const lastRaw = rawSeries[rawSeries.length - 1]
+  const prevRaw = rawSeries[rawSeries.length - 2]
+  const missedLast = lastRaw.sleep != null && lastRaw.sleep < MIN_REAL_NIGHT
+  const noRecent = lastRaw.sleep == null && (!prevRaw || prevRaw.sleep == null)
+  const stale = missedLast || noRecent
   const last = series.length - 1
   const col = (k) => series.map((d) => d[k])
   const recent = (k, n) => col(k).slice(-n).filter((x) => x != null)
@@ -234,8 +242,18 @@ export function recoveryScore(rawSeries) {
     score -= 8
     reasons.push(`Garmin HRV status is ${status.toLowerCase()}`)
   }
+  score = clamp(score, 0, 100)
+  if (stale) {
+    score = Math.min(score, STALE_CAP)
+    reasons.unshift(
+      missedLast
+        ? `The watch recorded only ${r1(lastRaw.sleep)} h last night, so there is no reliable overnight reading and Recovery is held at Fair`
+        : 'No overnight data for the last two days, so Recovery is held at Fair'
+    )
+  }
   return {
-    score: clamp(score, 0, 100),
+    score,
+    stale,
     parts,
     reasons,
     now: { hrv: hrv5, rhr: rhr3 },
@@ -264,7 +282,7 @@ export function readiness({ series, loadByDate, today, trendLevel = 'steady' }) 
   const recLevel = levelOf(recScore, RECOVERY_CUTS)
   const readyLevel = levelOf(ready, READY_CUTS)
   return {
-    recovery: { score: Math.round(recScore), level: recLevel, word: recoveryWord(recLevel), parts: rec.parts, now: rec.now, normal: rec.normal },
+    recovery: { score: Math.round(recScore), level: recLevel, word: recoveryWord(recLevel), stale: rec.stale, parts: rec.parts, now: rec.now, normal: rec.normal },
     training: { score: Math.round(ready), level: readyLevel, zone: zoneWord(readyLevel), load },
     reasons: [...rec.reasons, ...adj.reasons]
   }
