@@ -10,7 +10,7 @@
 import { percentOfBest } from './loadType'
 
 export const TYPES = ['Heavy', 'Mixed', 'Volume']
-export const TYPE_COLOUR = { Heavy: '#ff8a3d', Mixed: '#6b8cff', Volume: '#8ccf3a' }
+export const TYPE_COLOUR = { Heavy: '#f26b1d', Mixed: '#3b6df0', Volume: '#16a34a' }
 
 // What each kind of session is for, and the rep, intensity and effort targets that go with it.
 export const TYPE_INFO = {

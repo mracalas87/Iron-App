@@ -367,6 +367,7 @@ export default function Plan() {
         })}
       </div>
 
+      <div className="bento">
       <Panel
         id="goals"
         icon="goal"
@@ -465,6 +466,7 @@ export default function Plan() {
       <Panel id="ground" icon="rules" title="Ground rules" summary={`${GROUND_RULES.length} rules`} {...back}>
         <RuleList rules={GROUND_RULES} />
       </Panel>
+      </div>
     </div>
   )
 }

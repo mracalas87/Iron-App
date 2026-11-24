@@ -6,7 +6,7 @@ import { PanelIcon } from './Icons'
 export default function Panel({ id, icon, title, summary, preview, open, onToggle, onHome, homeLabel = 'Home', children }) {
   const isOpen = open === id
   return (
-    <div className={`panel${isOpen ? ' open' : ''}${preview && !isOpen ? ' has-preview' : ''}`}>
+    <div data-panel={id} className={`panel${isOpen ? ' open' : ''}${preview && !isOpen ? ' has-preview' : ''}`}>
       <button className="panel-head" onClick={() => onToggle(isOpen ? null : id)} aria-expanded={isOpen}>
         {icon && <PanelIcon name={icon} />}
         <span className="panel-text">

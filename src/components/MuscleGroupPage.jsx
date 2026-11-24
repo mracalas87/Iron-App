@@ -132,7 +132,7 @@ export default function MuscleGroupPage({ group, onBack, onStart, onStartDraft }
         ))}
       </div>
 
-      <div className="card mgp-card" style={{ borderColor: TYPE_COLOUR[tab] }}>
+      <div className="card mgp-card">
         <div className="mgp-label">Your top {tab.toLowerCase()} {group.toLowerCase()} workout</div>
         {top ? (
           <>

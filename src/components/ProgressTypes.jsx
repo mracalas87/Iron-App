@@ -102,7 +102,7 @@ function TypeChart({ type, group, series }) {
   const say = verdict(type, rows, group)
 
   return (
-    <div className="card" style={{ borderColor: colour }}>
+    <div className="card">
       <div className="pt-head">
         <span className="pt-dot" style={{ background: colour }} />
         <span className="pt-label" style={{ margin: 0 }}>{type} {group.toLowerCase()} · last {rows.length || 10}</span>
@@ -128,7 +128,7 @@ function TypeChart({ type, group, series }) {
               <XAxis dataKey="label" tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={{ stroke: CHART.grid }} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fill: CHART.axis, fontSize: 11 }} axisLine={false} tickLine={false} width={40} tickFormatter={kfmt} domain={[(min) => Math.max(0, Math.floor((Math.min(min, optimal || min) * 0.85) / 100) * 100), (max) => Math.ceil((Math.max(max, optimal || max) * 1.1) / 100) * 100]} />
               <Tooltip content={<Tip />} />
-              <Line type="linear" dataKey="optimal" name="Target" stroke="#eaf8fb" strokeWidth={1.5} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
+              <Line type="linear" dataKey="optimal" name="Target" stroke="#111111" strokeWidth={1.5} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
               <Line type="monotone" dataKey="actual" name="You" stroke={colour} strokeWidth={2.5} dot={{ r: 3, fill: colour, stroke: 'none' }} activeDot={{ r: 5 }} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>

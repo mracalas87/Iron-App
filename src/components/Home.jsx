@@ -81,7 +81,7 @@ const RED = 'var(--danger)'
 const AMBER = 'var(--warn)'
 const GREEN = 'var(--pr)'
 // Six bars that shift a step at a time from red on the left to green on the right.
-const GRADIENT = ['#d93a2f', '#ea6a2b', '#f2a31b', '#c7bc1c', '#84b92a', '#3f9d2e']
+const GRADIENT = ['#f4717f', '#ff8a5b', '#ffae2b', '#cfe86a', '#7fe39a', '#35c46a']
 // Recovery: Strained 1-2, Fair 3-4, Good 5-6. Training: Rest 1, Easy 2-3, Go 4-6.
 const RECOVERY_BAR = {
   colours: GRADIENT,
@@ -364,6 +364,7 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
         </button>
       )}
 
+      <div className="bento">
       <Panel id="today" icon="today" title="Today" summary={todaySummary} preview={todayPreview} open={open} onToggle={setOpen} onHome={goHome}>
         <div className="status-head">
           <div className="dim-label" style={{ margin: 0 }}>
@@ -560,6 +561,7 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
           </button>
         </Panel>
       )}
+      </div>
     </div>
   )
 }

@@ -1,18 +1,28 @@
 :root {
-  color-scheme: dark;
-  --bg: #082433;
-  --surface: #0d3447;
-  --surface-raised: #114159;
-  --border: #174b63;
-  --chalk: #eaf8fb;
-  --chalk-dim: #8fb9c7;
-  --iron: #2dd4c0;
-  --iron-dim: #135560;
-  --on-accent: #06222e;
-  --pr: #4ade80;
-  --danger: #ff6b61;
-  --warn: #f2a31b;
+  color-scheme: light;
+  --bg: #f6eed8;
+  --surface: #ffffff;
+  --surface-raised: #fff4cc;
+  --border: #111111;
+  --chalk: #111111;
+  --chalk-dim: #4a463c;
+  --iron: #111111;
+  --iron-dim: #f9d94c;
+  --on-accent: #111111;
+  --pr: #16a34a;
+  --danger: #e03131;
+  --warn: #d98200;
 
+  --yellow: #f9d94c;
+  --blue: #7fd4ee;
+  --pink: #f3a0e8;
+  --coral: #f4717f;
+  --orange: #f7b266;
+  --purple: #c4b0f5;
+  --green: #7fe39a;
+  --mint: #6fe0cf;
+  --nb-shadow: 5px 5px 0 #111111;
+  --nb-shadow-sm: 3px 3px 0 #111111;
 
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --sans: 'Inter', system-ui, sans-serif;
@@ -1727,4 +1737,689 @@ select:focus-visible {
   color: var(--chalk-dim);
   line-height: 1.45;
   margin-top: 3px;
+}
+
+/* =====================================================================================================
+   Neo-brutalism skin: cream page, thick black outlines, hard offset shadows, flat bright colour blocks,
+   heavy sans headings with small uppercase mono labels. It sits on top of the layout rules above, which
+   still decide sizes and spacing; this block only changes colour, borders, shadows and type.
+   ===================================================================================================== */
+
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(rgba(17, 17, 17, 0.18) 1.2px, transparent 1.2px);
+  background-size: 18px 18px;
+  font-weight: 500;
+}
+
+input, select, textarea {
+  color: var(--chalk);
+}
+
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
+  background: #fff;
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  color: var(--chalk);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #7b7668;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 3px 3px 0 var(--border);
+}
+
+/* header and tab bar */
+.app-header {
+  background: var(--yellow);
+  border-bottom: 3px solid var(--border);
+}
+
+.app-header h1 {
+  font-family: var(--sans);
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.app-header .plate-mark {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  background: #fff;
+  border: 3px solid var(--border);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.tab-bar {
+  background: #fff;
+  border-top: 3px solid var(--border);
+}
+
+.tab-bar button {
+  color: var(--chalk);
+  font-weight: 900;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-left: 3px solid var(--border);
+}
+
+.tab-bar button:first-child {
+  border-left: none;
+}
+
+.tab-bar button.active {
+  background: var(--yellow);
+  color: var(--chalk);
+}
+
+/* cards and panels: white tiles (colour blocks for the Home and Plan panels below) */
+.card,
+.panel,
+.heat-card,
+.mgp-hist-card {
+  background: #fff;
+  border: 3px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--nb-shadow);
+  margin-bottom: 16px;
+}
+
+.panel-head {
+  padding: 14px 16px;
+}
+
+.panel-title {
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.panel-sum {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--chalk);
+  opacity: 0.8;
+}
+
+.panel-chev {
+  color: var(--chalk);
+  font-weight: 900;
+}
+
+.panel.open .panel-head {
+  border-bottom: 3px solid var(--border);
+}
+
+.panel-ico {
+  background: #fff !important;
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.panel-ico svg,
+.sport-icon {
+  stroke: var(--chalk);
+}
+
+.panel-home {
+  border: 3px solid var(--border);
+  background: #fff;
+  color: var(--chalk);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--border);
+}
+
+.panel[data-panel='today'] { background: var(--yellow); }
+.panel[data-panel='coach'] { background: var(--purple); }
+.panel[data-panel='coming'] { background: var(--blue); }
+.panel[data-panel='month'] { background: var(--pink); }
+.panel[data-panel='recent'] { background: var(--orange); }
+.panel[data-panel='details'] { background: #fff; }
+.panel[data-panel='now'] { background: var(--yellow); }
+.panel[data-panel='week'] { background: var(--blue); }
+.panel[data-panel='race'] { background: var(--coral); }
+.panel[data-panel='pace'] { background: var(--purple); }
+.panel[data-panel='targets'] { background: var(--mint); }
+.panel[data-panel='fuel'] { background: var(--orange); }
+.panel[data-panel='goal'] { background: var(--pink); }
+.panel[data-panel='rules'] { background: var(--green); }
+.panel[data-panel='lifting'] { background: var(--yellow); }
+
+/* small uppercase mono labels */
+.duo-label,
+.dim-label,
+.pt-label,
+.mgp-label,
+.field label,
+.metric-box .label,
+.mini-tile .label,
+.vital-tile .label,
+.gauge-labels,
+.log-hint,
+.pt-target {
+  font-family: var(--mono);
+  color: var(--chalk);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.mgp-meta,
+.mgp-sub,
+.mg-sub,
+.pt-note,
+.pt-goal,
+.pt-foot,
+.pt-empty,
+.up-note,
+.advice-why,
+.panel-sum,
+.coach-intro,
+.mgp-foot,
+.basis,
+.pt-var-note,
+.mgp-block-note,
+.mgp-why {
+  color: #3d392f;
+}
+
+.duo-value {
+  font-family: var(--sans);
+  font-weight: 900;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* readiness bars: chunky segments with black outlines */
+.steps-track {
+  height: 24px;
+  gap: 5px;
+}
+
+.steps .step {
+  height: 14px;
+  border: 2.5px solid var(--border);
+  border-radius: 5px;
+  opacity: 0.3;
+}
+
+.steps .step.on {
+  opacity: 1;
+}
+
+.steps .step.current {
+  height: 22px;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.gauge-labels span {
+  font-size: 10px;
+}
+
+.advice {
+  border-top: 3px solid var(--border);
+}
+
+.advice-headline {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.advice-line span,
+.detail-line span {
+  color: var(--chalk);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.trend-line {
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--chalk);
+}
+
+.trend-line span {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.trend-line.alert {
+  background: var(--coral);
+}
+
+/* buttons */
+.btn,
+.refresh-btn,
+.mini-act,
+.move-btn {
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--nb-shadow);
+  background: #fff;
+  color: var(--chalk);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.btn:active,
+.refresh-btn:active,
+.mini-act:active,
+.move-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--border);
+}
+
+.btn-primary {
+  background: var(--yellow);
+  color: var(--chalk);
+}
+
+.btn-secondary {
+  background: #fff;
+}
+
+.btn:disabled,
+.refresh-btn:disabled {
+  opacity: 0.45;
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.btn-ghost {
+  color: var(--chalk);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mini-act {
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 var(--border);
+  border-width: 2.5px;
+  color: var(--chalk);
+  background: #fff;
+  font-size: 11px;
+}
+
+.mini-act.quiet {
+  box-shadow: none;
+  background: transparent;
+}
+
+.mgp-again {
+  color: var(--chalk);
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+/* chips and segmented controls */
+.chip {
+  background: #fff;
+  border: 2.5px solid var(--border);
+  color: var(--chalk);
+  font-weight: 800;
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.chip.active {
+  background: var(--yellow);
+  color: var(--chalk);
+}
+
+.seg {
+  background: #fff;
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--nb-shadow-sm);
+}
+
+.seg button {
+  color: var(--chalk);
+  font-weight: 900;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.seg button.active {
+  background: var(--border);
+  color: #fff;
+}
+
+.stat-chip {
+  background: #fff;
+  border: 2.5px solid var(--border);
+  color: var(--chalk);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+/* metric tiles */
+.metric-box,
+.mini-tile,
+.vital-tile {
+  background: var(--blue);
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--nb-shadow-sm);
+  color: var(--chalk);
+}
+
+.pt-metrics .metric-box:nth-child(1) { background: var(--yellow); }
+.pt-metrics .metric-box:nth-child(2) { background: var(--blue); }
+.pt-metrics .metric-box:nth-child(3) { background: var(--pink); }
+
+.metric-box .value,
+.mini-tile .value,
+.vital-tile .value {
+  font-family: var(--sans);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* muscle group tiles */
+.mg-btn,
+.mg-hist {
+  background: #fff;
+  border: 3px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--nb-shadow-sm);
+  color: var(--chalk);
+}
+
+.mg-btn.on {
+  background: var(--mg);
+}
+
+.mg-ico {
+  background: var(--mg);
+  color: var(--chalk);
+  border: 2.5px solid var(--border);
+  border-radius: 10px;
+}
+
+.mg-btn.on .mg-ico {
+  background: #fff;
+  color: var(--chalk);
+}
+
+.mg-name {
+  font-weight: 900;
+}
+
+.mg-badge {
+  color: var(--chalk);
+}
+
+.mg-btn.on .mg-badge {
+  background: var(--border);
+  color: #fff;
+}
+
+.mg-hist {
+  background: var(--mg);
+  color: var(--chalk);
+  font-weight: 900;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mgp-head .mg-ico {
+  background: var(--mg);
+  color: var(--chalk);
+}
+
+.mgp-title,
+.log-title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.mgp-big {
+  font-weight: 900;
+}
+
+/* lists */
+.exercise-list-item,
+.exercise-search-results button {
+  color: var(--chalk);
+  border-bottom: 2px solid var(--border);
+}
+
+.up-row,
+.vital-row,
+.feed-row,
+.mgp-ex,
+.mgp-block,
+.pt-var,
+.session-row {
+  border-color: var(--border);
+}
+
+.up-row,
+.vital-row,
+.feed-row {
+  border-bottom: 2px solid rgba(17, 17, 17, 0.35);
+  border-bottom-style: dashed;
+}
+
+.up-day {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--chalk);
+}
+
+.exercise-search-results {
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.selected-exercise,
+.set-row {
+  color: var(--chalk);
+}
+
+/* coach chat */
+.coach-msg {
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  color: var(--chalk);
+  box-shadow: var(--nb-shadow-sm);
+}
+
+.coach-msg.me {
+  background: var(--yellow);
+}
+
+.coach-msg.bot {
+  background: #fff;
+}
+
+.coach-msg.dim {
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.coach-sugg button,
+.coach-badge {
+  border: 2.5px solid var(--border);
+  background: #fff;
+  color: var(--chalk);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.coach-change {
+  border: 3px solid var(--border);
+  background: #fff;
+  border-radius: 10px;
+}
+
+/* errors, empty states */
+.err-line {
+  color: #fff;
+  background: var(--danger);
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 700;
+}
+
+.empty-state {
+  color: var(--chalk);
+}
+
+/* charts and the type pages */
+.pt-tip {
+  background: #fff;
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--border);
+  color: var(--chalk);
+}
+
+.pt-legend i.dash {
+  background: repeating-linear-gradient(90deg, var(--border) 0 4px, transparent 4px 7px);
+}
+
+.pt-vars-sum {
+  color: var(--chalk);
+  background: var(--yellow);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-weight: 700;
+}
+
+.pt-var-src {
+  color: var(--chalk);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.log-saved {
+  color: var(--chalk);
+  background: var(--green);
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 800;
+}
+
+.stepper-ctl button,
+.toggle-row button {
+  border: 2.5px solid var(--border);
+  background: #fff;
+  color: var(--chalk);
+  box-shadow: 2px 2px 0 var(--border);
+  font-weight: 900;
+}
+
+details summary {
+  cursor: pointer;
+}
+
+/* ---- bento grid: the Home and Plan panels as coloured tiles that double as buttons ---- */
+.bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: row dense;
+  gap: 16px 14px;
+  align-items: stretch;
+}
+
+.bento .panel {
+  position: relative;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.bento .panel.open,
+.bento .panel[data-panel='today'],
+.bento .panel[data-panel='goals'],
+.bento .panel[data-panel='details'] {
+  grid-column: 1 / -1;
+}
+
+.bento .panel:not(.open):not([data-panel='today']) {
+  min-height: 138px;
+}
+
+.bento .panel:not(.open):not([data-panel='today']) .panel-head {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 14px;
+}
+
+.bento .panel:not(.open):not([data-panel='today']) .panel-text {
+  flex: none;
+  width: 100%;
+}
+
+.bento .panel:not(.open):not([data-panel='today']) .panel-sum {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.35;
+}
+
+.bento .panel:not(.open):not([data-panel='today']) .panel-chev {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+}
+
+.bento .panel:not(.open):not([data-panel='today']) .panel-ico {
+  width: 42px;
+  height: 42px;
+}
+
+.bento .panel:not(.open):active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.bento .panel[data-panel='raceplan'] { background: var(--coral); }
+.bento .panel[data-panel='vo2'] { background: var(--blue); }
+.bento .panel[data-panel='races'] { background: var(--pink); }
+.bento .panel[data-panel='apprules'] { background: var(--mint); }
+.bento .panel[data-panel='ground'] { background: var(--green); }
+.bento .panel[data-panel='goals'] { background: var(--orange); }
+
+.metric-grid .metric-box:only-child {
+  grid-column: 1 / -1;
 }

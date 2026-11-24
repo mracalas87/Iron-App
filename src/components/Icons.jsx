@@ -1,5 +1,5 @@
 // Small sport icons for the Home screen: lifting, running, swimming and cycling.
-const COLOURS = { Lift: '#ff8a3d', Run: '#6b8cff', Race: '#6b8cff', Swim: '#34d3be', Ride: '#a98bff', Rest: '#9bb0c9' }
+const COLOURS = { Lift: '#111111', Run: '#111111', Race: '#111111', Swim: '#111111', Ride: '#111111', Rest: '#111111' }
 
 const SHAPES = {
   Lift: (
