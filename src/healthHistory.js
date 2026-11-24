@@ -1,6 +1,7 @@
 // Garmin only sends the last 14 days, which is thin for a personal baseline. Each time the app
 // has a fresh response it folds the days into a small history on the phone (a few numbers a day,
 // up to 120 days), so baselines get better the longer the app is used.
+// Each day keeps: resting HR, overnight HRV, sleep, deep, REM and awake hours, body battery gained overnight, and Garmin's HRV status.
 
 const KEY = 'iron-health-history'
 const KEEP_DAYS = 120
@@ -27,7 +28,11 @@ export function mergeHealthDays(health) {
       rhr: num(d.heartRate?.restingHeartRate),
       hrv: num(d.sleep?.avgOvernightHrv),
       sleep: hours(d.sleep?.dailySleepDTO?.sleepTimeSeconds),
-      deep: hours(d.sleep?.dailySleepDTO?.deepSleepSeconds)
+      deep: hours(d.sleep?.dailySleepDTO?.deepSleepSeconds),
+      rem: hours(d.sleep?.dailySleepDTO?.remSleepSeconds),
+      awake: hours(d.sleep?.dailySleepDTO?.awakeSleepSeconds),
+      bb: num(d.sleep?.bodyBatteryChange),
+      status: d.sleep?.hrvStatus || null
     }
     // keep what we already knew if today's response is missing a value (the watch has not synced yet)
     const old = store[d.date] || {}
@@ -35,7 +40,11 @@ export function mergeHealthDays(health) {
       rhr: row.rhr ?? old.rhr ?? null,
       hrv: row.hrv ?? old.hrv ?? null,
       sleep: row.sleep ?? old.sleep ?? null,
-      deep: row.deep ?? old.deep ?? null
+      deep: row.deep ?? old.deep ?? null,
+      rem: row.rem ?? old.rem ?? null,
+      awake: row.awake ?? old.awake ?? null,
+      bb: row.bb ?? old.bb ?? null,
+      status: row.status ?? old.status ?? null
     }
   }
   const dates = Object.keys(store).sort()

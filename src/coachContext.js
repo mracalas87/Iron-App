@@ -26,7 +26,7 @@ const pace = (meters, seconds) => {
 }
 
 // today: ISO date. vitals: getVitals() output. workouts: annotated workouts. garminActs: Garmin activities.
-export function buildCoachContext({ today, status, level, trend, advice, upcoming, last30, vitals, workouts, loadTypes, volumeOf, garminActs, customRules, rules, coachChanges, goals, categoryOf, loggedRuns }) {
+export function buildCoachContext({ today, status, level, ready, trend, advice, upcoming, last30, vitals, workouts, loadTypes, volumeOf, garminActs, customRules, rules, coachChanges, goals, categoryOf, loggedRuns }) {
   const L = []
 
   L.push('TODAY AND GOALS')
@@ -87,6 +87,11 @@ export function buildCoachContext({ today, status, level, trend, advice, upcomin
   L.push('')
   L.push('HOW HE IS TODAY')
   if (status && status !== '—') L.push(`Recovery ${status} (${level} of 6). Training ${advice.zone} (${advice.level} of 6). ${advice.headline}`)
+  if (ready) {
+    const ld = ready.training.load
+    L.push(`Scores out of 100 (70 recovery is his own normal): recovery ${ready.recovery.score}, training readiness ${ready.training.score}. Recovery is HRV, resting HR, sleep and body battery against his own 5-week normal. Training readiness subtracts the strain of his last 4 weeks of training${ld.ratio != null ? ` (this week is ${Math.round(ld.ratio * 10) / 10}x his 4-week average)` : ''}, counting morning weights by heart-rate block plus the lifts he logs. He runs only twice a week (the VO2 sessions) and swims once a week on Tuesday.`)
+    if (ready.reasons.length) L.push(`Why: ${ready.reasons.join('; ')}.`)
+  }
   if (trend && trend.level !== 'steady') L.push(`Recovery trend: ${trend.level}. ${trend.summary}`)
   if (advice) {
     if (advice.liftBrief || advice.strength) L.push(`App suggests for lifting: ${advice.liftBrief || advice.strength}`)

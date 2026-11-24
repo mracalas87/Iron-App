@@ -21,7 +21,7 @@ export const PHASES = [
     name: 'Recovery and baseline tests',
     start: '2026-11-15',
     end: '2026-11-30',
-    instruction: 'Recover first, then baseline tests: a 400 m swim (done 17 Nov, 9:56) and a 30 km ride.',
+    instruction: 'Recover first. The 400 m swim baseline is done (17 Nov, 9:56). There is no bike yet, so the 30 km ride baseline waits for January.',
     liftNote: 'Recovering: lift light and stop well short of failure.',
     legsNote: 'Legs: half the usual sets.'
   },
@@ -106,7 +106,7 @@ export const WEEKS = [
     km: '12 to 16 km running',
     sessions: [
       'Swim baselines are done: 400 m in 9:56 on Tue 17 Nov (about 2:29 per 100 m) and 500 m in 12:22 on Tue 24 Nov (about 2:28 per 100 m), heart rate 117. The swim plan starts on Tue 1 Dec.',
-      'Sat 28 Nov: 30 km ride, steady, heart rate under 145 (zone 2). Note average speed and heart rate.',
+      'No bike until the end of December, so there are no rides in the plan yet.',
       'No runs this week: the VO2 block, two runs a week, starts on Wed 2 Dec.'
     ]
   },
@@ -117,7 +117,7 @@ export const WEEKS = [
     km: 'about 13 km running (two runs)',
     sessions: [
       'Wed 2 Dec: 3 x 4 min hard (the on-ramp), 3 min easy jog between. Fri 4 Dec: the full 4 x 4.',
-      'Thu: the light swim with your daughter. Sat: easy ride, heart rate under 140.',
+      'Nothing else is planned: one swim and two runs a week, plus lifting.',
       'No legs the day before a VO2 run or on the day. Skip or cut a session if the legs feel heavy, your heart rate will not climb, or HRV is well below about 110.'
     ]
   },
@@ -137,7 +137,7 @@ export const WEEKS = [
     label: 'VO2 week 3',
     km: 'about 14 km running (two runs)',
     sessions: [
-      'Wed 16 Dec and Fri 18 Dec: 4 x 4 min hard, 3 min easy jog between. School is out from here, but it stays at two runs a week: the extra time goes into the swim, the ride and rest.',
+      'Wed 16 Dec and Fri 18 Dec: 4 x 4 min hard, 3 min easy jog between. School is out from here, but it stays at two runs a week: the extra time goes into rest and sleep.',
       'Keep sleep above 7 hours.'
     ]
   },
@@ -147,7 +147,7 @@ export const WEEKS = [
     label: 'VO2 week 4 (Christmas)',
     km: 'about 14 km running (two runs)',
     sessions: [
-      'Wed 23 Dec: 4 x 4 min hard. Sat 26 Dec: 4 x 4 min hard (Friday is Christmas, so the second session moves to Saturday and the ride is skipped).',
+      'Wed 23 Dec: 4 x 4 min hard. Sat 26 Dec: 4 x 4 min hard (Friday is Christmas, so the second session moves to Saturday).',
       'Fri 25 Dec: rest or a walk. Wednesday has a mid-block check: use the VO2 score panel to compare with the baseline.'
     ]
   },
@@ -155,9 +155,10 @@ export const WEEKS = [
     start: '2026-12-28',
     end: '2027-01-03',
     label: 'VO2 week 5 (New Year)',
-    km: 'about 14 km running (two runs)',
+    km: 'about 24 km running (two VO2 runs and a 10 km long run)',
     sessions: [
       'Wed 30 Dec: 4 x 4 min hard. Sat 2 Jan: 4 x 4 min hard (Friday is New Year, so the second session moves to Saturday).',
+      'Sun 3 Jan: the first long run, 10 km easy, heart rate under 148. Long runs start in January and build by 2 km a week.',
       'Skip or cut a session if the legs feel heavy, your heart rate will not climb, or HRV is well below about 110.'
     ]
   },
@@ -165,21 +166,23 @@ export const WEEKS = [
     start: '2027-01-04',
     end: '2027-01-10',
     label: 'VO2 week 6',
-    km: 'about 13 km running (two runs)',
+    km: 'about 25 km running (two VO2 runs and a 12 km long run)',
     sessions: [
       'Wed 6 Jan: the full 4 x 4 min hard. Fri 8 Jan: 3 x 4 min hard (a lighter day to freshen up for the test).',
-      'Lift as normal, no legs the day before a VO2 run or on the day.'
+      'Sat 9 Jan: the bike is back, so the 30 km baseline ride, steady, heart rate under 145 (zone 2).',
+      'Sun 10 Jan: long run 12 km, easy, heart rate under 148.',
+      'Lift as normal, no legs the day before a VO2 run or the day before and after a long run.'
     ]
   },
   {
     start: '2027-01-11',
     end: '2027-01-17',
     label: 'Test week',
-    km: 'about 12 km running (two runs)',
+    km: 'about 26 km running (the opener, the test and a 14 km long run)',
     sessions: [
       'Wed 13 Jan: a short opener, 2 x 4 min hard, to keep the legs fresh for the test.',
       'Fri 15 Jan: the test run. 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors with a good heart rate signal. The watch updates your VO2 max after a run like this. Also log the session in the VO2 score panel (Plan tab).',
-      'Sat 16 and Sun 17 Jan: rest or an easy ride or walk. No runs are planned after the test until the next block is set. The base phase starts on Mon 18 Jan.'
+      'Sat 16 Jan: rest or an easy ride. Sun 17 Jan: long run 14 km, easy, heart rate under 148. The base phase starts on Mon 18 Jan.'
     ]
   }
 ]
@@ -205,10 +208,15 @@ export const RUN_SESSIONS = {
   '2026-12-26': VO2_4X4,
   '2026-12-30': VO2_4X4,
   '2027-01-02': VO2_4X4,
+  '2027-01-03': 'Long run 10 km, easy, heart rate under 148 (zone 2). The first long run since the marathon: walk the hills if you need to, there is no time target',
   '2027-01-06': VO2_4X4,
   '2027-01-08': VO2_3X4,
+  '2027-01-10': 'Long run 12 km, easy, heart rate under 148 (zone 2)',
   '2027-01-13': 'VO2 opener, 2 x 4 min: 1 km easy warm-up, then 2 x 4 min hard at heart rate 165 to 175 (zone 4-5), 3 min easy jog between at heart rate 130 to 140, 1 km easy cool-down. About 5 km. It keeps the legs fresh for the test on Friday',
-  '2027-01-15': 'VO2 test run: 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors, good heart rate signal, then 5 min easy. About 7 km. The watch updates your VO2 max after it'
+  '2027-01-15': 'VO2 test run: 10 min easy, then 20 to 25 min as hard as you can hold evenly, outdoors, good heart rate signal, then 5 min easy. About 7 km. The watch updates your VO2 max after it',
+  '2027-01-17': 'Long run 14 km, easy, heart rate under 148 (zone 2). Two days after the test, so go slowly',
+  '2027-01-24': 'Long run 16 km, easy, heart rate under 148 (zone 2)',
+  '2027-01-31': 'Long run 12 km, easy, heart rate under 148 (zone 2). A lighter week'
 }
 
 // The rules Andy can change in the Plan tab (settings.js keeps his choices; report.js applies them).
@@ -313,7 +321,7 @@ export function doneEarly(runs, today = localToday()) {
 // Dated tests and checkpoints that are not runs; the Plan line on Today points to the next one.
 export const MILESTONES = [
   { date: '2026-11-17', text: '400 m swim baseline done: 9:56, about 2:29 per 100 m' },
-  { date: '2026-11-28', text: '30 km baseline ride' },
+  { date: '2027-01-09', text: '30 km baseline ride (the bike arrives at the end of December)' },
   { date: '2026-12-23', text: 'VO2 mid-block check: log the 4 x 4 in the VO2 score panel and compare with the 22 Nov baseline (49)' },
   { date: '2027-01-15', text: 'VO2 max test run (goal: VO2 score toward 55, Garmin over 50)' },
   { date: '2027-02-23', text: 'swim checkpoint: 1,500 m continuous, timed' },
@@ -326,7 +334,8 @@ export const MILESTONES = [
 // Between these dates every run is spelled out in RUN_SESSIONS (or the long-run slot), so a day with
 // no run there means no run, and no extra easy run is added on off days.
 export const DATED_RUNS_FROM = '2026-11-15'
-// Two runs a week, both in the VO2 block. Nothing is added in between, or after the test until the next block is planned.
+// Two VO2 runs a week until the test, and a Sunday long run from 3 Jan. Nothing else is added: no easy or recovery runs, and
+// no runs after the January long runs until the next block is planned.
 export const DATED_RUNS_UNTIL = '2027-02-28'
 
 // An easy run on an off day, by phase, when no dated run is planned.
@@ -348,8 +357,7 @@ export const PHASE_WEEKS = {
   base: [
     'Tue 5 to 6pm: swim for technique, 30 to 40 minutes of drills and easy lengths (about 800 to 1,200 m, heart rate under 135). Book a few lessons or a video check in the first month.',
     'Sat: long easy ride, 25 to 60 km, adding 5 to 10 km a month. Keep heart rate under about 140 on the bike until you have measured it.',
-    'Off day from lifting: easy run of 40 to 60 minutes, heart rate under 148. This keeps your run base at 15 to 25 km a week.',
-    'Thu: the light swim with your daughter is your second swim each week. Frequency builds swimming skill more than distance, so keep it going.'
+    'Sun: long easy run, heart rate under 148, adding 2 km a week with an easier week every fourth. No other runs are planned until the next block is set.'
   ],
   build: [
     'Tue: swim, building to 2,500 m a session (drills, then steady sets, heart rate under 140). First sea swims in May, in the wetsuit.',
@@ -394,9 +402,9 @@ export const RUN_GUIDE = [
 
 // Month by month swim and ride targets. A dash means the brief sets no target.
 export const MONTH_TARGETS = [
-  { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '30 km baseline test' },
-  { month: '2026-12', swim: 'One swim a week, Tuesday: 700 m building to 1,000 m', ride: '25 to 60 km, easy', note: 'VO2 max block: Norwegian 4 x 4 on Wednesday and Friday (Christmas and New Year week: Wednesday and Saturday). Check on 23 Dec.' },
-  { month: '2027-01', swim: 'Tuesday: 1,000 m building to 1,300 m', ride: '25 to 60 km', note: 'VO2 block to the test run on Fri 15 Jan. Goal: VO2 score toward 55 (51 to 53 realistic). Base phase from 18 Jan.' },
+  { month: '2026-11', swim: '400 m baseline done 17 Nov (9:56)', ride: '' },
+  { month: '2026-12', swim: 'One swim a week, Tuesday: 700 m building to 1,000 m', ride: '', note: 'No bike until the end of December. VO2 max block: Norwegian 4 x 4 on Wednesday and Friday (Christmas and New Year week: Wednesday and Saturday). Check on 23 Dec.' },
+  { month: '2027-01', swim: 'Tuesday: 1,000 m building to 1,300 m', ride: '30 km baseline on 9 Jan, then 25 to 60 km', note: 'Long runs on Sunday from 3 Jan (10 km, adding 2 km a week). VO2 block to the test run on Fri 15 Jan. Goal: VO2 score toward 55 (51 to 53 realistic). Base phase from 18 Jan.' },
   { month: '2027-02', swim: 'Tuesday: 1,300 m, then the 1,500 m checkpoint on 23 Feb', ride: '25 to 60 km. Checkpoint: 60 km', note: 'End of base.' },
   { month: '2027-03', swim: 'Build up to 2,500 m', ride: '60 to 85 km, hilly', note: 'Road bike in place by March.' },
   { month: '2027-04', swim: 'Build up to 2,500 m', ride: '60 to 85 km, hilly' },
@@ -417,7 +425,7 @@ export const LIFTING_RULES = [
     title: 'Tuesday swim',
     text: 'Lift legs, arms, or take the off day. Never chest, back or shoulders on Tuesday or the Monday before.'
   },
-  { title: 'Saturday ride', text: 'No legs from Thursday to Saturday.' },
+  { title: 'Saturday ride', text: 'No legs from Thursday to Saturday, from the day the bike is back (9 Jan).' },
   { title: 'When recovery drifts', text: 'If HRV or resting HR drifts off normal for 3 days, shorten lifting first.' },
   {
     title: 'Heavy, fewer sets',
@@ -431,12 +439,12 @@ export const GROUND_RULES = [
   { title: 'Easy is easy', text: 'Keep 80% of training easy. Easy means heart rate under 148.' },
   { title: 'Long ride', text: 'Raise the long ride by 10 km at most.' },
   { title: 'Niggles', text: 'A niggle that lasts 3 days means an easy week.' },
-  { title: 'Term time', text: '2 sessions a week (swim Tuesday 5 to 6pm, ride Saturday), on top of lifting.' },
+  { title: 'Term time', text: 'One swim a week (Tuesday, 5 to 6pm) and two runs, plus a Saturday ride once the bike arrives in January, on top of lifting.' },
   { title: 'School holidays', text: '4 to 6 sessions a week.' },
   { title: 'July and August', text: 'Main block, 7 to 8 sessions a week.' },
   {
     title: 'Thursday family swim',
-    text: 'A light swim with your daughter, 20 to 30 minutes. Play first, then a few relaxed lengths of technique. It is water practice, not training load.'
+    text: 'A light swim with your daughter is just for fun and is not in the plan. The only swim in the plan is Tuesday.'
   }
 ]
 
@@ -483,10 +491,10 @@ export const SWIM_SESSIONS = {
 export const APP_RULES = [
   { title: 'Which lift is next', text: 'The lift that has gone longest without being done (shoulders, back, legs, chest, arms). The same lift is never suggested twice within 5 days. After 5 lifting days in a row there is an off day.' },
   { title: 'Reading your workouts', text: 'The first muscle in the title is the day\'s lift. Triceps or biceps added to another muscle are extras, so "Chest, Triceps" counts as chest. Each lift flips between a heavy day and a volume day.' },
-  { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race. From 15 Nov: no legs Thursday to Saturday (the ride), and Tuesday is legs, arms or off only (the swim). In the VO2 block, no legs the day before a VO2 run or on the day.' },
+  { title: 'Legs', text: 'Never in the 2 days before or after a run of 15 km or more, never in the 7 days before a race. From the day the bike is back (9 Jan): no legs Thursday to Saturday (the ride). Tuesday is legs, arms or off only (the swim). No legs the day before a VO2 run or on the day, and none the day before, the day of and the day after a long run.' },
   { title: 'VO2 block', text: 'From 2 Dec to 15 Jan: two runs a week, both hard, on Wednesday and Friday (1 km warm-up, the Norwegian 4 x 4, 1 km cool-down), and a test run on 15 Jan. There are no easy, recovery or long runs in between. If recovery is only fair the session is cut to 3 x 4 min, and if the trend is down it becomes an easy run.' },
-  { title: 'Two runs a week', text: 'The only runs are the two VO2 sessions a week. The app never adds an easy, recovery or long run on an off day, and on every other day Today says there is no run planned. After the 15 Jan test no runs are planned until the next block is set.' },
-  { title: 'The swim', text: 'One structured swim a week on Tuesday, 5 to 6pm, building from your baseline (400 m in 9:56 on 17 Nov, 500 m in 12:22 on 24 Nov, about 2:28 per 100 m) to 1,500 m continuous on Tue 23 Feb. If Tuesday is missed, the same session moves to Thursday. The light swim with your daughter on Thursday stays as play, not training.' },
+  { title: 'Two runs a week', text: 'Until the 15 Jan test the only runs are the two VO2 sessions a week, and from 3 Jan a long run on Sunday as well (10, 12, 14, 16 km, then an easier 12). The app never adds an easy or recovery run on an off day, and on every other day Today says there is no run planned. After the January long runs, nothing is planned until the next block is set.' },
+  { title: 'The swim', text: 'One structured swim a week on Tuesday, 5 to 6pm, building from your baseline (400 m in 9:56 on 17 Nov, 500 m in 12:22 on 24 Nov, about 2:28 per 100 m) to 1,500 m continuous on Tue 23 Feb. If Tuesday is missed, the same session moves to Thursday. There is no other swim in the plan.' },
   { title: 'Days with no lifting', text: 'The long-run day, a race-rhythm run day, and the two days before a race. A full rest day has no lifting and no run.' },
   { title: 'Easy means easy', text: 'Easy running is heart rate under 148 (zone 2), and about 80% of training stays easy. The day after a long run is rest or 30 minutes under 140. After heavy legs, keep the run to 5 to 6 km.' },
   { title: 'The long run', text: 'It goes on the first weekend day at least 3 days after your last legs session and 4 days after another run of 15 km or more. A run of 18 km or more counts as the last long run.' },
@@ -499,6 +507,8 @@ export const APP_RULES = [
 
 // The weekday lifting rules start once swim and ride sessions begin (after the 15 Nov recovery).
 export const SWIM_RIDE_FROM = '2026-11-15'
+// The bike arrives at the end of December: no rides in the plan, and no Saturday leg ban, before this Saturday.
+export const RIDE_FROM = '2027-01-09'
 
 // What the lifting rules mean for a given date, or null if nothing applies.
 export function liftRuleFor(iso) {
@@ -506,7 +516,7 @@ export function liftRuleFor(iso) {
   const dow = new Date(iso + 'T12:00:00Z').getUTCDay() // 0 = Sunday
   if (dow === 1) return 'No chest, back or shoulders today (swim tomorrow)'
   if (dow === 2) return 'Legs, arms or off only today (swim tonight)'
-  if (dow === 4 || dow === 5 || dow === 6) return 'No legs today (Saturday ride)'
+  if ((dow === 4 || dow === 5 || dow === 6) && iso >= RIDE_FROM) return 'No legs today (Saturday ride)'
   return null
 }
 

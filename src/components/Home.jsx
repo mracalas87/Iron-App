@@ -82,13 +82,13 @@ const AMBER = 'var(--warn)'
 const GREEN = 'var(--pr)'
 // Six bars that shift a step at a time from red on the left to green on the right.
 const GRADIENT = ['#d93a2f', '#ea6a2b', '#f2a31b', '#c7bc1c', '#84b92a', '#3f9d2e']
-// Recovery: Strained 1-3, Fair 4-5, Good 6. Training: Rest 1, Easy 2-3, Go 4-6.
+// Recovery: Strained 1-2, Fair 3-4, Good 5-6. Training: Rest 1, Easy 2-3, Go 4-6.
 const RECOVERY_BAR = {
   colours: GRADIENT,
   groups: [
-    { key: 'Strained', count: 3, color: RED, has: (l) => l <= 3 },
-    { key: 'Fair', count: 2, color: AMBER, has: (l) => l === 4 || l === 5 },
-    { key: 'Good', count: 1, color: GREEN, has: (l) => l === 6 }
+    { key: 'Strained', count: 2, color: RED, has: (l) => l <= 2 },
+    { key: 'Fair', count: 2, color: AMBER, has: (l) => l === 3 || l === 4 },
+    { key: 'Good', count: 2, color: GREEN, has: (l) => l >= 5 }
   ]
 }
 const TRAINING_BAR = {
@@ -422,6 +422,11 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
                 {advice.run && (
                   <div className="advice-line">
                     <SportIcon kind="Run" /> {fresh && review.run ? review.run : firstSentence(advice.run)}
+                  </div>
+                )}
+                {advice.swim && (
+                  <div className="advice-line">
+                    <SportIcon kind="Swim" /> {firstSentence(advice.swim)}
                   </div>
                 )}
                 {stats.trend && stats.trend.level !== 'steady' && (

@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, carryMissed, doneEarly, SWIM_SESSIONS } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, getSessions, getMoves, getRules, carryMissed, doneEarly, SWIM_SESSIONS, RIDE_FROM } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -68,8 +68,7 @@ function swimText(d) {
 }
 
 function rideText(d, lastRideKm) {
-  if (d < '2026-11-28') return 'Easy spin 20 to 30 km, heart rate under 130 (zone 1), or rest'
-  if (d <= '2026-11-30') return '30 km baseline ride, steady, heart rate under 145 (zone 2). Note average speed and heart rate'
+  if (d <= RIDE_FROM) return '30 km baseline ride on the new bike, steady, heart rate under 145 (zone 2). Note average speed and heart rate'
   if (d >= '2027-07-01' && d < '2027-09-01') {
     return 'Long ride 90 to 100 km, steady, heart rate under 145 (zone 2). Eat 60 to 90 g of carbohydrate an hour'
   }
@@ -140,6 +139,13 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   const movedTo = new Set(Object.values(moves))
   for (const [d, text] of Object.entries(sessions)) {
     if (d >= today && d <= end && getRules().keyRunNoLift && text.startsWith('Race rhythm') && !forcedOff.has(d) && !movedTo.has(d)) forcedOff.set(d, 'key run day')
+    // A planned long run: no lifting that day, and legs clear the day before, the day itself and the day after.
+    if (text.startsWith('Long run') && d >= today && d <= addDays(end, 1)) {
+      if (!forcedOff.has(d) && !movedTo.has(d)) forcedOff.set(d, 'long run day')
+      if (!legsBlocked.has(d)) legsBlocked.set(d, 'long run day')
+      if (!legsBlocked.has(addDays(d, -1))) legsBlocked.set(addDays(d, -1), 'long run tomorrow')
+      if (!legsBlocked.has(addDays(d, 1))) legsBlocked.set(addDays(d, 1), 'recovering from the long run')
+    }
     // A VO2 session (hard intervals): no leg lifting the day before or on the day, but other lifts stay.
     if (text.startsWith('VO2') && d >= today && d <= addDays(end, 1)) {
       if (!legsBlocked.has(d)) legsBlocked.set(d, 'VO2 session day')
@@ -182,7 +188,7 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       const w = dow(d)
       if (w === 1 && [0, 1, 3].includes(token)) return false // swim tomorrow: no chest, back, shoulders
       if (w === 2 && ![2, 4].includes(token)) return false // swim tonight: legs or arms only
-      if ([4, 5, 6].includes(w) && token === 2) return false // Saturday ride: no legs Thu to Sat
+      if ([4, 5, 6].includes(w) && token === 2 && d >= RIDE_FROM) return false // Saturday ride (once the bike is back): no legs Thu to Sat
     }
     return true
   }
@@ -330,11 +336,11 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
         row.cardio.push({ kind: 'Run', text: sessions[d], movable: !movedFrom, movedFrom, carriedFrom: carry.carried[d], date: d })
       }
       // Two runs a week only (the VO2 sessions): no easy or recovery run is ever added on an off day.
+      // One swim a week (Tuesday, or Thursday if Tuesday was missed). No bike until the end of December.
       const planned = swimFor(d)
-      if (d >= FAMILY_SWIM.from && dow(d) === 4 && !planned) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
       if (d >= SWIM_RIDE_FROM) {
         if (planned) row.cardio.push({ kind: 'Swim', text: planned })
-        else if (dow(d) === 6) row.cardio.push({ kind: 'Ride', text: rideText(d, lastRideKm) })
+        else if (dow(d) === 6 && d >= RIDE_FROM) row.cardio.push({ kind: 'Ride', text: rideText(d, lastRideKm) })
       }
     }
     // extra sessions Andy accepted from the coach, and the coach's notes for the day

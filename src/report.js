@@ -11,6 +11,9 @@ import { coachChangeLines } from './coachReview'
 import { getWeightSessions } from './weights'
 import { buildUpcoming } from './upcoming'
 import { analyzeTrends, MIN_REAL_NIGHT } from './trends'
+import { readiness, dailyLoads } from './readiness'
+import { mergeLoads } from './loadHistory'
+import { workingSets } from './loadType'
 import { mergeHealthDays } from './healthHistory'
 import { mergeActivities } from './activityHistory'
 
@@ -21,8 +24,6 @@ export const ZONES = [
   { key: 'Fair', color: 'var(--warn)' },
   { key: 'Good', color: 'var(--pr)' }
 ]
-// Marker position (% along the gauge) for 0, 1, 2, 3, 4 and 5+ warning points.
-const MARKER_POSITIONS = [88, 60, 45, 25, 14, 6]
 
 function readHealthCache() {
   try {
@@ -94,45 +95,25 @@ export async function buildReport() {
   ])
   const trainedDates = new Set([...weightDates, ...workouts.map((w) => w.date), ...runs.map((r) => r.date)])
 
-  // ---- Status: each warning adds points by severity ----
-  const reasons = []
-  let points = 0
-  const warn = (pts, text) => {
-    points += pts
-    reasons.push(text)
-  }
-
-  // Sleep over the last 7 recorded nights. A night under 3 h is the watch missing the night, not
-  // sleep, so it is left out (it used to drag the average down and count as 6 h of sleep debt).
-  const realNights = v.sleepHours.values.filter((x) => x != null && x >= MIN_REAL_NIGHT).slice(-7)
-  const sleepAvg = realNights.length >= 3 ? realNights.reduce((a, b) => a + b, 0) / realNights.length : null
-  if (sleepAvg != null && sleepAvg < 6.5) warn(2, `Sleep averaging ${round(sleepAvg, 1)}h, well under 7h`)
-  else if (sleepAvg != null && sleepAvg < 7) warn(1, `Sleep averaging ${round(sleepAvg, 1)}h, under 7h`)
-
-  // Trends over several days against your own baseline (trends.js): the median of your last 5 days
-  // against your own 4-week normal. This is the main recovery signal.
-  const trend = analyzeTrends(mergeHealthDays(health))
-  const ownHrvSignal = trend.signals.some((s) => s.key === 'hrv')
-
-  // Garmin's HRV status compares its own 7-day average with a 3-week baseline, so a single odd night or a
-  // big race can set it to Unbalanced while your numbers are fine. Unbalanced only counts when your own
-  // 5-day HRV is also below your normal; Low or Poor counts for one point even when your own trend is steady.
-  const hrvStatusWarned = ['LOW', 'POOR'].includes(v.hrvStatus)
-  if (hrvStatusWarned && !ownHrvSignal) warn(1, `Garmin HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()}`)
-
-  for (const s of trend.signals) {
-    if (s.key === 'sleep' && sleepAvg != null && sleepAvg < 7) continue // the sleep average above already counts
-    warn(s.points, s.text)
-  }
-  if (ownHrvSignal && ['UNBALANCED', 'LOW', 'POOR'].includes(v.hrvStatus)) {
-    warn(1, `Garmin HRV status is ${formatHrvStatus(v.hrvStatus).toLowerCase()} too`)
-  }
-
+  // ---- Recovery and training readiness (readiness.js) ----
+  // Recovery: your overnight signals against your own normal (HRV, resting HR, sleep, body battery). Training: that recovery
+  // less the strain of the last 4 weeks of training, counting recorded runs, rides and swims by heart rate and your morning
+  // weights by their heart-rate block plus the lifts logged that day.
   const hasHealth = v.hasData
-  const status = !hasHealth ? '—' : points === 0 ? 'Good' : points <= 2 ? 'Fair' : 'Strained'
-  const position = hasHealth ? MARKER_POSITIONS[Math.min(points, MARKER_POSITIONS.length - 1)] : null
-  // six steps on the bar: no warning points is 6, five or more is 1
-  const level = hasHealth ? 6 - Math.min(points, 5) : null
+  const healthRows = mergeHealthDays(health)
+  const trend = analyzeTrends(healthRows)
+  const ownHrvSignal = trend.signals.some((s) => s.key === 'hrv')
+  const loadTypesNow = new Map(recentDays.filter((d) => d.loadType).map((d) => [d.date, d.loadType]))
+  const lifts = workouts.map((w) => ({ date: w.date, sets: workingSets([w]).length, groups: w.muscleGroups || [], type: loadTypesNow.get(w.date) || null }))
+  const windowStart = (health?.days || []).map((d) => d.date).sort()[0] || todayDate
+  const restHR = trend.normal.rhr || v.restingHR.avg || 42
+  const todaysLoads = dailyLoads({ from: windowStart, to: todayDate, activities: health?.activities || [], weightSessions, lifts, rest: restHR })
+  const loadHistory = hasHealth ? mergeLoads(todaysLoads) : {}
+  const ready = hasHealth ? readiness({ series: healthRows, loadByDate: loadHistory, today: todayDate, trendLevel: trend.level }) : null
+  const reasons = ready ? ready.reasons : []
+  const status = ready ? ready.recovery.word : '—'
+  const level = ready ? ready.recovery.level : null
+  const position = null
 
   // ---- Detailed vitals rows ----
   // A night the watch missed (under 3 h) and the HRV from that same recording are left out of the ranges and averages.
@@ -273,6 +254,20 @@ export async function buildReport() {
     if (parts.length) notes.push(`Next morning, ${parts.join('; ')}. Small samples, so treat as a hint.`)
   }
 
+  // The numbers behind the two bars (readiness.js): 70 on each part is your own normal.
+  if (ready) {
+    const part = Object.fromEntries(ready.recovery.parts.map((x) => [x.key, Math.round(x.score)]))
+    notes.push(
+      `Recovery ${ready.recovery.score} out of 100 (70 is your normal): HRV ${part.hrv ?? '-'}, resting HR ${part.rhr ?? '-'}, sleep ${part.sleep ?? '-'}, body battery ${part.bb ?? '-'}.`
+    )
+    const ld = ready.training.load
+    notes.push(
+      ld.ratio != null
+        ? `Training readiness ${ready.training.score} out of 100. Training load: the last 7 days are ${round(ld.ratio, 1)}x your ${ld.days}-day average${ld.yesterday != null ? `, and yesterday was ${Math.round(ld.yesterday)} load units` : ''}. Your morning weights count by their heart-rate block plus the lifts you log.`
+        : 'Training load: still learning your normal, it needs about 10 days of data.'
+    )
+  }
+
   if (hasHealth && !hrAvailable) {
     notes.push('Refresh from Garmin on the Health tab to include your morning weights sessions.')
   } else if (hasHealth) {
@@ -326,6 +321,7 @@ export async function buildReport() {
     weightDates,
     runs,
     rides,
+    swims: swimRide.filter((a) => a.kind === 'swim'),
     loadTypes,
     strain: trend.level,
     coach: readCoachExtras()
@@ -333,7 +329,8 @@ export async function buildReport() {
 
   const advice = buildAdvice({
     hasHealth,
-    statusPoints: points,
+    ready,
+    swimToday: upcoming.todaySwim,
     sleepLastNight: v.sleepHours.latest,
     workouts,
     runs,
@@ -354,6 +351,7 @@ export async function buildReport() {
     today: todayDate,
     status,
     level,
+    ready,
     trend,
     advice,
     upcoming,

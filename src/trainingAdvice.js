@@ -121,7 +121,8 @@ export const HARD_HR_FROM = 160
 // count as "already trained" and block advice for an evening run.
 export function buildAdvice({
   hasHealth,
-  statusPoints,
+  ready = null, // { recovery, training: { zone, level, score }, reasons } from readiness.js
+  swimToday = null, // today's structured swim from upcoming.js, or null
   sleepLastNight,
   workouts,
   runs,
@@ -157,52 +158,17 @@ export function buildAdvice({
   const yesterday = daysAgo(1)
   const groupsSince = daysAgo(2)
   const reasons = []
-  let readiness = statusPoints
-
-  if (sleepLastNight != null && sleepLastNight < 5.5) {
-    readiness += 2
-    reasons.push(`Only ${r1(sleepLastNight)}h sleep last night`)
-  } else if (sleepLastNight != null && sleepLastNight < 6.5) {
-    readiness += 1
-    reasons.push(`${r1(sleepLastNight)}h sleep last night`)
-  }
-
-  const activeDays = new Set([...workouts.map((w) => w.date), ...runs.map((r) => r.date)])
-  const trainedDays = new Set([...activeDays, ...weightDates])
-  // He lifts most mornings, so a quiet week is normal; only a full fortnight with no rest counts.
-  const noRestFortnight = Array.from({ length: 14 }, (_, i) => daysAgo(i + 1)).every((d) => trainedDays.has(d))
-  if (noRestFortnight) {
-    readiness += 1
-    reasons.push('No full rest day in the last 14 days')
-  }
-
-  // One week of running well above the previous three is the clearest simple injury-risk flag
-  // (workload ratio above about 1.5, Gabbett 2016). It only means something with four weeks of history.
-  const kmBetween = (from, to) =>
-    runs.filter((r) => r.date >= daysAgo(from) && r.date <= daysAgo(to)).reduce((s, r) => s + r.distanceKm, 0)
-  const lastWeekKm = kmBetween(6, 0)
-  const priorWeeklyKm = (kmBetween(13, 7) + kmBetween(20, 14) + kmBetween(27, 21)) / 3
-  if (historyStart && historyStart <= daysAgo(27) && priorWeeklyKm >= 10 && lastWeekKm / priorWeeklyKm > 1.5) {
-    readiness += 1
-    reasons.push(`Last 7 days of running is ${r1(lastWeekKm / priorWeeklyKm)}x the weekly average of the 3 weeks before`)
-  }
-
-  // Several heavy days close together build fatigue even when sleep and HRV look fine.
-  const heavyRecent = [0, 1, 2, 3].filter((i) => loadTypes.get(daysAgo(i)) === 'Heavy').length
-  if (heavyRecent >= 3) {
-    readiness += 1
-    reasons.push(`${heavyRecent} heavy lifting days in the last 4`)
-  }
-
-  // A recovery trend that has held for days is not cancelled by one good night: it sets a floor.
+  // The zone and the bar come from readiness.js: recovery (HRV, resting HR, sleep and body battery against your own normal)
+  // less the strain of the last 4 weeks of training, counting your morning weights by their heart-rate block and the lifts
+  // you log. The reasons for the score are shown by report.js, so they are not repeated here.
   const level = trend ? trend.level : 'steady'
-  if (level === 'concern') readiness = Math.max(readiness, 3)
-  else if (level === 'alert') readiness = Math.max(readiness, 5)
+  const zone = ready ? ready.training.zone : 'Go'
+  const barLevel = ready ? ready.training.level : 6
+  const position = null
 
-  const zone = readiness <= 2 ? 'Go' : readiness <= 4 ? 'Easy' : 'Rest'
-  const position = POSITIONS[Math.min(readiness, POSITIONS.length - 1)]
-  // six steps on the bar: Go is 4 to 6, Easy 2 to 3, Rest 1
-  const barLevel = 6 - Math.min(readiness, 5)
+  // Several heavy lifting days close together build fatigue even when sleep and HRV look fine.
+  const heavyRecent = [0, 1, 2, 3].filter((i) => loadTypes.get(daysAgo(i)) === 'Heavy').length
+  if (heavyRecent >= 3) reasons.push(`${heavyRecent} heavy lifting days in the last 4`)
 
   const yesterdayRuns = runs.filter((r) => r.date === yesterday)
   const yesterdayKm = yesterdayRuns.reduce((s, r) => s + r.distanceKm, 0)
@@ -217,7 +183,7 @@ export function buildAdvice({
   const workDay = dow >= 1 && dow <= 5
   const fitText = workDay ? ' A 30-45 minute session fits a work day.' : ''
 
-  let tip = readiness >= 3 ? 'An earlier night will do more for you than an extra session.' : null
+  let tip = zone !== 'Go' ? 'An earlier night will do more for you than an extra session.' : null
   // Taper: 8-14 days, volume cut about 40-60%, intensity kept (Bosquet 2007 meta-analysis).
   const daysToRace = race ? Math.round((new Date(race.date + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 86400000) : null
   if (level === 'concern' || level === 'alert') {
@@ -288,6 +254,7 @@ export function buildAdvice({
 
   // The plan sets today's run; health and lifting only ever make it easier or move it.
   let planRun = null
+  let noRunPlanned = false
   if (plan) {
     if (plan.runKind === 'long-due') {
       const { min, max } = plan.run
@@ -319,11 +286,14 @@ export function buildAdvice({
     }
     else if (!dated && today >= DATED_RUNS_FROM && today <= DATED_RUNS_UNTIL && plan.runKind !== 'race' && !slotToday) {
       planRun = 'No run planned today. Rest, or an easy walk.'
+      noRunPlanned = true
     }
   }
 
   let run
   if (zone === 'Rest') run = 'Skip it, or an easy walk.'
+  // two runs a week only (the VO2 sessions): on every other day the answer is no run, whatever else is going on
+  else if (noRunPlanned) run = 'No run planned today (your runs are the two VO2 sessions a week). Rest, or an easy walk.'
   else if (level === 'concern' && plan?.runKind !== 'race' && !(plan?.runKind === 'long-due' && plan.slot === today)) run = `Recovery trend is down: easy 4-5 km, heart rate under 140 (zone 1-2), or skip it.`
   else if (longRunYesterday) run = zone === 'Go' ? `Long run yesterday: rest, or 30 minutes (about 4-5 km) at most, very easy, heart rate under 140 (zone 1-2). Stop if the legs feel heavy.` : 'Long run yesterday, so skip it or take a walk.'
   else if (hardRunYesterday) run = `Hard run yesterday, so keep today easy: 5-6 km, heart rate under ${EASY_HR_CAP} (zone 2).`
@@ -333,5 +303,5 @@ export function buildAdvice({
   else if (zone === 'Go') run = liftedToday ? `Easy 6-8 km, heart rate under ${EASY_HR_CAP} (zone 2). Finish 2-3 hours before bed.` : `Easy 6-8 km, heart rate under ${EASY_HR_CAP} (zone 2), or steady up to 159 (zone 3).`
   else run = `Easy 4-5 km at conversational pace, heart rate under ${EASY_HR_CAP} (zone 2).`
 
-  return { zone, position, level: barLevel, headline, plan: plan ? plan.line : null, strength, liftBrief, run, tip, reasons }
+  return { zone, position, level: barLevel, headline, plan: plan ? plan.line : null, strength, liftBrief, run, swim: swimToday, tip, reasons }
 }
