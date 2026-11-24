@@ -9,7 +9,7 @@ import { readReview, saveReview, requestReview, cleanReview, applyActions, undoA
 import { useGarmin } from '../useGarmin'
 import { buildReport, statusColor } from '../report'
 import { ADVICE_ZONES } from '../trainingAdvice'
-import { getVitals, trendLabel, round } from '../vitals'
+import { getVitals, round } from '../vitals'
 import { loadLocalEntries, buildFeed } from '../activityFeed'
 import { syncRunsFromGarminCache } from '../db'
 import { undoMove } from '../overrides'
@@ -98,21 +98,6 @@ const TRAINING_BAR = {
     { key: 'Easy', count: 2, color: AMBER, has: (l) => l === 2 || l === 3 },
     { key: 'Go', count: 3, color: GREEN, has: (l) => l >= 4 }
   ]
-}
-
-function MiniTile({ label, value, unit, trend }) {
-  return (
-    <div className="mini-tile">
-      <div className="label">{label}</div>
-      <div className="value">
-        {value ?? '—'}
-        {value != null && unit && <span className="unit">{unit}</span>}
-      </div>
-      <div className="trend" style={{ color: trend?.color }}>
-        {trend?.text || ' '}
-      </div>
-    </div>
-  )
 }
 
 function Trend({ title, data, dataKey, color, domain }) {
@@ -276,12 +261,10 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
   const reasonsLine = stats
     ? [...stats.reasons, ...(advice?.reasons || [])].filter((r) => !trendTexts.has(r) || stats.trend.level === 'steady').slice(0, 2).join(' · ')
     : ''
-  const sleepTrend = trendLabel(v.sleepHours.delta != null ? v.sleepHours.delta * 60 : null, 'min', true)
 
   const word = (s) => (s && s !== '—' ? s : null)
   const nextUp = stats ? stats.upcoming.rows.find((r) => r.lift || r.cardio.length > 0) : null
   const comingSummary = nextUp ? `${nextUp.label}: ${nextUp.lift || nextUp.cardio[0].kind}` : 'Nothing planned'
-  const statsSummary = `HRV ${round(v.hrv.latest) ?? '—'} · RHR ${round(v.restingHR.latest) ?? '—'} · Sleep ${v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) + 'h' : '—'}`
   const monthSummary = (
     <span className="chips-inline">
       <Last30Chips last30={stats?.last30} />
@@ -501,16 +484,6 @@ export default function Home({ activeWorkout, onOpenLog, resetTick }) {
           {!stats.upcoming.liftKnown && (
             <div className="up-note" style={{ padding: '8px 0 10px' }}>Log your lifts to see which one is next.</div>
           )}
-        </Panel>
-      )}
-
-      {hasData && (
-        <Panel id="stats" icon="stats" title="Stats" summary={statsSummary} open={open} onToggle={setOpen} onHome={goHome}>
-          <div className="mini-row" style={{ marginBottom: 0 }}>
-            <MiniTile label="HRV" value={round(v.hrv.latest)} unit="ms" trend={trendLabel(v.hrv.delta, 'ms', true)} />
-            <MiniTile label="Resting HR" value={round(v.restingHR.latest)} unit="bpm" trend={trendLabel(v.restingHR.delta, 'bpm', false)} />
-            <MiniTile label="Sleep" value={v.sleepHours.latest != null ? round(v.sleepHours.latest, 1) : null} unit="h" trend={sleepTrend} />
-          </div>
         </Panel>
       )}
 

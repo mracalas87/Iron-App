@@ -5,7 +5,7 @@
 // morning heart-rate blocks since. Your rules are applied on top: nothing that would
 // clash with the long run, race, swim or ride gets scheduled, and a lift that cannot go
 // on a day is moved to the next day it can, not dropped.
-import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, carryMissed, easyRunText, DATED_RUNS_UNTIL, doneEarly } from './plan'
+import { currentPhase, monthTarget, RACES, SWIM_RIDE_FROM, FAMILY_SWIM, getSessions, getMoves, getRules, carryMissed, doneEarly, SWIM_SESSIONS } from './plan'
 
 const CYCLE = ['Shoulders', 'Back', 'Legs', 'Chest', 'Arms', 'Off']
 const OFF = 5
@@ -87,7 +87,7 @@ function rideText(d, lastRideKm) {
 
 // today: ISO date. nowHour: local hour, used to tell whether today's lift is still to come.
 // weightDates: Set of dates with a morning heart-rate block. rides: [{ date, km }].
-export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], loadTypes = new Map(), strain = 'steady', coach = { notes: {}, rest: {}, sessions: {} }, days = 7 }) {
+export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs, rides = [], swims = [], loadTypes = new Map(), strain = 'steady', coach = { notes: {}, rest: {}, sessions: {} }, days = 7 }) {
   const lifted = (d) => weightDates.has(d) || workouts.some((w) => w.date === d)
   const logged = workouts
     .map((w) => {
@@ -272,6 +272,21 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
   const todayLift = todayToken == null ? null : todayToken === OFF ? 'Off day' : liftLabel(todayToken)
 
   const ranEarly = doneEarly(runs, today)
+
+  // The week's one structured swim is on Tuesday, 5 to 6pm. If Tuesday's swim was missed (no swim logged on the Tuesday or
+  // the Wednesday), the same session is due on Thursday instead. Returns the text for a date, or null.
+  const swamOn = (a, b) => swims.some((x) => x.date >= a && x.date <= b)
+  const swimFor = (d) => {
+    if (d < SWIM_RIDE_FROM) return null
+    const w = dow(d)
+    if (w === 2) return `${SWIM_SESSIONS[d] || swimText(d)}, 5-6pm`
+    if (w === 4) {
+      const tue = addDays(d, -2)
+      if (tue < today && SWIM_SESSIONS[tue] && !swamOn(tue, addDays(tue, 1))) return `${SWIM_SESSIONS[tue]}, 5-6pm (Tuesday's swim was missed, so it is today)`
+    }
+    return null
+  }
+  const todaySwim = swamOn(today, today) ? null : swimFor(today)
   const rows = []
   for (let n = 1; n <= days; n++) {
     const d = addDays(today, n)
@@ -308,20 +323,18 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
       const ph = cp.phase
       // the run: the long run slot, then the dated run in the plan, then an easy run on an off day
       // (never on the swim or ride day, or a rest day the recovery trend asked for)
-      const w = dow(d)
-      const swimOrRide = d >= SWIM_RIDE_FROM && (w === 2 || w === 6)
       const movedFrom = Object.keys(moves).find((f) => moves[f] === d)
       if (longRuns.has(d)) row.cardio.push({ kind: 'Run', text: sessions[d] || longRuns.get(d) })
       else if (sessions[d] && ranEarly.has(d)) row.note = row.note ? `${row.note}. Run done early` : 'Run done early, none today'
       else if (sessions[d] && !(forcedOff.get(d) || '').startsWith('recovery trend') && !(forcedOff.get(d) || '').startsWith('rest day (coach)')) {
         row.cardio.push({ kind: 'Run', text: sessions[d], movable: !movedFrom, movedFrom, carriedFrom: carry.carried[d], date: d })
       }
-      else if (off && !forcedOff.has(d) && !swimOrRide && d > DATED_RUNS_UNTIL) row.cardio.push({ kind: 'Run', text: easyRunText(ph.id) })
-      if (d >= FAMILY_SWIM.from && dow(d) === 4) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
+      // Two runs a week only (the VO2 sessions): no easy or recovery run is ever added on an off day.
+      const planned = swimFor(d)
+      if (d >= FAMILY_SWIM.from && dow(d) === 4 && !planned) row.cardio.push({ kind: 'Swim', text: FAMILY_SWIM.text })
       if (d >= SWIM_RIDE_FROM) {
-        const w = dow(d)
-        if (w === 2) row.cardio.push({ kind: 'Swim', text: `${swimText(d)}, 5-6pm` })
-        else if (w === 6) row.cardio.push({ kind: 'Ride', text: rideText(d, lastRideKm) })
+        if (planned) row.cardio.push({ kind: 'Swim', text: planned })
+        else if (dow(d) === 6) row.cardio.push({ kind: 'Ride', text: rideText(d, lastRideKm) })
       }
     }
     // extra sessions Andy accepted from the coach, and the coach's notes for the day
@@ -332,5 +345,5 @@ export function buildUpcoming({ today, nowHour = 12, workouts, weightDates, runs
     rows.push(row)
   }
 
-  return { rows, todayLift, cycle: { done: cycleDone, due: cycleDue }, liftKnown: known, lastLogged: last ? { date: last.date, name: CYCLE[last.token] } : null }
+  return { rows, todayLift, todaySwim, cycle: { done: cycleDone, due: cycleDue }, liftKnown: known, lastLogged: last ? { date: last.date, name: CYCLE[last.token] } : null }
 }
